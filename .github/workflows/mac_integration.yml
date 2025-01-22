@@ -1,0 +1,137 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Please write our copyright if you use this file.
+# © 2023 Floorp Projects & Contributors
+
+#! SELF HOST DOES NOT SUPPORTED
+#TODO: separate Publish to other workflow
+
+on:
+  workflow_call:
+    inputs:
+      x86_64_artifact_name:
+        type: string
+        default: ""
+      aarch64_artifact_name:
+        type: string
+        default: ""
+      MOZ_BUILD_DATE:
+        type: string
+        default: ""
+    secrets:
+        APPLE_DEVELOPER_P12_BASE64:
+            description: "macOS CERTIFICATES P12 For App BASE64"
+            required: true
+        APPLE_DEVELOPER_P12_PASSWORD:
+            description: "macOS CERTIFICATES P12 PASSWORD"
+            required: true
+        APPLE_DEVELOPER_ID:
+            description: "macOS AppleDeveloperId"
+            required: true
+        APPLE_DEVELOPER_ACCOUNT_EMAIL:
+            description: "macOS AppleAccountId"
+            required: true
+        APPLE_DEVELOPER_TEAM_ID:
+            description: "macOS AppleTeamId"
+            required: true
+        APPLE_DEVELOPER_ACCOUNT_APP_SPESIFIC_PASSWORD:
+            description: "macOS AppleAccountAppSpecificPassword"
+            required: true
+
+jobs:
+  Integration:
+    runs-on: macos-latest
+    steps:
+        - name: Clone 📥
+          uses: actions/checkout@v4
+          with:
+            submodules: 'recursive'
+
+        - name: download AArch64 build artifact 📥
+          uses: actions/download-artifact@v4
+          with:
+            name: ${{ inputs.aarch64_artifact_name }}
+            path: ./
+
+        - name: download x86_64 build artifact 📥
+          uses: actions/download-artifact@v4
+          with:
+            name: ${{ inputs.x86_64_artifact_name }}
+            path: ./
+
+        - uses: actions/setup-python@v5
+          with:
+            python-version: '3.11'
+
+        - name: Create environment 🌲
+          shell: bash
+          run: |
+            ./mach --no-interactive bootstrap --application-choice browser
+            echo -e "ac_add_options --enable-bootstrap" >> mozconfig
+            ./mach configure
+
+        - name: Install apple-codesign 🍎
+          run: |
+            cargo install apple-codesign
+
+        - name: Integration 🗃
+          run: |
+            ./mach python "./toolkit/mozapps/installer/unify.py" "./obj-x86_64-apple-darwin/dist/floorp/Floorp.app" "./obj-aarch64-apple-darwin/dist/floorp/Floorp.app"
+
+        - name: create .p12 for codesign 🖊️
+          run: |
+           echo ${{ secrets.APPLE_DEVELOPER_P12_BASE64 }} > floorp-cert.txt
+           base64 --decode -i floorp-cert.txt -o floorpCert.p12
+           echo ${{ secrets.APPLE_DEVELOPER_P12_PASSWORD }} > floorpCertPassword.passwd
+
+        - name: Sign to .app 🖋️
+          run: |
+            ./mach macos-sign -v -r -c "release" -a ./obj-x86_64-apple-darwin/dist/floorp/Floorp.app --rcodesign-p12-file floorpCert.p12 --rcodesign-p12-password-file floorpCertPassword.passwd
+
+        - name: Create DMG 📦
+          run: |
+            ./mach python -m mozbuild.action.make_dmg ./obj-x86_64-apple-darwin/dist/floorp floorp-macOS-universal-temp.dmg
+            unzip "./.github/workflows/build/dmg-floorp-base.zip"
+            hdiutil attach ./floorp-macOS-universal-temp.dmg
+            hdiutil attach ./base.dmg
+
+            cp -r "/Volumes/Floorp/Floorp.app" /Volumes/Floorp\ Installer/
+            hdiutil detach /Volumes/Floorp\ Installer/
+            hdiutil convert ./base.dmg -format UDZO -imagekey zlib-level=9 -o floorp-macOS-universal.dmg
+
+        - name: import APPLE DEVELOPER ID CERTIFICATE for .app 🔑
+          uses: apple-actions/import-codesign-certs@v3
+          with:
+            p12-file-base64: ${{ secrets.APPLE_DEVELOPER_P12_BASE64 }}
+            p12-password: ${{ secrets.APPLE_DEVELOPER_P12_PASSWORD }}
+
+        - name: Sign to .dmg 🖋️
+          run: |
+            codesign -s "${{ secrets.APPLE_DEVELOPER_ID }}" floorp-macOS-universal.dmg
+
+            xcrun notarytool submit "floorp-macOS-universal.dmg" \
+                --apple-id "${{ secrets.APPLE_DEVELOPER_ACCOUNT_EMAIL }}" \
+                --team-id "${{ secrets.APPLE_DEVELOPER_TEAM_ID }}" \
+                --password "${{ secrets.APPLE_DEVELOPER_ACCOUNT_APP_SPESIFIC_PASSWORD }}" \
+                --wait
+
+            mkdir -p ./output
+            mv ./floorp-macOS-universal.dmg ./output/floorp-macOS-universal.dmg
+
+        - name: Publish 🎁
+          uses: actions/upload-artifact@v4
+          with:
+            name: macOS-universal-integrated-signed-dmg
+            if-no-files-found: ignore
+            path: |
+              ./output/
+
+        - name: Publish
+          uses: actions/upload-artifact@v4
+          with:
+            name: macOS-universal-integrated-signed-package
+            if-no-files-found: ignore
+            path: |
+              ./obj-x86_64-apple-darwin/

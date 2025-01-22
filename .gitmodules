@@ -1,4 +1,3 @@
-[submodule "noraneko"]
-	path = noraneko
-	url = https://github.com/nyanrus/noraneko
-	branch = main
+[submodule "floorp"]
+	path = floorp
+	url = https://github.com/Floorp-Projects/Floorp-12

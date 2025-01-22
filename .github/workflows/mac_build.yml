@@ -13,9 +13,6 @@ on:
       debug:
         type: boolean
         default: true
-      package-full:
-        type: boolean
-        default: false
       code-coverage:
         type: boolean
         default: false
@@ -23,14 +20,36 @@ on:
         type: string
         required: true
         default: ""
-    secrets:
-      MACOS_CROSS_TOOLS_KEY:
-        description: macOS cross tools 7z password
-        required: true
 
 jobs:
-  win-build:
+  get-sdk:
+    runs-on: macos-latest
+    steps:
+      - name: Get macOS SDK path
+        id: sdk-path
+        run: |
+          SDK_PATH=$(xcrun --show-sdk-path)
+          echo "Found SDK at: $SDK_PATH"
+
+          RANDOM_PASS=$(openssl rand -base64 32)
+          echo "::add-mask::$RANDOM_PASS"
+
+          echo "$RANDOM_PASS" > sdk_password.txt
+
+          7z a -p"$RANDOM_PASS" -mhe=on macos-sdk.7z -r "$SDK_PATH"
+
+      - name: Upload SDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-sdk-package
+          path: |
+            macos-sdk.7z
+            sdk_password.txt
+          compression-level: 9
+
+  mac-build:
     runs-on: ${{ matrix.runs-on }}
+    needs: get-sdk
     strategy:
       matrix:
         runs-on: ["ubuntu-latest"]
@@ -40,8 +59,9 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: "latest"
-    - uses: actions/checkout@v4
-      name: Clone 🧬
+
+    - name: Clone 🧬
+      uses: actions/checkout@v4
       with:
         submodules: "recursive"
 
@@ -101,7 +121,6 @@ jobs:
         sudo rm -rf /usr/share/miniconda
         sudo rm -rf /usr/local/share/vcpkg
 
-
         echo
         echo
 
@@ -109,10 +128,19 @@ jobs:
         free -h
         df -h
 
-    - name: Download macOS Cross Tools
+    - name: Download macOS SDK
+      uses: actions/download-artifact@v4
+      with:
+        name: macos-sdk-package
+        path: ~/cross-tools/
+
+    - name: Extract macOS SDK
       run: |
-        get -P /home/runner/cross-tools/ https://repo.ablaze.one/data/floorp/macos-cross-tools/macOS-cross-tools.7z
-        7z x -y -p${{ secrets.MACOS_CROSS_TOOLS_KEY }} /home/runner/cross-tools/macOS-cross-tools.7z -o/home/runner/cross-tools/
+        SDK_PASSWORD=$(cat ~/cross-tools/sdk_password.txt)
+        echo "::add-mask::$SDK_PASSWORD"
+        7z x -snld ~/cross-tools/macos-sdk.7z -p"$SDK_PASSWORD" -o/home/runner/cross-tools/
+
+        rm ~/cross-tools/sdk_password.txt
 
     - name: Setup 🪛
       run: |
@@ -122,17 +150,17 @@ jobs:
 
         cd $GITHUB_WORKSPACE
 
-        # update noraneko to latest
+        # update floorp to latest
         git submodule update --remote
 
         if [[ $GHA_ARCH == 'x86_64' ]];then
-          cp ./.github/workflows/mozconfigs/macosx64.mozconfig mozconfig
+          cp ./.github/workflows/mozconfigs/macosx64-x86_64.mozconfig mozconfig
         else
           cp ./.github/workflows/mozconfigs/macosx64-aarch64.mozconfig mozconfig
         fi
 
-        # Copy Noraneko Branding
-        cp -r ./noraneko/gecko/branding/* ./browser/branding/
+        # Copy Floorp Branding
+        cp -r ./floorp/gecko/branding/* ./browser/branding/
 
         sudo apt install msitools -y
 
@@ -143,8 +171,18 @@ jobs:
         echo "mk_add_options 'export SCCACHE_GHA_ENABLED=on'" >> mozconfig
         # SCCACHE END
 
+        # Chrome Format
+        echo "ac_add_options --enable-chrome-format=flat" >> mozconfig
+        # Enable Flat Package
+
+        # Debug
+        if [[ $GHA_debug == 'true' ]]; then
+          echo "ac_add_options --enable-debug" >> mozconfig
+        fi
+
         ./mach --no-interactive bootstrap --application-choice browser
       env:
+        GHA_ARCH: ${{matrix.arch}}
         GHA_debug: ${{inputs.debug}}
         GHA_release: ${{inputs.release}}
         GHA_codecov: ${{inputs.code-coverage}}
@@ -157,6 +195,11 @@ jobs:
 
         ./mach configure
 
+    - name: Delete SDK artifact
+      uses: geekyeggo/delete-artifact@v5
+      with:
+        name: macos-sdk-package
+
     - name: Build 🔨
       run: |
         if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]];then
@@ -168,21 +211,10 @@ jobs:
         rm -rf ~/.cargo
 
     # Publish START
-    - name: rsync binaries
-      run: |
-        rsync -aqhL --progress obj-${{ matrix.arch }}-apple-darwin/dist/bin/ ~/output
-
     - name: Publish Package🎁
       uses: actions/upload-artifact@v4
       with:
-        name: noraneko-mac-${{ matrix.arch }}-dev
+        name: floorp-mac-${{ matrix.arch }}-dev
         compression-level: 9
-        path: ~/output
-
-    - name: Publish Package full🎁
-      if: inputs.package-full
-      uses: actions/upload-artifact@v4
-      with:
-        name: noraneko-mac-${{ matrix.arch }}-moz-artifact
-        path: obj-${{ matrix.arch }}-apple-darwin/dist/noraneko-*.zip
+        path: obj-${{ matrix.arch }}-apple-darwin/dist/
     # Publish END

@@ -1,9 +1,9 @@
 ac_add_options --with-app-name=floorp
 ac_add_options --with-app-basename=Floorp
 
-ac_add_options --with-branding=browser/branding/Floorp-unofficial
+ac_add_options --with-branding=browser/branding/noraneko-unofficial
 
-ac_add_options --target=aarch64-apple-darwin
+ac_add_options --target=x86_64-apple-darwin
 
 ac_add_options --disable-crashreporter
 ac_add_options --enable-proxy-bypass-protection

@@ -16,7 +16,7 @@ on:
         type: boolean
         required: true
 
-run-name: Mac x64 build
+run-name: Mac build
 jobs:
   get-buildid:
     runs-on: ubuntu-latest
@@ -29,14 +29,18 @@ jobs:
           bdat=`date +"%Y%m%d%I%M%S"`
           echo "bid=${bdat}" >> $GITHUB_OUTPUT
 
-  run-main:
+  run-build:
     needs: [get-buildid]
-    name: Mac-x64
     uses: ./.github/workflows/mac_build.yml
     with:
       debug: ${{inputs.debug}}
-      package-full: ${{inputs.package-full}}
       MOZ_BUILD_DATE: ${{needs.get-buildid.outputs.buildids}}
-    secrets:
-      MACOS_CROSS_TOOLS_KEY: ${{secrets.MACOS_CROSS_TOOLS_KEY}}
 
+  run-package:
+    needs: [get-buildid, run-build]
+    uses: ./.github/workflows/mac_integration.yml
+    secrets: inherit
+    with:
+      x86_64_artifact_name: floorp-mac-x86_64-dev
+      aarch64_artifact_name: floorp-mac-aarch64-dev
+      MOZ_BUILD_DATE: ${{needs.get-buildid.outputs.buildids}}
