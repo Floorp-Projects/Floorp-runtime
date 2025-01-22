@@ -172,7 +172,7 @@ jobs:
         # SCCACHE END
 
         # Chrome Format
-        echo "ac_add_options --enable-chrome-format=flat" >> mozconfig
+        # echo "ac_add_options --enable-chrome-format=flat" >> mozconfig
         # Enable Flat Package
 
         # Debug
