@@ -24,10 +24,9 @@ jobs:
           with:
             node-version: lts/*
 
-        - uses: pnpm/action-setup@v4
+        - uses: denoland/setup-deno@v2
           with:
-            version: 9
-            run_install: false
+            deno-version: v2.x
 
         - uses: actions/checkout@v4
           with:
@@ -59,19 +58,29 @@ jobs:
           run: |
             Xvfb :2 -screen 0 1024x768x24 &
             export DISPLAY=:2
-            pnpm i
-            pnpm dev &
+            deno install
+            deno run dev &
             sleep 100
             if pgrep -f "floorp" > /dev/null; then
                 echo "Test passed"
-                echo "status=success" >> $GITHUB_ENV
+                STATUS=success
             else
                 echo "Test failed"
-                echo "status=failure" >> $GITHUB_ENV
+                STATUS=failure
             fi
-            pkill -f "node"
+            echo "status=$STATUS" >> $GITHUB_ENV
+            echo "status=$STATUS" >> $GITHUB_OUTPUT
+            pkill -f "deno"
 
         - name: Set test status
+          if: always()
           id: test-status
           run: |
-            echo "status=$status" >> $GITHUB_OUTPUT
+            if [ "${{ steps.test-unix.outputs.status }}" = "success" ]; then
+                echo "status=success" >> $GITHUB_ENV
+            else
+                echo "status=failure" >> $GITHUB_ENV
+            fi
+            # Set step output so that job output can be used in downstream workflows
+            echo "status=${{ steps.test-unix.outputs.status }}" >> $GITHUB_OUTPUT
+            echo "Test status set to: ${{ steps.test-unix.outputs.status }}"

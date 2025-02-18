@@ -8,6 +8,12 @@ on:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
+    inputs:
+      pgo:
+        description: 'Enable Profile-Guided Optimization (PGO)'
+        required: false
+        type: boolean
+        default: true
 
 run-name: "(B) 📅 Daily Runtime Build with Pull Upstream"
 jobs:
@@ -23,7 +29,7 @@ jobs:
     secrets: inherit
     with:
       debug: false
-      pgo: true
+      pgo: ${{ inputs.pgo }}
 
   linux-amd64:
     name: Linux amd x64 build
@@ -32,7 +38,7 @@ jobs:
     secrets: inherit
     with:
       debug: false
-      pgo: true
+      pgo: ${{ inputs.pgo }}
 
   mac-amd64:
     name: Mac amd x64 build
@@ -41,7 +47,7 @@ jobs:
     secrets: inherit
     with:
       debug: false
-      pgo: true
+      pgo: ${{ inputs.pgo }}
 
   platform-tests:
     name: Platform Tests
@@ -174,10 +180,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.set_tag.outputs.tag }}
+          prerelease: ${{ needs.platform-tests.outputs.test_status != 'success' }}
           name: "Runtime Release - ${{ steps.set_tag.outputs.tag }}"
-          make_latest: ${{ needs.platform-tests.outputs.test_status }} == "success"
-          prerelease: ${{ needs.platform-tests.outputs.test_status }} == "failure"
-          body: "This is a runtime release for Floorp 12. \n\n **Test Status:** ${{ needs.platform-tests.outputs.test_status }} \n\n **WARNING:** NOTE: This release is not an Floorp installer. Visit the [releases page](https://floorp.app) to download the official installer."
+          body: "This is a runtime release for Noraneko. \n\n **Test Status:** ${{ needs.platform-tests.outputs.test_status }} \n\n **WARNING:** This release is not a Noraneko installer. Visit the [releases page](https://floorp.app/) to download the official installer."
           files: |
             ./artifact/win/floorp-win-amd64-moz-artifact.zip
             ./artifact/win/Windows-x64-dist-host.zip
