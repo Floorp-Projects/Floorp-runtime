@@ -7,7 +7,7 @@ index e605019172..782e1ca956 100644
  
 
 -imply_option("MOZ_APP_VENDOR", "Mozilla")
-+imply_option("MOZ_APP_VENDOR", "Ablaze")
++imply_option("MOZ_APP_VENDOR", "Floorp")
  imply_option("MOZ_APP_ID", "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}")
  # Include the DevTools client, not just the server (which is the default)
  imply_option("MOZ_DEVTOOLS", "all")
