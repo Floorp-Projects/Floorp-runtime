@@ -1,0 +1,271 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Generate PGO Profile (Linux)
+
+'on':
+  workflow_call:
+    inputs:
+      browser-artifact-name:
+        description: 'Browser artifact to download'
+        required: true
+        type: string
+      artifact-path:
+        description: 'Path where browser artifact will be placed'
+        required: false
+        type: string
+        default: '/home/runner/artifact'
+      runner:
+        description: 'Runner label to execute on'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+      target-arch:
+        description: 'Target architecture (x86_64, aarch64)'
+        required: false
+        type: string
+        default: 'x86_64'
+      upload-artifact-name:
+        description: 'Name for uploaded profile data artifact'
+        required: false
+        type: string
+
+jobs:
+  generate-profdata-and-jarlog:
+    name: Generate PGO Profile Data (${{ inputs.target-arch }})
+    runs-on: ${{ inputs.runner }}
+    env:
+      UPLOAD_ARTIFACT_NAME: >-
+        ${{ inputs.upload-artifact-name ||
+        format('{0}-profile-generate-output', inputs.browser-artifact-name) }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download browser artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.browser-artifact-name }}
+          path: ${{ inputs.artifact-path }}
+
+      - name: Set up QEMU for ARM64 (if needed)
+        if: inputs.target-arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
+
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
+            # Install cross-compilation tools and ARM64 libraries
+            sudo apt install -y \
+              qemu-user-static \
+              binfmt-support \
+              gcc-aarch64-linux-gnu \
+              g++-aarch64-linux-gnu \
+              libc6-dev-arm64-cross \
+              xvfb \
+              mesa-utils
+            
+            # Install ARM64 LLVM tools via Docker approach
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          else
+            sudo apt install -y xvfb llvm-19 clang-19 mesa-utils
+          fi
+
+      - name: Bootstrap Mozilla build
+        run: |
+          chmod +x ./mach
+          if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
+            # Use QEMU for ARM64 bootstrap if needed
+            ./mach --no-interactive bootstrap --application-choice browser
+          else
+            ./mach --no-interactive bootstrap --application-choice browser
+          fi
+
+      - name: Setup directories and tools
+        run: |
+          mkdir -p obj-firefox/dist
+          mkdir -p /tmp/output
+          mkdir -p /tmp/clang/bin
+          
+          if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
+            # Setup ARM64 cross-compilation tools
+            # Use Docker container to get ARM64 LLVM tools
+            docker run --rm -v /tmp/clang:/tmp/clang --platform linux/arm64 ubuntu:24.04 bash -c "
+              apt update -qq && 
+              apt install -y llvm-19 && 
+              cp /usr/bin/llvm-profdata-19 /tmp/clang/llvm-profdata-arm64
+            "
+            ln -sf /tmp/clang/llvm-profdata-arm64 /tmp/clang/bin/llvm-profdata
+          else
+            ln -sf $(which llvm-profdata-19) /tmp/clang/bin/llvm-profdata
+          fi
+
+      - name: Extract and prepare browser
+        run: |
+          cd ${{ inputs.artifact-path }}
+          
+          # Extract archive
+          if ls *.tar.* >/dev/null 2>&1; then
+            tar -xf *.tar.*
+          elif ls *.zip >/dev/null 2>&1; then
+            unzip -q *.zip
+          fi
+          
+          echo "Contents after extraction:"
+          ls -la
+          
+          # Find browser directory - look for directories first, then check subdirectories
+          BROWSER_DIR=""
+          
+          # Look for top-level directories containing browser
+          for dir in */; do
+            if [[ -d "$dir" ]]; then
+              if find "$dir" -name "floorp" -o -name "firefox" -o -name "firefox-bin" | grep -q .; then
+                BROWSER_DIR="$dir"
+                break
+              fi
+            fi
+          done
+          
+          # If not found, look for any directory with floorp or firefox in name
+          if [[ -z "$BROWSER_DIR" ]]; then
+            BROWSER_DIR=$(find . -maxdepth 1 -type d \( -name "*floorp*" -o -name "*firefox*" \) | head -1)
+          fi
+          
+          if [[ -n "$BROWSER_DIR" && -d "$BROWSER_DIR" ]]; then
+            echo "Found browser directory: $BROWSER_DIR"
+            mv "$BROWSER_DIR" $GITHUB_WORKSPACE/obj-firefox/dist/firefox
+          else
+            echo "Browser directory not found. Available contents:"
+            find . -type d -maxdepth 2
+            echo "Files:"
+            find . -name "*floorp*" -o -name "*firefox*"
+            exit 1
+          fi
+
+      - name: Generate profile
+        run: |
+          export MOZ_FETCHES_DIR=/tmp
+          export JARLOG_FILE=en-US.log
+          export LLVM_PROFDATA=/tmp/clang/bin/llvm-profdata
+          export DISPLAY=:99
+          
+          # Start Xvfb
+          Xvfb :99 -screen 0 1024x768x24 &
+          XVFB_PID=$!
+          sleep 3
+          
+          # Find browser binary (look for actual executable files, not directories)
+          echo "Looking for browser binary in obj-firefox/dist/firefox/..."
+          ls -la obj-firefox/dist/firefox/ || echo "Directory doesn't exist or is empty"
+          
+          BROWSER=""
+          for binary_name in floorp firefox firefox-bin; do
+            if [[ -f "obj-firefox/dist/firefox/$binary_name" ]]; then
+              BROWSER="obj-firefox/dist/firefox/$binary_name"
+              break
+            fi
+          done
+          
+          if [[ -z "$BROWSER" ]]; then
+            echo "No browser binary found. Available files:"
+            find obj-firefox/dist/firefox -type f -executable 2>/dev/null || echo "No executable files found"
+            find obj-firefox/dist/firefox -name "*" -type f | head -10
+            kill $XVFB_PID
+            exit 1
+          fi
+          
+          echo "Found browser binary: $BROWSER"
+          
+          # Check architecture and handle accordingly
+          ARCH=$(file "$BROWSER" | grep -o "ARM aarch64\|x86-64\|x86_64")
+          echo "Browser binary architecture: $ARCH"
+          
+          if [[ "aarch64" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
+            echo "Running ARM64 binary with QEMU user-mode emulation"
+            
+            # Ensure QEMU is available and create symlink if needed
+            QEMU_PATH=""
+            if [[ -f "/usr/bin/qemu-aarch64-static" ]]; then
+              QEMU_PATH="/usr/bin/qemu-aarch64-static"
+            elif [[ -f "/usr/local/bin/qemu-aarch64-static" ]]; then
+              QEMU_PATH="/usr/local/bin/qemu-aarch64-static"
+            else
+              echo "ERROR: qemu-aarch64-static not found in standard locations"
+              kill $XVFB_PID
+              exit 1
+            fi
+            
+            echo "Found QEMU at: $QEMU_PATH"
+            
+            # Create symlink in current directory for convenience
+            if [[ ! -f "./qemu-aarch64-static" ]]; then
+              ln -sf "$QEMU_PATH" ./qemu-aarch64-static
+            fi
+            
+            # Ensure QEMU static is properly registered
+            if [[ ! -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
+              echo "Registering QEMU ARM64 handler"
+              docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+              sleep 2
+            fi
+            
+            # Make sure the binary is executable
+            chmod +x "$BROWSER"
+            
+            # Test if binfmt handles ARM64 execution transparently
+            echo "Testing direct ARM64 execution..."
+            if timeout 10s "$BROWSER" --version >/dev/null 2>&1; then
+              echo "Direct ARM64 execution successful (binfmt working)"
+            else
+              echo "Direct execution failed, using explicit QEMU"
+              BROWSER="$QEMU_PATH $BROWSER"
+            fi
+          else
+            chmod +x "$BROWSER"
+          fi
+          
+          # Verify it's executable
+          echo "Testing browser execution..."
+          if [[ "aarch64" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
+            # For ARM64 binaries, test with timeout since QEMU can be slow
+            timeout 30s $BROWSER --version || echo "Browser version check timed out or failed (this may be expected for QEMU)"
+          else
+            "$BROWSER" --version
+          fi
+          
+          # Check if browser test was successful enough to proceed
+          if [[ $? -ne 0 ]] && [[ "aarch64" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
+            echo "Browser execution test failed. Checking QEMU setup..."
+            
+            # Debug QEMU setup
+            echo "QEMU debug info:"
+            which qemu-aarch64-static || echo "qemu-aarch64-static not in PATH"
+            ls -la /proc/sys/fs/binfmt_misc/qemu-aarch64 || echo "QEMU ARM64 binfmt not registered"
+            
+            # Try one more time with explicit QEMU
+            echo "Final attempt with explicit QEMU path..."
+            BROWSER="$QEMU_PATH $(echo $BROWSER | sed 's/.*qemu-aarch64-static //')"
+          fi
+          
+          echo "Final browser command: $BROWSER"
+          
+          # Generate profile
+          echo "Starting profile generation..."
+          ./mach python build/pgo/profileserver.py --binary "$BROWSER"
+          
+          # Cleanup
+          kill $XVFB_PID
+
+      - name: Upload profile data
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.UPLOAD_ARTIFACT_NAME }}
+          path: |
+            merged.profdata
+            en-US.log
+          retention-days: 7

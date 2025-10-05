@@ -1,0 +1,19 @@
+diff --git a/toolkit/xre/nsXREDirProvider.cpp b/toolkit/xre/nsXREDirProvider.cpp
+index 3b4612e02c..3c02531e26 100644
+--- a/toolkit/xre/nsXREDirProvider.cpp
++++ b/toolkit/xre/nsXREDirProvider.cpp
+@@ -1253,10 +1253,10 @@ nsresult nsXREDirProvider::AppendProfilePath(nsIFile* aFile, bool aLocal) {
+   if (!profile.IsEmpty()) {
+     rv = AppendProfileString(aFile, profile.get());
+   } else {
+-    if (!vendor.IsEmpty()) {
+-      rv = aFile->AppendNative(vendor);
+-      NS_ENSURE_SUCCESS(rv, rv);
+-    }
++    // if (!vendor.IsEmpty()) {
++    //   rv = aFile->AppendNative(vendor);
++    //   NS_ENSURE_SUCCESS(rv, rv);
++    // }
+     rv = aFile->AppendNative(appName);
+   }
+   NS_ENSURE_SUCCESS(rv, rv);

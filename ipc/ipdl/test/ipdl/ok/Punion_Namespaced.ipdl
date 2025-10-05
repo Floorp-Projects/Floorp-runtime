@@ -1,0 +1,19 @@
+namespace kitties {
+
+union Socks {
+    int;
+    double;
+};
+
+} // namespace kitties
+
+
+namespace puppies {
+
+[ChildProc=any]
+protocol Punion_Namespaced {
+child:
+    async Msg(Socks s);
+};
+
+} // namespace puppies

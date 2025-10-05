@@ -1,0 +1,49 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#placesList {
+  width: 200px;
+  min-width: 100px;
+  max-width: 400px;
+}
+
+/* Menus */
+#placesMenu > menu {
+  appearance: auto;
+  -moz-default-appearance: toolbarbutton;
+  min-height: var(--button-min-height);
+
+  &:hover {
+    color: -moz-buttonhovertext;
+  }
+
+  &:hover:active,
+  &[open] {
+    color: -moz-buttonactivetext;
+  }
+}
+
+/* Root View */
+#placesView {
+  background-color: Window;
+}
+
+/* Expanders */
+
+.expander-up,
+.expander-down {
+  > .button-box {
+    appearance: auto;
+    -moz-default-appearance: -moz-menulist-arrow-button;
+  }
+}
+
+.expander-up > .button-box {
+  transform: scaleY(-1);
+}
+
+/* Downloads pane */
+#clearDownloadsButton > .toolbarbutton-icon {
+  display: none;
+}

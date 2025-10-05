@@ -1,0 +1,128 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Bug 1869845 - Styles in this file are still experimental!  */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-medium);
+}
+
+/* Password Card styles */
+password-card,
+.empty-state-card {
+  margin-block: var(--space-small);
+}
+
+.passwords-list {
+  display: flex;
+  flex-direction: column;
+}
+
+moz-card {
+  background-color: var(--sidebar-box-background);
+  box-shadow: none;
+  color: var(--sidebar-box-color);
+  border: var(--sidebar-box-border);
+  border-radius: var(--border-radius-medium);
+  border-width: var(--sidebar-box-border-width);
+  border-color: var(--sidebar-box-border-color);
+}
+
+login-form {
+  margin-block-start: var(--space-small);
+}
+
+.search-container {
+  width: 100%;
+  min-height: var(--input-text-min-height);
+  padding-inline: var(--space-small);
+  border: var(--border-width) solid var(--border-color-interactive);
+  border-radius: var(--border-radius-small);
+  box-sizing: border-box;
+  background-color: Field;
+  color: FieldText;
+  cursor: text;
+  display: flex;
+
+  &:focus-within {
+    outline: 1px auto;
+  }
+}
+
+.search-icon {
+  background-image: url(chrome://global/skin/icons/search-textbox.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  -moz-context-properties: fill;
+  fill: var(--icon-color);
+  width: var(--icon-size);
+  flex-shrink: 0;
+}
+
+.search {
+  border: none;
+  outline: none;
+  margin-inline-start: var(--space-xsmall);
+  background: transparent;
+  width: 100%;
+  text-overflow: ellipsis;
+}
+
+.first-row {
+  display: grid;
+  grid-template-columns: 1fr min-content;
+  grid-gap: var(--space-small);
+  align-items: center;
+  margin-block-end: var(--space-medium);
+}
+
+.second-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: var(--space-small);
+}
+
+.no-logins-card-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-small);
+
+  > moz-button {
+    width: 100%;
+  }
+}
+
+.no-logins-card-content,
+.reauth-card-content {
+  display: flex;
+  flex-direction: column;
+
+  > img {
+    max-width: 232px;
+    align-self: center;
+  }
+}
+
+.reauth-card-content {
+  gap: var(--space-large);
+}
+
+.alert-card {
+  display: flex;
+  flex-direction: column;
+  margin-block: var(--space-medium);
+
+  > ul {
+    list-style-type: none;
+    padding-inline: var(--space-small);
+    margin-block: var(--space-small);
+
+    > li:not(:last-child) {
+      margin-block-end: var(--space-medium);
+    }
+  }
+}

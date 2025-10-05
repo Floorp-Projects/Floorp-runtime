@@ -1,0 +1,31 @@
+{
+  "last-release-sha": "0b006175eea0c58957715b2c1cd7e56aec5170f1",
+  "separate-pull-requests": false,
+  "packages": {
+    "packages/puppeteer": {
+      "component": "puppeteer",
+      "extra-files": ["docker/Dockerfile"]
+    },
+    "packages/puppeteer-core": {
+      "component": "puppeteer-core"
+    },
+    "packages/testserver": {},
+    "packages/ng-schematics": {
+      "bump-minor-pre-major": true,
+      "separate-pull-requests": true
+    },
+    "packages/browsers": {}
+  },
+  "plugins": [
+    {
+      "type": "node-workspace",
+      "merge": false
+    },
+    {
+      "type": "linked-versions",
+      "group-name": "puppeteer",
+      "groupName": "puppeteer",
+      "components": ["puppeteer", "puppeteer-core"]
+    }
+  ]
+}

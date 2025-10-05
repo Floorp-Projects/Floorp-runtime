@@ -1,0 +1,60 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Daily Runtime Build
+
+permissions:
+  contents: write
+
+'on':
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug build'
+        required: false
+        type: boolean
+        default: true
+      pgo:
+        description: 'Enable Profile-Guided Optimization'
+        required: false
+        type: boolean
+        default: true
+
+run-name: Daily Runtime Build${{ inputs.debug && ' (Debug)' || '' }}
+
+jobs:
+  windows-x86_64:
+    name: Windows x86_64
+    uses: ./.github/workflows/wrapper-build-windows.yml
+    secrets: inherit
+    with:
+      debug: ${{ github.event.inputs.debug == 'true' || github.event_name == 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+
+  linux-x86_64:
+    name: Linux x86_64
+    uses: ./.github/workflows/wrapper-build-linux.yml
+    secrets: inherit
+    with:
+      debug: ${{ github.event.inputs.debug == 'true' || github.event_name == 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+
+  linux-aarch64:
+    name: Linux aarch64
+    uses: ./.github/workflows/wrapper-build-linux.yml
+    secrets: inherit
+    with:
+      debug: ${{ github.event.inputs.debug == 'true' || github.event_name == 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+      arch: aarch64
+
+  mac:
+    name: Mac build
+    uses: ./.github/workflows/wrapper-mac-build.yml
+    secrets: inherit
+    with:
+      debug: ${{ github.event.inputs.debug == 'true' || github.event_name == 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+

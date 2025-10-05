@@ -1,0 +1,15 @@
+[DEFAULT]
+skip-if = ["isolated_process"] # Bug 1709948
+subsuite = "media"
+tags = "mediasession mediacontrol"
+
+support-files = [
+  "../../test/gizmo.mp4",
+  "file_trigger_actionhandler_frame.html",
+  "file_trigger_actionhandler_window.html",
+  "MediaSessionTestUtils.js",
+]
+
+["test_setactionhandler.html"]
+
+["test_trigger_actionhandler.html"]

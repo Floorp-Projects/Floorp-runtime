@@ -1,0 +1,181 @@
+/* stylelint-disable max-nesting-depth */
+
+.ds-navigation {
+  color: var(--newtab-contextual-text-primary-color);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-xsmall) 0;
+
+  @media (min-width: $break-point-widest) {
+    line-height: 32px;
+  }
+
+  &.ds-navigation-centered {
+    text-align: center;
+  }
+
+  &.ds-navigation-right-aligned {
+    text-align: end;
+  }
+
+  // Contrast fix for users who have wallpapers set
+  @include wallpaper-contrast-fix;
+
+  ul {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+
+  ul li {
+    display: inline-block;
+
+    &::after {
+      content: '·';
+      padding: var(--space-xsmall);
+    }
+
+    &:last-child::after {
+      content: none;
+    }
+
+    a {
+      &:hover,
+      &:active {
+        text-decoration: none;
+      }
+
+      &:active {
+        color: var(--newtab-primary-element-active-color);
+      }
+    }
+  }
+
+  .ds-navigation-header {
+    padding-inline-end: var(--space-xsmall);
+  }
+
+  .ds-navigation-privacy {
+    padding-inline-start: var(--space-xsmall);
+    float: inline-end;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  &.ds-navigation-new-topics {
+    display: block;
+    padding-block-start: var(--space-xxlarge);
+
+    .ds-navigation-header {
+      font-size: var(--font-size-small);
+      font-weight: var(--font-weight-bold);
+      display: inline-block;
+      margin-block-end: var(--space-small);
+    }
+
+    .ds-navigation-family {
+      text-align: center;
+      font-size: var(--font-size-small);
+      margin: var(--space-large) auto var(--space-xlarge);
+
+      span {
+        margin: 0 var(--space-small);
+      }
+
+      .firefox-logo,
+      .pocket-logo {
+        height: 20px;
+        width: 20px;
+        background-size: cover;
+      }
+
+      .firefox-logo {
+        background-image: url('chrome://newtab/content/data/content/assets/firefox.svg');
+      }
+
+      .pocket-logo {
+        background-image: url('chrome://global/skin/icons/help.svg');
+        fill: $pocket-icon-fill;
+      }
+
+      .ds-navigation-family-message {
+        display: block;
+
+        @media (min-width: $break-point-medium) {
+          display: inline;
+        }
+      }
+
+      @media (min-width: $break-point-medium) {
+        // Bug 1967304 - Large number (40px)
+        margin-block-start: calc(var(--space-large) + var(--space-xlarge));
+      }
+    }
+
+    ul {
+      display: grid;
+      grid-gap: 0 var(--space-xlarge);
+      grid-auto-flow: column;
+      grid-template: repeat(8, 1fr) / repeat(1, 1fr);
+
+      li {
+        border-top: $border-primary;
+        line-height: 24px;
+        font-size: var(--font-size-small);
+        font-weight: var(--font-weight-bold);
+
+        &::after {
+          content: '';
+          padding: 0;
+        }
+
+        &:nth-last-child(2),
+        &:nth-last-child(3) {
+          display: none;
+        }
+
+        &:nth-last-child(1) {
+          border-bottom: $border-primary;
+        }
+      }
+
+      @media (min-width: $break-point-medium) {
+        grid-template: repeat(3, 1fr) / repeat(2, 1fr);
+
+        li {
+          &:nth-child(3) {
+            border-bottom: $border-primary;
+          }
+        }
+      }
+
+      @media (min-width: $break-point-large) {
+        grid-template: repeat(2, 1fr) / repeat(3, 1fr);
+
+
+        li {
+          &:nth-child(odd) {
+            border-bottom: 0;
+          }
+
+          &:nth-child(even) {
+            border-bottom: $border-primary;
+          }
+        }
+      }
+
+      @media (min-width: $break-point-widest) {
+        grid-template: repeat(2, 1fr) / repeat(4, 1fr);
+
+        li {
+          &:nth-last-child(2),
+          &:nth-last-child(3) {
+            display: block;
+          }
+        }
+      }
+    }
+  }
+}

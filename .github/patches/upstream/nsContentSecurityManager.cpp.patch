@@ -1,0 +1,57 @@
+diff --git a/dom/security/nsContentSecurityManager.cpp b/dom/security/nsContentSecurityManager.cpp
+index acf30ffb73297..f527ab3533ec7 100644
+--- a/dom/security/nsContentSecurityManager.cpp
++++ b/dom/security/nsContentSecurityManager.cpp
+@@ -969,8 +969,11 @@ nsresult nsContentSecurityManager::CheckAllowLoadInSystemPrivilegedContext(
+   // GetInnerURI can return null for malformed nested URIs like moz-icon:trash
+   if (!innerURI) {
+     MeasureUnexpectedPrivilegedLoads(loadInfo, innerURI, remoteType);
+-    aChannel->Cancel(NS_ERROR_CONTENT_BLOCKED);
+-    return NS_ERROR_CONTENT_BLOCKED;
++    if (StaticPrefs::security_disallow_privileged_no_finaluri_loads()) {
++      aChannel->Cancel(NS_ERROR_CONTENT_BLOCKED);
++      return NS_ERROR_CONTENT_BLOCKED;
++    }
++    return NS_OK;
+   }
+   // loads of userContent.css during startup and tests that show up as file:
+   if (innerURI->SchemeIs("file")) {
+@@ -1025,14 +1028,16 @@ nsresult nsContentSecurityManager::CheckAllowLoadInSystemPrivilegedContext(
+   }
+ 
+   if (contentPolicyType == ExtContentPolicy::TYPE_SUBDOCUMENT) {
+-    if (net::SchemeIsHttpOrHttps(innerURI)) {
++    if (StaticPrefs::security_disallow_privileged_https_subdocuments_loads() &&
++        net::SchemeIsHttpOrHttps(innerURI)) {
+       MOZ_ASSERT(
+           false,
+           "Disallowing SystemPrincipal load of subdocuments on HTTP(S).");
+       aChannel->Cancel(NS_ERROR_CONTENT_BLOCKED);
+       return NS_ERROR_CONTENT_BLOCKED;
+     }
+-    if (innerURI->SchemeIs("data")) {
++    if (StaticPrefs::security_disallow_privileged_data_subdocuments_loads() &&
++        innerURI->SchemeIs("data")) {
+       MOZ_ASSERT(
+           false,
+           "Disallowing SystemPrincipal load of subdocuments on data URL.");
+@@ -1041,7 +1046,8 @@ nsresult nsContentSecurityManager::CheckAllowLoadInSystemPrivilegedContext(
+     }
+   }
+   if (contentPolicyType == ExtContentPolicy::TYPE_SCRIPT) {
+-    if (net::SchemeIsHttpOrHttps(innerURI)) {
++    if (StaticPrefs::security_disallow_privileged_https_script_loads() &&
++        net::SchemeIsHttpOrHttps(innerURI)) {
+       MOZ_ASSERT(false,
+                  "Disallowing SystemPrincipal load of scripts on HTTP(S).");
+       aChannel->Cancel(NS_ERROR_CONTENT_BLOCKED);
+@@ -1049,7 +1055,8 @@ nsresult nsContentSecurityManager::CheckAllowLoadInSystemPrivilegedContext(
+     }
+   }
+   if (contentPolicyType == ExtContentPolicy::TYPE_STYLESHEET) {
+-    if (net::SchemeIsHttpOrHttps(innerURI)) {
++    if (StaticPrefs::security_disallow_privileged_https_stylesheet_loads() &&
++        net::SchemeIsHttpOrHttps(innerURI)) {
+       MOZ_ASSERT(false,
+                  "Disallowing SystemPrincipal load of stylesheets on HTTP(S).");
+       aChannel->Cancel(NS_ERROR_CONTENT_BLOCKED);

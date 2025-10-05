@@ -1,0 +1,12 @@
+[DEFAULT]
+run-if = ["os == 'mac'"] # Bug 1611300
+
+["browser_touchbar_searchrestrictions.js"]
+https_first_disabled = true
+
+["browser_touchbar_tests.js"]
+support-files = [
+  "readerModeArticle.html",
+  "test-video.mp4",
+  "video_test.html",
+]

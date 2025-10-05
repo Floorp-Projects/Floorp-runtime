@@ -1,0 +1,153 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("sidebar.verticalTabs") {
+  :host {
+    --button-size-icon: var(--tab-min-height);
+    --button-min-height: var(--button-size-icon);
+    --button-border-radius: var(--border-radius-medium);
+  }
+}
+
+:host {
+  width: 100%;
+}
+
+.wrapper {
+  display: grid;
+  grid-template-rows: auto min-content min-content;
+  box-sizing: border-box;
+  height: 100%;
+  max-width: 100%;
+  padding-inline: 0;
+
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media -moz-pref("sidebar.verticalTabs") {
+    display: flex;
+    flex-direction: column;
+
+    :host([expanded]) & {
+      /* TODO: Should this be some other pixel value between 5/6? Need to be careful of Linux where font size is larger */
+      --tab-pinned-horizontal-count: 5;
+      /* TODO: These --space-* tokens should use semantic names shared with tabs.css */
+      width: calc(var(--tab-pinned-horizontal-count) * var(--tab-pinned-min-width-expanded) + 2 * var(--tab-pinned-container-margin-inline-expanded) + 1px);
+    }
+
+    :host([customWidth]) & {
+      width: 100%;
+    }
+  }
+}
+
+#sidebar-tools-and-extensions-splitter {
+  display: block;
+  border-top: var(--tabstrip-inner-border);
+  margin-inline: var(--tab-inner-inline-margin);
+  margin-block-end: var(--space-small);
+  min-height: 2px;
+
+  &:hover {
+    background-color: var(--focus-outline-color);
+    border-radius: var(--border-radius-medium);
+  }
+
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media not -moz-pref("sidebar.visibility", "expand-on-hover") {
+    /* We need these rules to apply at all times when the sidebar.visibility
+    pref is not set to "expand-on-hover" as opposed to when the "sidebar-expand-on-hover" attribute
+    has not been added to root. There are certain scenarios when that attribute is temporarily
+    removed from root such as when toggling the sidebar to expand with the toolbar button. */
+    :host([expanded]) & {
+      border-color: transparent;
+    }
+  }
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: start;
+  max-width: 100%;
+  overflow: hidden;
+
+  > moz-button {
+    --button-icon-fill: var(--toolbarbutton-icon-fill);
+    --button-attention-dot-color: light-dark(#53b93a, #73d25d);
+  }
+
+  > moz-button:not(.tools-overflow) {
+    --button-outer-padding-inline: var(--space-medium);
+    --button-outer-padding-block: var(--space-xxsmall);
+
+    &:first-of-type {
+      --button-outer-padding-block-start: var(--space-small);
+    }
+
+    &:last-of-type {
+      --button-outer-padding-block-end: var(--space-small);
+    }
+  }
+
+  moz-button:not([type~="ghost"]):not(:hover) {
+    &::part(button) {
+      background-color: var(--toolbarbutton-active-background);
+    }
+  }
+}
+
+:host([sidebar-positionend]) .more-tools-button::part(button) {
+  transform: scaleX(-1);
+}
+
+.tools-and-extensions[orientation="horizontal"] {
+  :host([expanded]) & {
+    display: flex;
+    flex-wrap: wrap-reverse;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-content: flex-start;
+    gap: var(--space-xxsmall);
+    padding-inline: var(--space-medium);
+    padding-block-end: var(--space-small);
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("sidebar.visibility", "expand-on-hover") {
+      /* We need these rules to apply at all times when the sidebar.visibility
+      pref is set to "expand-on-hover" as opposed to when the "sidebar-expand-on-hover" attribute
+      has not been added to root. There are certain scenarios when that attribute is temporarily
+      removed from root such as when toggling the sidebar to expand with the toolbar button. */
+      margin-block-start: var(--space-small);
+    }
+
+    .tools-overflow {
+      width: unset;
+    }
+
+    :host(:not([sidebar-ongoing-animations])) &[overflowing="true"] {
+      padding-block: 0;
+    }
+  }
+}
+
+.bottom-actions > moz-button:last-of-type {
+  --button-outer-padding-block-end: var(--space-medium);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  moz-button::part(moz-button-label) {
+    opacity: 0;
+    transition: opacity 300ms ease-in-out;
+  }
+}
+
+.tools-and-extensions {
+  align-self: start;
+  width: 100%;
+}
+
+.bottom-actions {
+  align-self: end;
+}

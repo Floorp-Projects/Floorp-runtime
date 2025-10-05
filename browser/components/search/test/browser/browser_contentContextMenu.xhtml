@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <a href="http://mozilla.org" id="link">I'm a link!</a>
+    <br/>
+    <a href="http://mozilla.org" id="longLink">I'm a really long link and I should be truncated.</a>
+    <br/>
+    <span id="plainText">
+      Right clicking me when I'm selected should show the menu item.
+    </span>
+    <br/>
+    <span id="mixedContent">
+      I'm some text, and <a href="http://mozilla.org">I'm a link!</a>
+    </span>
+    <br/>
+    <a href="http://mozilla.org">A partial <span id="partialLink">link selection</span></a>
+    <br/>
+    <span id="surrogatePair">
+      This character🔥  shouldn't be truncated.
+    </span>
+    <br/>
+    <img id="image" width="100" height="100" src="ctxmenu-image.png" />
+    <img id="image-svg" width="100" height="100" src="search-glass.svg" />
+    <img id="image-data-uri" width="100" height="100" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAATklEQVRYhe3SIQ4AIBADwf7/04elBAtrVlSduGnSTDJ7cuT1PQJwwO+Hl7sAGAA07gjAAfgIBeAAoHFHAA7ARygABwCNOwJwAD5CATRgAYXh+kypw86nAAAAAElFTkSuQmCC" />
+    <img id="image-content-disposition" width="100" height="100" src="firebird.png" />
+  </body>
+</html>

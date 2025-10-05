@@ -1,0 +1,46 @@
+From: Michael Froman <mfroman@mozilla.com>
+Date: Tue, 8 Jul 2025 09:15:00 -0500
+Subject: Bug 1974813 - (fix-78f1c67f1) don't process deps from
+ 'buildtools/third_party'
+
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/9855b72bb8a73615cab39cbe8cf04679cc975050
+---
+ config/BUILDCONFIG.gn | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/config/BUILDCONFIG.gn b/config/BUILDCONFIG.gn
+index 4d9c9f5db..f1189be21 100644
+--- a/config/BUILDCONFIG.gn
++++ b/config/BUILDCONFIG.gn
+@@ -558,6 +558,7 @@ foreach(_target_type,
+         deps = []
+       }
+ 
++      if (false) { # Mozilla
+       if (is_clang && (!defined(invoker.use_libcxx_modules) ||
+                        invoker.use_libcxx_modules)) {
+         # This is necessary for Clang modules builds.
+@@ -577,6 +578,7 @@ foreach(_target_type,
+           "//buildtools/third_party/libc++:std_wctype_h",
+         ]
+       }
++      }
+ 
+       # Consumed by the unsafe-buffers plugin during compile.
+       #
+@@ -652,6 +654,7 @@ foreach(_target_type,
+       if (!defined(deps)) {
+         deps = []
+       }
++      if (false) { # Mozilla
+       if (!defined(invoker.no_default_deps) || !invoker.no_default_deps) {
+         # This pulls in one of:
+         # //build/config:executable_deps
+@@ -684,6 +687,7 @@ foreach(_target_type,
+           "//buildtools/third_party/libc++:std_wctype_h",
+         ]
+       }
++      }
+ 
+       # On Android, write shared library output file to metadata. We will use
+       # this information to, for instance, collect all shared libraries that

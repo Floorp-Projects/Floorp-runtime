@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=605242
+-->
+<head>
+  <title>Test for Bug 605242</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/EventUtils.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body onload="setTimeout('runTest()', 0)">
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=605242">Mozilla Bug 605242</a>
+<p id="display"></p>
+<div id="content" style="display: none">
+  
+</div>
+<pre id="test">
+<script type="application/javascript">
+
+/** Test for Bug 605242 **/
+
+SimpleTest.waitForExplicitFinish();
+
+function runTest() {
+  var b = document.getElementById("testbutton");
+  synthesizeMouse(b, 5, 5, { type: "mousedown" });
+  var l = document.querySelectorAll(":active");
+
+  var contains = false;  
+  for (var i = 0; i < l.length; ++i) {
+    if (l[i] == b) {
+      contains = true;
+    }
+  }
+
+  ok(contains, "Wrong active content! \n");
+  synthesizeMouse(b, 5, 5, { type: "mouseup" });
+  SimpleTest.finish();
+}
+
+</script>
+</pre>
+<button id="testbutton">A button</button>
+<pre id="log">
+</pre>
+</body>
+</html>

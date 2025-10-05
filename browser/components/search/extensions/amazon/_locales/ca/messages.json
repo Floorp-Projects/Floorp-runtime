@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.ca"
+  },
+  "extensionDescription": {
+    "message": "Amazon.ca Search"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.ca/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

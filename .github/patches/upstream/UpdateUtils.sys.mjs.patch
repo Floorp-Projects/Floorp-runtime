@@ -1,0 +1,16 @@
+diff --git a/toolkit/modules/UpdateUtils.sys.mjs b/toolkit/modules/UpdateUtils.sys.mjs
+index 0268c11a9a..6afca17cf1 100644
+--- a/toolkit/modules/UpdateUtils.sys.mjs
++++ b/toolkit/modules/UpdateUtils.sys.mjs
+@@ -77,6 +77,11 @@ export var UpdateUtils = {
+     return url.replace(/%(\w+)%/g, (match, name) => {
+       let replacement = match;
+       switch (name) {
++        case "NORA_UPDATE_HOST":
++          replacement = `
++            REPLACE_THIS_NORA_UPDATE_HOST_TARGET_PLACEHOLDER
++          `.trim();
++          break;
+         case "PRODUCT":
+           replacement = Services.appinfo.name;
+           break;

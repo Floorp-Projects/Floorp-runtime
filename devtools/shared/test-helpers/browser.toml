@@ -1,0 +1,12 @@
+[DEFAULT]
+tags = "devtools"
+subsuite = "devtools"
+support-files = ["allocation-tracker.js"]
+
+["browser_allocation_tracker.js"]
+skip-if = [
+  "os == 'win' && os_version == '11.26100' && processor == 'x86_64' && ccov", # And ccov as this doesn't aim to cover any production code, we are only testing test helpers here.
+  "verify", # Bug 1730507 - objects without stacks get allocated during the GC of the first test when running multiple times.
+]
+
+["browser_dump_scope.js"]

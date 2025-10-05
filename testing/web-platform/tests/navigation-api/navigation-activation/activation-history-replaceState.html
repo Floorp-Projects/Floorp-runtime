@@ -1,0 +1,19 @@
+<!doctype html>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script type="module">
+import { ensureWindowLoadEventFired } from "../resources/helpers.mjs";
+
+promise_test(async t => {
+  // Wait for after the load event so that the navigation doesn't get converted
+  // into a replace navigation.
+  await ensureWindowLoadEventFired(t);
+
+  assert_equals(navigation.activation.entry, navigation.currentEntry);
+  let activationEntry = navigation.activation.entry;
+  history.replaceState("#fragment", "", "");
+  assert_not_equals(navigation.activation.entry, navigation.currentEntry);
+  assert_equals(navigation.activation.entry, activationEntry);
+  assert_equals(navigation.activation.entry.index, -1);
+}, "navigation.activation.entry should be orphaned by history.replaceState()");
+</script>

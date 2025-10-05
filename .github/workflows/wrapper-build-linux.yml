@@ -1,0 +1,103 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Linux Build
+
+'on':
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug build'
+        type: boolean
+        required: true
+      pgo:
+        description: 'Enable Profile-Guided Optimization'
+        type: boolean
+        default: false
+        required: true
+      arch:
+        description: 'Target architecture'
+        type: choice
+        options:
+          - x86_64
+          - aarch64
+        default: x86_64
+        required: true
+
+  workflow_call:
+    inputs:
+      debug:
+        description: 'Enable debug build'
+        type: boolean
+        required: true
+      pgo:
+        description: 'Enable Profile-Guided Optimization'
+        type: boolean
+        default: false
+        required: true
+      arch:
+        description: 'Target architecture'
+        type: string
+        default: x86_64
+        required: false
+
+run-name: >-
+  ${{ inputs.pgo && '[PGO] ' || '' }}Linux ${{ inputs.arch || 'x64' }}
+  ${{ inputs.debug && ' Debug' || '' }}
+
+jobs:
+  build-normal:
+    name: >-
+      Linux ${{ inputs.arch || 'x86_64' }}
+      ${{ inputs.debug && ' Debug' || '' }}
+    if: ${{ !inputs.pgo }}
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: linux
+      arch: ${{ inputs.arch || 'x86_64' }}
+      debug: ${{ inputs.debug }}
+      pgo: false
+
+  build-pgo-stage1:
+    name: >-
+      Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 1
+      ${{ inputs.debug && ' Debug' || '' }}
+    if: ${{ inputs.pgo }}
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: linux
+      arch: ${{ inputs.arch || 'x86_64' }}
+      debug: ${{ inputs.debug }}
+      pgo: true
+      pgo_mode: 'generate'
+
+  collect-profiles:
+    name: Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 2
+    if: ${{ inputs.pgo }}
+    needs: build-pgo-stage1
+    uses: ./.github/workflows/generate-pgo-profile-linux.yml
+    secrets: inherit
+    with:
+      browser-artifact-name: >-
+        floorp-linux-${{ inputs.arch || 'x86_64' }}-moz-artifact
+      artifact-path: /home/runner/artifact
+      runner: ubuntu-latest
+      target-arch: ${{ inputs.arch || 'x86_64' }}
+      upload-artifact-name: >-
+        floorp-linux-${{ inputs.arch || 'x86_64' }}-profile-generate-output
+
+  build-pgo-final:
+    name: >-
+      Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 3
+      ${{ inputs.debug && ' Debug' || '' }}
+    if: ${{ inputs.pgo }}
+    needs: collect-profiles
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: linux
+      arch: ${{ inputs.arch || 'x86_64' }}
+      debug: ${{ inputs.debug }}
+      pgo: true
+      pgo_mode: 'use'
+      pgo_artifact_name: >-
+        floorp-linux-${{ inputs.arch || 'x86_64' }}-profile-generate-output

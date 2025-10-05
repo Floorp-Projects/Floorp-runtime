@@ -1,0 +1,16 @@
+[DEFAULT]
+subsuite = "webgpu"
+run-if = ["!release_or_beta"]
+prefs = [
+  "dom.webgpu.enabled=true",
+  "dom.webgpu.service-workers.enabled=true",
+  "privacy.fingerprintingProtection=true",
+  "privacy.fingerprintingProtection.overrides='-AllTargets,+WebGPULimits'",
+]
+
+# WebGPU is only available in secure contexts.
+#
+# See spec WebIDL, like this: https://www.w3.org/TR/webgpu/#navigatorgpu
+scheme = "https"
+
+["test_rfp_clamp_limits_on.html"]

@@ -1,0 +1,162 @@
+# Configure UniFFI sources
+#
+# Each key is the UDL namespace of the component.
+#
+#
+# IMPORTANT: Please Request review from a DOM peer before
+# committing to using UniFFI. There are other ways to consume Rust from
+# JavaScript that might fit your use case better.
+
+# TODO: Upgrade the TOML crate and switch to array of tables syntax.
+
+[context_id.async_wrappers]
+ContextIDComponent = "AsyncWrapped"
+"ContextIDComponent.new" = "Sync"
+"ContextIdCallback.persist" = "FireAndForget"
+"ContextIdCallback.rotated" = "FireAndForget"
+
+[filter_adult.async_wrappers]
+"FilterAdultComponent.new" = "Sync"
+"FilterAdultComponent.contains" = "Sync"
+
+[search.async_wrappers]
+SearchEngineSelector = "Sync"
+"SearchEngineSelector.use_remote_settings_server" = "AsyncWrapped"
+
+[suggest.async_wrappers]
+SuggestStore = "AsyncWrapped"
+"SuggestStore.interrupt" = "Sync"
+"SuggestStore.new" = "Sync"
+"SuggestStoreBuilder.build" = "Sync"
+"SuggestStoreBuilder.cache_path" = "AsyncWrapped"
+"SuggestStoreBuilder.data_path" = "Sync"
+"SuggestStoreBuilder.load_extension" = "Sync"
+"SuggestStoreBuilder.new" = "Sync"
+"SuggestStoreBuilder.remote_settings_bucket_name" = "Sync"
+"SuggestStoreBuilder.remote_settings_server" = "Sync"
+"SuggestStoreBuilder.remote_settings_service" = "Sync"
+"raw_suggestion_url_matches" = "Sync"
+
+[relevancy.async_wrappers]
+"score" = "Sync"
+RelevancyStore = "Sync"
+"RelevancyStore.bandit_init" = "AsyncWrapped"
+"RelevancyStore.bandit_select" = "AsyncWrapped"
+"RelevancyStore.bandit_update" = "AsyncWrapped"
+"RelevancyStore.ensure_interest_data_populated" = "AsyncWrapped"
+"RelevancyStore.get_bandit_data" = "AsyncWrapped"
+"RelevancyStore.ingest" = "AsyncWrapped"
+"RelevancyStore.user_interest_vector" = "AsyncWrapped"
+
+[remote_settings.async_wrappers]
+RemoteSettings = "AsyncWrapped"
+"RemoteSettings.new" = "Sync"
+"RemoteSettingsService.new" = "Sync"
+"RemoteSettingsService.update_config" = "Sync"
+"RemoteSettingsService.make_client" = "AsyncWrapped"
+"RemoteSettingsService.sync" = "AsyncWrapped"
+RemoteSettingsClient = "AsyncWrapped"
+
+[error_support.async_wrappers]
+"set_application_error_reporter" = "AsyncWrapped"
+"unset_application_error_reporter" = "AsyncWrapped"
+"ApplicationErrorReporter.report_error" = "FireAndForget"
+"ApplicationErrorReporter.report_breadcrumb" = "FireAndForget"
+
+[tabs.async_wrappers]
+RemoteCommandStore = "AsyncWrapped"
+TabsBridgedEngine = "AsyncWrapped"
+TabsStore = "AsyncWrapped"
+
+[webext_storage.async_wrappers]
+WebExtStorageBridgedEngine = "AsyncWrapped"
+WebExtStorageStore = "AsyncWrapped"
+
+[tracing_support.async_wrappers]
+"register_event_sink" = "Sync"
+"unregister_event_sink" = "Sync"
+"register_min_level_event_sink" = "Sync"
+"unregister_min_level_event_sink" = "Sync"
+
+[uniffi_bindings_tests.async_wrappers]
+"clone_interface" = "Sync"
+"create_async_test_trait_interface" = "AsyncWrapped"
+"create_test_trait_interface" = "Sync"
+"func_with_default" = "Sync"
+"func_with_error" = "Sync"
+"func_with_flat_error" = "Sync"
+"func_with_multi_word_arg" = "Sync"
+"get_custom_types_demo" = "AsyncWrapped"
+"invoke_test_callback_interface_get_value" = "AsyncWrapped"
+"invoke_test_callback_interface_noop" = "AsyncWrapped"
+"invoke_test_callback_interface_set_value" = "AsyncWrapped"
+"invoke_test_callback_interface_throw_if_equal" = "AsyncWrapped"
+"invoke_test_trait_interface_get_value" = "Sync"
+"invoke_test_trait_interface_noop" = "Sync"
+"invoke_test_trait_interface_set_value" = "Sync"
+"invoke_test_trait_interface_throw_if_equal" = "Sync"
+"roundtrip_bool" = "Sync"
+"roundtrip_complex_compound" = "Sync"
+"roundtrip_complex_enum" = "Sync"
+"roundtrip_complex_rec" = "Sync"
+"roundtrip_custom_type" = "Sync"
+"roundtrip_enum_no_data" = "Sync"
+"roundtrip_enum_with_data" = "Sync"
+"roundtrip_f32" = "Sync"
+"roundtrip_f64" = "Sync"
+"roundtrip_hash_map" = "Sync"
+"roundtrip_i16" = "Sync"
+"roundtrip_i32" = "Sync"
+"roundtrip_i64" = "Sync"
+"roundtrip_i8" = "Sync"
+"roundtrip_option" = "Sync"
+"roundtrip_simple_rec" = "AsyncWrapped"
+"roundtrip_string" = "Sync"
+"roundtrip_time_interval_ms" = "AsyncWrapped"
+"roundtrip_time_interval_sec_dbl" = "AsyncWrapped"
+"roundtrip_time_interval_sec_flt" = "AsyncWrapped"
+"roundtrip_u16" = "Sync"
+"roundtrip_u32" = "Sync"
+"roundtrip_u64" = "Sync"
+"roundtrip_u8" = "Sync"
+"roundtrip_url" = "AsyncWrapped"
+"roundtrip_vec" = "Sync"
+"sum_with_many_types" = "Sync"
+"swap_test_interfaces" = "Sync"
+"test_func" = "Sync"
+"TestInterface.new" = "Sync"
+"TestInterface.get_value" = "Sync"
+"TestInterface.ref_count" = "Sync"
+"AsyncInterface.new" = "Sync"
+"ComplexMethods.new" = "Sync"
+"ComplexMethods.method_with_default" = "Sync"
+"ComplexMethods.method_with_multi_word_arg" = "Sync"
+TestCallbackInterface = "FireAndForget"
+TestTraitInterface = "Sync"
+
+[uniffi_bindings_tests_collision.async_wrappers]
+"invoke_collision_callback" = "Sync"
+TestCallbackInterface = "FireAndForget"
+
+[uniffi_bindings_tests_external_types.async_wrappers]
+"roundtrip_ext_custom_type" = "Sync"
+"roundtrip_ext_enum" = "Sync"
+"roundtrip_ext_interface" = "Sync"
+"roundtrip_ext_record" = "Sync"
+
+[uniffi_bindings_tests.custom_types.Url]
+type_name = "URL"
+lift = "new URL({})"
+lower = "{}.toString()"
+
+[uniffi_bindings_tests.custom_types.TimeIntervalMs]
+# Convert milliseconds to Date
+type_name = "Date"
+lift = "new Date({})"
+lower = "{}.getTime()"
+
+[uniffi_bindings_tests.custom_types.TimeIntervalSecDbl]
+# Convert seconds (as float) to Date
+type_name = "Date"
+lift = "new Date({} * 1000)"
+lower = "{}.getTime() / 1000"

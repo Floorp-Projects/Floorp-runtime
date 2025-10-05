@@ -1,0 +1,167 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+on:
+    workflow_call:
+
+jobs:
+  macOS-Universal-gen-profdata-and-jarlog:
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        runs-on: [macos-13, macos-14]
+        # macos-latest-large is x86_64 and macos-latest is arm64
+
+    steps:
+      - name: Init
+        run: |
+          sysctl machdep.cpu
+          export RUNNER_USERDIR=`echo ~`
+          echo "RUNNER_USERDIR=$RUNNER_USERDIR" >> $GITHUB_ENV
+          mkdir -p ~/downloads/artifacts
+
+      - uses: actions/checkout@v4
+        name: Clone 🧬
+        with:
+          submodules: 'true'
+
+      - name: Check Arch type
+        shell: bash
+        run: |
+          if [[ $GHA_BUILD_MACHINE != 'macos-13' ]]; then
+            export ARCH_TYPE=`echo "aarch64"`
+            echo "ARCH_TYPE=$ARCH_TYPE" >> $GITHUB_ENV
+          else
+            export ARCH_TYPE=`echo "x86_64"`
+            echo "ARCH_TYPE=$ARCH_TYPE" >> $GITHUB_ENV
+          fi
+        env:
+          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
+
+      - uses: actions/download-artifact@v4
+        id: download-artifacts-mac-enable-profgen
+        name: Download artifact 📥
+        with:
+          name: floorp-mac-${{ env.ARCH_TYPE }}-build-with-profgen
+          path: ~/downloads/artifacts
+
+      - name: Download macOS SDK
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-sdk
+          path: ~/macos-sdk-artifact
+
+      - name: Extract macOS SDK
+        run: |
+          mkdir -p ~/macos-sdk
+          gtar -xzf ~/macos-sdk-artifact/macos_sdk.tar.gz -C ~/macos-sdk --warning=no-unknown-keyword || tar -xzf ~/macos-sdk-artifact/macos_sdk.tar.gz -C ~/macos-sdk
+
+      - name: force install python3.12
+        continue-on-error: true
+        run: |
+          brew install python@3.12
+
+      - name: force link python3.12
+        continue-on-error: true
+        run: |
+          # due to "Error: The `brew link` step did not complete successfully" we need to force link python3.12
+          brew link --force --overwrite python@3.12
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set LLVM environment variables
+        run: |
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
+          if [[ $ARCH_TYPE == 'x86_64' ]];then
+              echo "TARGET_TRIPLE=x86_64-apple-darwin" >> $GITHUB_ENV
+          else
+              echo "TARGET_TRIPLE=aarch64-apple-darwin" >> $GITHUB_ENV
+          fi
+          echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
+
+      - name: Install LLVM 19 toolchain
+        run: |
+          # Install LLVM 19 via Homebrew
+          brew install llvm@19
+
+          # Add LLVM to PATH
+          echo "/opt/homebrew/opt/llvm@19/bin" >> $GITHUB_PATH
+          echo "/usr/local/opt/llvm@19/bin" >> $GITHUB_PATH
+
+          # Verify versions
+          echo "Checking installed versions:"
+          export PATH="/opt/homebrew/opt/llvm@19/bin:/usr/local/opt/llvm@19/bin:$PATH"
+          clang --version || echo "clang not found"
+          llvm-profdata --version || echo "llvm-profdata not found"
+
+      - name: setup environment 🌲
+        env:
+          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
+          SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+        run: |
+          echo "ac_add_options --disable-bootstrap" >> mozconfig
+
+          # Add macOS SDK path
+          echo "ac_add_options --with-macos-sdk=$(echo ~)/macos-sdk" >> mozconfig
+
+          # Add linker configuration to match build
+          echo "ac_add_options --enable-linker=lld" >> mozconfig
+
+          echo 'mozconfig: **********************'
+          cat ./mozconfig
+          echo '*********************************'
+
+          brew install gnu-tar
+          export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+          ./mach --no-interactive bootstrap --application-choice browser
+
+          # Override mozconfig
+          echo -e "ac_add_options --enable-bootstrap" > mozconfig
+          echo "ac_add_options --with-macos-sdk=$(echo ~)/macos-sdk" >> mozconfig
+          echo "ac_add_options --enable-linker=lld" >> mozconfig
+
+      - name: Install setup tool via PIP 📦
+        run: |
+          pip install setuptools
+
+      - name: Extract artifact 📂
+        run: |
+          mkdir -p ./floorp
+          cp ${{ steps.download-artifacts-mac-enable-profgen.outputs.download-path }}/${ARCH_TYPE}-apple-darwin-output.tar.xz ./
+          tar xf ${ARCH_TYPE}-apple-darwin-output.tar.xz
+
+## ./mach python python/mozbuild/mozbuild/action/install.py $MOZ_FETCHES_DIR/target.dmg $MOZ_FETCHES_DIR
+      - name: Generate Profdata 📊
+        env:
+          SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
+        run: |
+          # Use LLVM 19's llvm-profdata
+          if [[ -f /opt/homebrew/opt/llvm@19/bin/llvm-profdata ]]; then
+            export LLVM_PROFDATA=/opt/homebrew/opt/llvm@19/bin/llvm-profdata
+          elif [[ -f /usr/local/opt/llvm@19/bin/llvm-profdata ]]; then
+            export LLVM_PROFDATA=/usr/local/opt/llvm@19/bin/llvm-profdata
+          else
+            export LLVM_PROFDATA=$RUNNER_USERDIR/.mozbuild/clang/bin/llvm-profdata
+          fi
+          
+          echo "Using LLVM_PROFDATA: $LLVM_PROFDATA"
+          $LLVM_PROFDATA --version || echo "llvm-profdata version check failed"
+          
+          export JARLOG_FILE="en-US.log"
+          ./mach python build/pgo/profileserver.py --binary ./obj-${ARCH_TYPE}-apple-darwin/dist/floorp/Floorp.app/Contents/MacOS/floorp
+
+      - name: Publish 🎁
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-${{ env.ARCH_TYPE }}-apple-darwin-profdata-and-jarlog
+          path: |
+            merged.profdata
+            en-US.log

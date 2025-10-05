@@ -1,0 +1,173 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#placesToolbar {
+  --toolbar-item-height: 26px;
+  --toolbar-item-margin: 0px 4px;
+
+  position: relative;
+  -moz-window-dragging: drag;
+  padding: calc(env(-moz-mac-titlebar-height) + 4px) 4px 3px;
+  border-bottom: 1px solid ThreeDShadow;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    appearance: auto;
+    -moz-default-appearance: -moz-window-titlebar;
+    z-index: -1;
+  }
+}
+
+#placesMenu > menu,
+#placesToolbar > toolbarbutton {
+  appearance: auto;
+  -moz-default-appearance: toolbarbutton;
+  color: inherit;
+  padding: 3px;
+  min-height: var(--toolbar-item-height);
+  margin: var(--toolbar-item-margin);
+
+  -moz-context-properties: fill, fill-opacity;
+  fill: currentColor;
+  fill-opacity: 0.8;
+
+  > .menu-icon,
+  > .toolbarbutton-icon {
+    margin: 1px 4px;
+  }
+
+  &:not(#clearDownloadsButton) > .menu-text {
+    display: none;
+  }
+
+  &[disabled],
+  &:not(:hover):-moz-window-inactive {
+    opacity: 0.5;
+  }
+
+  &[disabled]:-moz-window-inactive {
+    opacity: 0.25;
+  }
+
+  > menupopup {
+    margin-top: 1px;
+  }
+}
+
+#searchFilter {
+  margin: var(--toolbar-item-margin);
+  --input-text-min-height: var(--toolbar-item-height);
+  @media (-moz-mac-big-sur-theme) {
+    --input-text-background-color: transparent;
+    --input-text-color: currentColor;
+  }
+  --input-text-border-color: ButtonBorder;
+}
+
+/* Places Organizer Sidebars */
+
+#placesList {
+  background-color: -moz-sidebar;
+  width: 160px;
+  min-width: 100px;
+  max-width: 400px;
+
+  > treechildren::-moz-tree-cell-text {
+    margin-inline-end: 6px;
+  }
+
+  > treechildren::-moz-tree-cell(separator) {
+    cursor: default;
+  }
+
+  > treechildren::-moz-tree-separator {
+    border-top: 1px solid color-mix(in srgb, FieldText 70%, transparent);
+    margin: 0 10px;
+  }
+}
+
+#placesView {
+  border-top: none !important;
+
+  > splitter {
+    border-inline-start: none !important;
+    border-inline-end: 1px solid color-mix(in srgb, FieldText 30%, transparent);
+    min-width: 1px;
+    width: 3px;
+    margin-inline-start: -3px;
+    position: relative;
+    background-image: none !important;
+  }
+}
+
+/* Root View */
+#placesView {
+  border-top: 1px solid ThreeDDarkShadow;
+  -moz-user-focus: ignore;
+}
+
+/* Info box */
+#detailsPane {
+  border-top: 1px solid color-mix(in srgb, FieldText 50%, transparent);
+}
+
+#placeContent {
+  appearance: none;
+  border: none;
+
+  > treechildren::-moz-tree-cell,
+  > treechildren::-moz-tree-column {
+    border-inline-start: 1px solid color-mix(in srgb, FieldText 30%, transparent);
+  }
+
+  > treechildren::-moz-tree-column(first-column),
+  > treechildren::-moz-tree-cell(first-column) {
+    /* This matches the treecol separator in tree.css */
+    border-inline-start: none;
+  }
+
+  > treechildren::-moz-tree-cell(separator) {
+    border-color: transparent;
+  }
+}
+
+/**
+ * info pane
+ */
+
+#itemsCountText,
+#selectItemDescription {
+  color: GrayText;
+}
+
+/**
+ * Downloads pane
+ */
+
+#clearDownloadsButton {
+  list-style-image: none !important;
+}
+
+#clearDownloadsButton > .toolbarbutton-icon {
+  display: none;
+}
+
+/**** expanders ****/
+
+.expander-up,
+.expander-down {
+  padding: 0;
+}
+
+.expander-up {
+  appearance: auto;
+  -moz-default-appearance: -moz-mac-disclosure-button-open;
+}
+
+.expander-down {
+  appearance: auto;
+  -moz-default-appearance: -moz-mac-disclosure-button-closed;
+}

@@ -1,0 +1,4 @@
+:focus { background-color: green; }
+
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=1645773 */
+textarea { -moz-appearance: none; }

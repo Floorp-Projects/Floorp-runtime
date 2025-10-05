@@ -1,0 +1,156 @@
+.feature-highlight {
+  position: relative;
+  // This is needed because in 1 case this is positioned under a link
+  // and in an element that's not clickable.
+  pointer-events: auto;
+  z-index: 1;
+
+  .feature-highlight-modal {
+    position: absolute;
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    cursor: default;
+    justify-content: space-between;
+    border-radius: var(--border-radius-small);
+    background: var(--newtab-background-color-secondary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 15%);
+    width: 298px;
+    transition:
+      opacity 0.3s,
+      visibility 0.3s;
+
+    // The "Dismiss" button in the top right corner of the highlight
+    > moz-button {
+      margin-inline-start: var(--space-xsmall);
+      // Make sure the focus outline is not overlapped by the arrow
+      // if the arrow is positioned near the button
+      z-index: 1;
+    }
+
+    .message-icon {
+      margin-block: var(--space-large);
+      margin-inline: var(--space-large) var(--space-medium);
+    }
+
+    &.opened {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      height: 24px;
+      width: 24px;
+      background: var(--newtab-background-color-secondary);
+      box-shadow: 4px 4px 6px -2px rgba(0, 0, 0, 15%);
+    }
+
+    &.inset-block-start {
+      inset-block-end: 100%;
+      margin-block-end: var(--space-xlarge);
+
+      &::after {
+        inset-block-end: calc(var(--space-medium) * -1);
+        transform: rotate(45deg);
+      }
+
+      &:dir(rtl)::after  {
+        transform: rotate(225deg);
+      }
+    }
+
+    &.inset-block-end {
+      inset-block-start: 100%;
+      margin-block-start: var(--space-xlarge);
+
+      &::after {
+        inset-block-start: calc(var(--space-medium) * -1);
+        transform: rotate(225deg);
+      }
+    }
+
+    &.inset-inline-start {
+      inset-inline-end: calc(var(--space-xxlarge) * -1);
+
+      &::after {
+        inset-inline-end: calc(var(--space-xxlarge) - var(--space-medium));
+      }
+    }
+
+    &.inset-inline-center {
+      transform: translateX(-50%);
+      inset-inline-start: 50%;
+
+      &:dir(rtl) {
+        transform: translateX(50%);
+      }
+    }
+
+    &.inset-inline-end {
+      inset-inline-start: calc(var(--space-xxlarge) * -1);
+
+      &::after {
+        inset-inline-start: calc(var(--space-xxlarge) - var(--space-medium));
+      }
+    }
+
+    // Arrow is pointed on left side of box
+    &.arrow-inline-start {
+      &::after {
+        content: '';
+        position: absolute;
+        inset-block-start: 50%;
+        inset-inline-end: calc(var(--space-small) * -1);
+        transform: translateY(-50%) rotate(225deg);
+        height: 16px;
+        width: 16px;
+        background: var(--newtab-background-color-secondary);
+        box-shadow: -4px 4px 6px -2px rgba(0, 0, 0, 15%);
+      }
+    }
+
+    // Arrow is pointed on left side of box
+    &.arrow-inline-end {
+      &::after {
+        content: '';
+        position: absolute;
+        inset-block-start: 50%;
+        inset-inline-start: calc(var(--space-small) * -1);
+        transform: translateY(-50%) rotate(135deg);
+        height: 16px;
+        width: 16px;
+        background: var(--newtab-background-color-secondary);
+        box-shadow: 4px 4px 6px -2px rgba(0, 0, 0, 15%);
+      }
+    }
+
+    // arrow is on the top of the box centered
+    &.arrow-top-center {
+      &::after {
+        inset-block-start: calc(var(--space-small) * -1);
+        inset-inline-start: 50%;
+        transform: translateX(-50%) rotate(225deg);
+        height: 16px;
+        width: 16px;
+      }
+    }
+
+    p {
+      font-size: var(--font-size-small);
+      font-weight: var(--font-weight);
+      margin: var(--space-large) 0;
+      flex-grow: 1;
+    }
+  }
+
+  .toggle-button {
+    border: none;
+    padding: 0;
+
+    &.isHidden {
+      display: none;
+    }
+  }
+}

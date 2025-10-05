@@ -1,0 +1,105 @@
+.sections-list {
+  .section-list {
+    display: grid;
+    grid-gap: var(--space-xxlarge);
+    grid-template-columns: repeat(auto-fit, $card-width);
+    margin: 0;
+
+    @media (max-width: $break-point-medium) {
+      @include context-menu-open-left;
+    }
+
+    @media (min-width: $break-point-medium) and (max-width: $break-point-large) {
+      :nth-child(2n) {
+        @include context-menu-open-left;
+      }
+    }
+
+    @media (min-width: $break-point-large) and (max-width: $break-point-large + 2 * $card-width) {
+      :nth-child(3n) {
+        @include context-menu-open-left;
+      }
+    }
+
+    @media (min-width: $break-point-widest) and (max-width: $break-point-widest + 2 * $card-width) {
+      // 3n for normal cards, 4n for compact cards
+      :nth-child(3n),
+      :nth-child(4n) {
+        @include context-menu-open-left;
+      }
+    }
+  }
+
+  .section-empty-state {
+    border: $border-secondary;
+    border-radius: var(--border-radius-small);
+    display: flex;
+    height: $card-height;
+    width: 100%;
+
+    .empty-state {
+      margin: auto;
+      max-width: 350px;
+
+      .empty-state-message {
+        color: var(--newtab-text-primary-color);
+        font-size: var(--font-size-small);
+        margin-block-end: 0;
+        text-align: center;
+      }
+    }
+
+    @media (min-width: $break-point-widest) {
+      height: $card-height-large;
+    }
+  }
+}
+
+.top-stories-bottom-container {
+  color: var(--newtab-text-primary-color);
+  font-size: var(--font-size-small);
+  margin-block-start: var(--space-medium);
+  display: flex;
+  justify-content: space-between;
+
+  a {
+    color: var(--newtab-primary-action-background);
+    font-weight: var(--font-weight-bold);
+
+    &.more-recommendations {
+      font-weight: var(--font-weight);
+      font-size: var(--font-size-small);
+    }
+  }
+
+  .wrapper-topics {
+    @media (max-width: $break-point-large - 1) {
+      display: none;
+    }
+  }
+
+  @media (max-width: $break-point-medium - 1) {
+    .wrapper-more-recommendations {
+      width: 100%;
+
+      .more-recommendations {
+        justify-content: center;
+
+        &::after {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+@media (min-width: $break-point-widest) {
+  .sections-list {
+    // Compact cards stay the same size but normal cards get bigger.
+    .normal-cards {
+      .section-list {
+        grid-template-columns: repeat(auto-fit, $card-width-large);
+      }
+    }
+  }
+}

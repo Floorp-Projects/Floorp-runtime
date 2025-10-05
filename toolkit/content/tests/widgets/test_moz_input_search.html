@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MozInputSearch Tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-input-search.mjs"
+    ></script>
+    <script src="lit-test-helpers.js"></script>
+    <script class="testbody" type="application/javascript">
+      let testHelpers = new InputTestHelpers();
+      let html;
+
+      add_setup(async function setup() {
+        ({ html } = await testHelpers.setupLit());
+        testHelpers.setupTests({
+          templateFn: (attrs, children) =>
+            html`<moz-input-search ${attrs}>${children}</moz-input-search>`,
+        });
+      });
+
+      add_task(async function testMozInputSearchProperties() {
+        await testHelpers.testCommonInputProperties("moz-input-search");
+      });
+
+      add_task(async function testMozInputSearchEvents() {
+        await testHelpers.testTextBasedInputEvents("moz-input-search");
+      });
+
+      add_task(async function testSearchIconPresence() {
+        const mozInputSearch = document.querySelector("moz-input-search");
+        const inputElement = mozInputSearch.shadowRoot.querySelector("#input");
+        const backgroundImage =
+          window.getComputedStyle(inputElement).backgroundImage;
+        const searchIcon =
+          'url("chrome://global/skin/icons/search-textbox.svg")';
+
+        is(
+          backgroundImage,
+          searchIcon,
+          "Search icon is set as a background-image of Input element."
+        );
+      });
+
+      add_task(async function testMozInputSearchSearchEvent() {
+        const mozInputSearch = document.querySelector("moz-input-search");
+        const inputElement = mozInputSearch.shadowRoot.querySelector("#input");
+        {
+          let searchEvent = new Promise(r => {
+            mozInputSearch.addEventListener("MozInputSearch:search", r, {
+              once: true,
+            });
+          });
+          SpecialPowers.wrap(inputElement).setUserInput("abc");
+          await searchEvent;
+          ok(
+            true,
+            "Typing some text eventually fires a debounced search event"
+          );
+        }
+
+        {
+          let searchEvent = new Promise(r => {
+            mozInputSearch.addEventListener("MozInputSearch:search", r, {
+              once: true,
+            });
+          });
+          mozInputSearch.clear();
+          is(mozInputSearch.value, "", "clear() value");
+          is(inputElement.value, "", "clear() input value");
+          await searchEvent;
+          ok(true, "clear() dispatches the search event if needed");
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <p id="display"></p>
+    <pre id="test"></pre>
+  </body>
+</html>

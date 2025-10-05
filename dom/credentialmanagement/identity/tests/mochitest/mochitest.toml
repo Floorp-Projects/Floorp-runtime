@@ -1,0 +1,111 @@
+[DEFAULT]
+prefs = [
+  "dom.security.credentialmanagement.identity.enabled=true",
+  "dom.security.credentialmanagement.identity.select_first_in_ui_lists=true",
+  "dom.security.credentialmanagement.identity.reject_delay.enabled=false",
+  "privacy.restrict3rdpartystorage.heuristic.window_open=false",
+  "network.cookie.cookieBehavior.optInPartitioning=false", # disables blocking third-party cookies
+]
+scheme = "https"
+skip-if = [
+  "xorigin",
+  "http3", #  Bug 1838420
+  "http2",
+]
+
+support-files = [
+  "head.js",
+  "helper_continue_on.html",
+  "helper_continue_on_close.html",
+  "helper_continue_on_override.html",
+  "helper_continue_on_reject.html",
+  "helper_set_cookie.html",
+  "helper_set_cookie.html^headers^",
+  "/.well-known/web-identity",
+  "/.well-known/web-identity^headers^",
+  "server_manifest.sjs",
+  "server_manifest_account_label.sjs",
+  "server_manifest_same_site.sjs",
+  "server_manifest_wrong_provider_in_manifest.sjs",
+  "server_simple_accounts.sjs",
+  "server_simple_idtoken.sjs",
+  "server_no_accounts_accounts.sjs",
+  "server_no_accounts_idtoken.sjs",
+  "server_two_accounts_accounts.sjs",
+  "server_two_accounts_idtoken.sjs",
+  "server_two_providers_accounts.sjs",
+  "server_two_providers_idtoken.sjs",
+  "server_accounts_error_accounts.sjs",
+  "server_accounts_error_idtoken.sjs",
+  "server_account_label_accounts.sjs",
+  "server_hint_filter_accounts.sjs",
+  "server_hint_filter_idtoken.sjs",
+  "server_idtoken_error_accounts.sjs",
+  "server_idtoken_error_idtoken.sjs",
+  "server_accounts_redirect_accounts.sjs",
+  "server_accounts_redirect_idtoken.sjs",
+  "server_idtoken_redirect_accounts.sjs",
+  "server_idtoken_redirect_idtoken.sjs",
+  "server_continue_on_accounts.sjs",
+  "server_continue_on_idtoken.sjs",
+  "server_continue_on_close_accounts.sjs",
+  "server_continue_on_close_idtoken.sjs",
+  "server_continue_on_override_accounts.sjs",
+  "server_continue_on_override_idtoken.sjs",
+  "server_continue_on_reject_accounts.sjs",
+  "server_continue_on_reject_idtoken.sjs",
+  "server_is_auto_selected_accounts.sjs",
+  "server_is_auto_selected_idtoken.sjs",
+  "web-identity-multiple-config",
+  "web-identity-multiple-config^headers^",
+]
+
+["test_account_label.html"]
+
+["test_accounts_error.html"]
+
+["test_accounts_redirect.html"]
+
+["test_continue_on.html"]
+
+["test_continue_on_close.html"]
+
+["test_continue_on_override.html"]
+
+["test_continue_on_reject.html"]
+
+["test_delay_reject.html"]
+
+["test_domain_hint_filter.html"]
+
+["test_empty_provider_list.html"]
+
+["test_get_without_providers.html"]
+
+["test_idtoken_error.html"]
+
+["test_idtoken_redirect.html"]
+
+["test_is_auto_selected.html"]
+
+["test_login_hint_filter.html"]
+
+["test_manifest_same_site_ignores_well_known.html"]
+
+["test_mediation.html"]
+
+["test_no_accounts.html"]
+
+["test_simple.html"]
+
+["test_simple_no_user_activation.html"]
+
+["test_two_accounts.html"]
+
+["test_two_providers.html"]
+
+["test_well_known_multiple_config_simple.html"]
+
+["test_well_known_multiple_config_wrong_account_endpoint.html"]
+
+["test_wrong_provider_in_manifest.html"]

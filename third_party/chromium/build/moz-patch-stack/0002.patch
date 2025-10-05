@@ -1,0 +1,110 @@
+From: Michael Froman <mfroman@mozilla.com>
+Date: Mon, 20 Jun 2022 22:34:00 +0000
+Subject: Bug 1775143 - pt3 - (mirror) 127ace4d8887 r=ng
+
+(skip-generation)
+
+Depends on D149816
+
+Differential Revision: https://phabricator.services.mozilla.com/D149817
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f9c3bbb23f7ae513b2d94fabd2ada44c6100103b
+---
+ config/compiler/BUILD.gn |  4 ++--
+ config/linux/BUILD.gn    |  2 +-
+ config/sysroot.gni       |  6 +++---
+ toolchain/linux/BUILD.gn | 30 +++++++++++++++---------------
+ 4 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/config/compiler/BUILD.gn b/config/compiler/BUILD.gn
+index 0aa2d1e5c..6b36c5c2a 100644
+--- a/config/compiler/BUILD.gn
++++ b/config/compiler/BUILD.gn
+@@ -11,7 +11,7 @@ import("//build/config/clang/clang.gni")
+ import("//build/config/compiler/compiler.gni")
+ import("//build/config/coverage/coverage.gni")
+ import("//build/config/dcheck_always_on.gni")
+-import("//build/config/gclient_args.gni")
++#import("//build/config/gclient_args.gni")
+ import("//build/config/host_byteorder.gni")
+ import("//build/config/pch.gni")
+ import("//build/config/rust.gni")
+@@ -1619,7 +1619,7 @@ config("compiler_deterministic") {
+ }
+ 
+ config("clang_revision") {
+-  if (is_clang && clang_base_path == default_clang_base_path &&
++  if (false && is_clang && clang_base_path == default_clang_base_path &&
+       current_os != "zos") {
+     update_args = [
+       "--print-revision",
+diff --git a/config/linux/BUILD.gn b/config/linux/BUILD.gn
+index 131bb71d1..cc4749ea0 100644
+--- a/config/linux/BUILD.gn
++++ b/config/linux/BUILD.gn
+@@ -54,7 +54,7 @@ config("libresolv") {
+   libs = [ "resolv" ]
+ }
+ 
+-if (use_glib) {
++if (false && use_glib) {
+   pkg_config("glib") {
+     packages = [
+       "glib-2.0",
+diff --git a/config/sysroot.gni b/config/sysroot.gni
+index 9264bb700..71eedaaaf 100644
+--- a/config/sysroot.gni
++++ b/config/sysroot.gni
+@@ -60,9 +60,9 @@ if (sysroot == "") {
+       } else if (_script_arch == "x64") {
+         _script_arch = "amd64"
+       }
+-      assert(
+-          path_exists(sysroot),
+-          "Missing sysroot ($sysroot). To fix, run: build/linux/sysroot_scripts/install-sysroot.py --arch=$_script_arch")
++      #assert(
++      #    path_exists(sysroot),
++      #    "Missing sysroot ($sysroot). To fix, run: build/linux/sysroot_scripts/install-sysroot.py --arch=$_script_arch")
+     }
+   } else if (is_mac) {
+     import("//build/config/mac/mac_sdk.gni")
+diff --git a/toolchain/linux/BUILD.gn b/toolchain/linux/BUILD.gn
+index 484faaa9a..b9fdcdde5 100644
+--- a/toolchain/linux/BUILD.gn
++++ b/toolchain/linux/BUILD.gn
+@@ -318,21 +318,21 @@ gcc_toolchain("s390x") {
+   }
+ }
+ 
+-gcc_toolchain("mips64") {
+-  cc = "gcc"
+-  cxx = "g++"
+-
+-  readelf = "readelf"
+-  nm = "nm"
+-  ar = "ar"
+-  ld = cxx
+-
+-  toolchain_args = {
+-    current_cpu = "mips64"
+-    current_os = "linux"
+-    is_clang = false
+-  }
+-}
++#gcc_toolchain("mips64") {
++#  cc = "gcc"
++#  cxx = "g++"
++#
++#  readelf = "readelf"
++#  nm = "nm"
++#  ar = "ar"
++#  ld = cxx
++#
++#  toolchain_args = {
++#    current_cpu = "mips64"
++#    current_os = "linux"
++#    is_clang = false
++#  }
++#}
+ 
+ gcc_toolchain("ppc64") {
+   cc = "gcc"

@@ -1,0 +1,73 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * IPC Transaction protocol for the FedCM DOM API.
+ */
+
+include protocol PWindowGlobal;
+
+include "mozilla/dom/IdentityCredentialSerializationHelpers.h";
+
+using mozilla::dom::CredentialMediationRequirement from "mozilla/dom/CredentialManagementBinding.h";
+using mozilla::dom::IdentityCredentialDisconnectOptions from "mozilla/dom/IdentityCredentialBinding.h";
+using mozilla::dom::IdentityCredentialRequestOptions from "mozilla/dom/IdentityCredentialBinding.h";
+using mozilla::dom::IdentityProviderConfig from "mozilla/dom/IdentityCredentialBinding.h";
+using mozilla::dom::IdentityResolveOptions from "mozilla/dom/IdentityCredentialBinding.h";
+using mozilla::dom::LoginStatus from "mozilla/dom/LoginStatusBinding.h";
+
+[RefCounted] using class nsIURI from "mozilla/ipc/URIUtils.h";
+
+
+namespace mozilla {
+namespace dom {
+
+struct IPCIdentityCredential
+{
+  nsString id;
+  nsCString? token;
+  bool isAutoSelected;
+  nsCString configURL;
+};
+
+
+union WebIdentityGetCredentialResponse {
+  nsresult;
+  IPCIdentityCredential;
+};
+
+union OpenContinuationWindowResponse {
+  nsresult;
+  uint64_t;
+};
+
+async protocol PWebIdentity {
+  manager PWindowGlobal;
+
+  parent:
+    async RequestCancel();
+
+    async GetIdentityCredential(IdentityCredentialRequestOptions aOptions,
+                                CredentialMediationRequirement aMediationRequirement,
+                                bool aHasUserActivation)
+      returns (WebIdentityGetCredentialResponse response);
+
+    async DisconnectIdentityCredential(IdentityCredentialDisconnectOptions aOptions) returns (nsresult rv);
+
+    async PreventSilentAccess() returns (nsresult rv);
+
+    async SetLoginStatus(LoginStatus foo) returns (nsresult rv);
+
+    async ResolveContinuationWindow(nsCString token, IdentityResolveOptions options) returns (nsresult rv);
+
+    async IsActiveContinuationWindow() returns (bool result);
+
+  child:
+    async OpenContinuationWindow(nsIURI aContinueURI) returns (OpenContinuationWindowResponse response);
+
+    async __delete__();
+};
+
+}
+}

@@ -1,0 +1,42 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src chrome: resource:;"
+    />
+    <title data-l10n-id="contextual-manager-passwords-title"></title>
+    <script
+      type="module"
+      src="chrome://global/content/megalist/MegalistAlpha.mjs"
+    ></script>
+    <!-- We import sidebar.css before the others, otherwise, it unintentionally
+      overrides some properties (e.g., conflicts with :root) -->
+    <link
+      rel="stylesheet"
+      href="chrome://browser/content/sidebar/sidebar.css"
+    />
+    <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://global/content/megalist/megalist.css"
+    />
+    <link rel="localization" href="branding/brand.ftl" />
+    <link rel="localization" href="browser/contextual-manager.ftl" />
+    <link rel="localization" href="browser/aboutLogins.ftl" />
+    <link rel="localization" href="browser/sidebar.ftl" />
+  </head>
+
+  <body>
+    <megalist-alpha></megalist-alpha>
+  </body>
+</html>

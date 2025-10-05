@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=421640
+-->
+<head>
+  <title>Test for Bug 421640</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/EventUtils.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=421640">Mozilla Bug 421640</a>
+<div id="content">
+  <div id="edit" contenteditable="true">This text is editable</div>
+  <div><button id="button">Test</button></div> 
+</div>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+/** Test for Bug 421640 **/
+
+function test(click, focus, nextFocus) {
+  var selection = window.getSelection();
+  var edit = document.getElementById("edit");
+  var text = edit.firstChild;
+
+  selection.removeAllRanges();
+
+  var rect = edit.getBoundingClientRect();
+  synthesizeMouseAtPoint(rect.left + 1, rect.top + 1, { type: "mousedown" });
+  synthesizeMouseAtPoint(rect.right - 1, rect.top + 1, { type: "mousemove" });
+  synthesizeMouseAtPoint(rect.right - 1, rect.top + 1, { type: "mouseup" });
+
+  is(selection.anchorNode, text, "");
+
+  synthesizeMouse(document.getElementById("button"), 10, 1, {});
+
+  is(selection.anchorNode, text, "");
+
+  SimpleTest.finish();
+}
+
+window.onload = function() {
+  SimpleTest.waitForExplicitFinish();
+  setTimeout(test, 0);
+};
+
+</script>
+</pre>
+</body>
+</html>

@@ -1,0 +1,41 @@
+﻿diff --git a/dom/ipc/BrowserChild.cpp b/dom/ipc/BrowserChild.cpp
+index 27fb1239db..43e6b876d8 100644
+--- a/dom/ipc/BrowserChild.cpp
++++ b/dom/ipc/BrowserChild.cpp
+@@ -2542,7 +2542,8 @@ mozilla::ipc::IPCResult BrowserChild::RecvRenderLayers(const bool& aEnabled) {
+     ProcessHangMonitor::MaybeStartPaintWhileInterruptingJS();
+   }
+ 
+-  mRenderLayers = aEnabled;
++  bool splitViewIsEnabled = Preferences::GetBool("floorp.browser.splitView.working", false);
++  mRenderLayers = splitViewIsEnabled ? true : aEnabled;
+   const bool wasVisible = IsVisible();
+ 
+   UpdateVisibility();
+diff --git a/dom/ipc/BrowserHost.cpp b/dom/ipc/BrowserHost.cpp
+index 489f07a612..032b87e537 100644
+--- a/dom/ipc/BrowserHost.cpp
++++ b/dom/ipc/BrowserHost.cpp
+@@ -106,7 +106,7 @@ void BrowserHost::UpdateEffects(EffectsInfo aEffects) {
+ /* attribute boolean renderLayers; */
+ NS_IMETHODIMP
+ BrowserHost::GetRenderLayers(bool* aRenderLayers) {
+-  if (!mRoot) {
++  if (!mRoot && !Preferences::GetBool("floorp.browser.splitView.working", false)) {
+     *aRenderLayers = false;
+     return NS_OK;
+   }
+diff --git a/dom/ipc/BrowserParent.cpp b/dom/ipc/BrowserParent.cpp
+index b37d6838d9..48acddae31 100644
+--- a/dom/ipc/BrowserParent.cpp
++++ b/dom/ipc/BrowserParent.cpp
+@@ -3584,7 +3584,8 @@ void BrowserParent::SetRenderLayers(bool aEnabled) {
+     return;
+   }
+ 
+-  mRenderLayers = aEnabled;
++  bool splitViewIsEnabled = Preferences::GetBool("floorp.browser.splitView.working", false);
++  mRenderLayers = splitViewIsEnabled ? true : aEnabled;
+ 
+   SetRenderLayersInternal(aEnabled);
+ }

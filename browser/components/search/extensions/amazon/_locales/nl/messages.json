@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.nl"
+  },
+  "extensionDescription": {
+    "message": "Amazon.nl Search"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.nl/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

@@ -1,0 +1,12 @@
+[DEFAULT]
+support-files = [
+  "page_blank.html",
+  "frameQuota.html",
+  "interOriginFrame.js",
+]
+
+["test_localStorageBasePrivateBrowsing_perwindowpb.html"]
+
+["test_localStorageFromChrome.xhtml"]
+
+["test_localStorageQuotaPrivateBrowsing_perwindowpb.html"]

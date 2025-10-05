@@ -1,0 +1,87 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+on:
+    workflow_call:
+        inputs:
+            platform:
+                description: 'Target platform (ubuntu only)'
+                type: string
+                default: ubuntu
+        outputs:
+            test_status:
+                description: 'Test execution status (success/failure)'
+                value: ${{ jobs.main.outputs.status }}
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.test-status.outputs.status }}
+    steps:
+        - uses: actions/setup-node@v4
+          with:
+            node-version: lts/*
+
+        - uses: denoland/setup-deno@v2
+          with:
+            deno-version: v2.x
+
+        - uses: actions/checkout@v4
+          with:
+            repository: "Floorp-Projects/Floorp"
+            ref: "main"
+            submodules: recursive
+
+        - name: Download artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: floorp-linux-amd64-moz-artifact
+            path: /tmp/artifact
+
+        - name: Compress artifact
+          shell: bash
+          run: |
+            cd /tmp/artifact
+            mv floorp-linux-amd64-moz-artifact.tar.xz $GITHUB_WORKSPACE/
+
+        - name: upload artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: floorp-linux-amd64-moz-artifact-dev-patch-test
+            path: floorp-linux-amd64-moz-artifact-dev.zip
+
+        - name: Running Test
+          id: test-unix
+          continue-on-error: true
+          shell: bash
+          run: |
+            Xvfb :2 -screen 0 1024x768x24 &
+            export DISPLAY=:2
+            deno install
+            deno run dev &
+            sleep 100
+            if pgrep -f "floorp" > /dev/null; then
+                echo "Test passed"
+                STATUS=success
+            else
+                echo "Test failed"
+                STATUS=failure
+            fi
+            echo "status=$STATUS" >> $GITHUB_ENV
+            echo "status=$STATUS" >> $GITHUB_OUTPUT
+            pkill -f "deno"
+
+        - name: Set test status
+          if: always()
+          id: test-status
+          run: |
+            if [ "${{ steps.test-unix.outputs.status }}" = "success" ]; then
+                echo "status=success" >> $GITHUB_ENV
+            else
+                echo "status=failure" >> $GITHUB_ENV
+            fi
+            # Set step output so that job output can be used in downstream workflows
+            echo "status=${{ steps.test-unix.outputs.status }}" >> $GITHUB_OUTPUT
+            echo "Test status set to: ${{ steps.test-unix.outputs.status }}"

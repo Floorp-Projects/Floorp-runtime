@@ -1,0 +1,83 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-parcelize'
+
+apply plugin: 'com.google.devtools.ksp'
+
+android {
+    defaultConfig {
+        minSdkVersion = config.minSdkVersion
+        compileSdk = config.compileSdkVersion
+        targetSdkVersion = config.targetSdkVersion
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas".toString())
+            arg("room.generateKotlin", "true")
+        }
+
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += ["room.incremental": "true"]
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
+        }
+    }
+
+    buildFeatures {
+        viewBinding = true
+    }
+
+    namespace = 'mozilla.components.feature.addons'
+}
+
+dependencies {
+    implementation libs.kotlin.coroutines
+
+    implementation libs.androidx.activity
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.cardview
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.recyclerview
+    implementation libs.androidx.work.runtime
+
+    implementation libs.androidx.room.runtime
+    ksp libs.androidx.room.compiler
+
+    implementation project(':components:ui-colors')
+    implementation project(':components:ui-icons')
+    implementation project(':components:ui-widgets')
+    implementation project(':components:browser-state')
+    implementation project(':components:concept-engine')
+    implementation project(':components:concept-fetch')
+    implementation project(':components:concept-menu')
+    implementation project(':components:support-base')
+    implementation project(':components:support-ktx')
+    implementation project(':components:support-webextensions')
+    implementation project(':components:support-utils')
+
+    testImplementation project(':components:support-test')
+    testImplementation project(':components:support-test-libstate')
+    testImplementation project(':components:browser-engine-gecko')
+    testImplementation libs.androidx.concurrent
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.testing.robolectric
+    testImplementation libs.androidx.work.testing
+    testImplementation libs.testing.coroutines
+}
+
+apply from: '../../../android-lint.gradle'
+apply from: '../../../publish.gradle'
+ext.configurePublish(config.componentsGroupId, project.name, project.ext.description)

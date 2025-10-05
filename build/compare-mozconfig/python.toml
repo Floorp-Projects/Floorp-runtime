@@ -1,0 +1,4 @@
+[DEFAULT]
+subsuite = "mozbuild"
+
+["compare-mozconfigs.py"]

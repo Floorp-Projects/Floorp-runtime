@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+        <title>Test mouse hover near text element inside svg element with viewBox attribute</title>
+        <script src="/tests/SimpleTest/SimpleTest.js"></script>
+        <script src="/tests/SimpleTest/EventUtils.js"></script>
+    </head>
+    <body style="margin:0">
+        <div>
+            <svg viewBox="-1 -1 2 2" width="300" height="300">
+                <text style="font-size:0.1px" onmouseover="this.setAttribute('fill', 'red')">Hi</text>
+            </svg>
+        </div>
+        <p>
+            <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1519144">Mozilla Bug 1519144</a>
+        </p>
+        <script type="application/javascript">
+            //hover above the text
+            synthesizeMouseAtPoint(155, 125, { type: "mousemove" });
+            //hover to the left of the text
+            synthesizeMouseAtPoint(125, 155, { type: "mousemove" });
+            requestIdleCallback(() => {
+                ok(!document.getElementsByTagName('text')[0].hasAttribute('fill'),
+                   'Text element should not receive an event');
+                SimpleTest.finish();
+            });
+            SimpleTest.waitForExplicitFinish()
+        </script>
+    </body>
+</html>

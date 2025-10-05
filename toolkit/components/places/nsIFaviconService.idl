@@ -1,0 +1,204 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface nsIURI;
+interface nsIPrincipal;
+
+[scriptable, uuid(e81e0b0c-b9f1-4c2e-8f3c-b809933cf73c)]
+interface nsIFaviconService : nsISupports
+{
+  // The favicon is being loaded from a private browsing window
+  const unsigned long FAVICON_LOAD_PRIVATE = 1;
+  // The favicon is being loaded from a non-private browsing window
+  const unsigned long FAVICON_LOAD_NON_PRIVATE = 2;
+
+  // Defines values for icon flags.
+  const unsigned short ICONDATA_FLAGS_RICH = 1 << 0;
+
+  /**
+   * The limit in bytes of the size of favicons in memory and passed via the
+   * favicon protocol.
+   */
+  const unsigned long MAX_FAVICON_BUFFER_SIZE = 65536;
+
+  /**
+   * For a given icon URI, this will return a URI that will result in the image.
+   * In most cases, this is an annotation URI.  For chrome URIs, this will do
+   * nothing but returning the input URI.
+   *
+   * No validity checking is done. If you pass an icon URI that we've never
+   * seen, you'll get back a URI that references an invalid icon. The
+   * cached-favicon protocol handler's special case for cached favicon will
+   * resolve invalid icons to the default icon, although without caching.
+   * For invalid chrome URIs, you'll get a broken image.
+   *
+   * @param aFaviconURI
+   *        The URI of an icon in the favicon service.
+   * @return A URI that will give you the icon image.  This is NOT the URI of
+   *         the icon as set on the page, but a URI that will give you the
+   *         data out of the favicon service.  For a normal page with a
+   *         favicon we've stored, this will be an annotation URI which will
+   *         then cause the corresponding favicon data to be loaded async from
+   *         this service.  For pages where we don't have a favicon, this will
+   *         be a chrome URI of the default icon. For chrome URIs, the
+   *         output will be the same as the input.
+   */
+  nsIURI getFaviconLinkForIcon(in nsIURI aFaviconURI);
+
+  /**
+   * Expire all known favicons from the database.
+   *
+   * @note This is an async method.
+   *       On successful completion a "places-favicons-expired" notification is
+   *       dispatched through observer's service.
+   */
+  void expireAllFavicons();
+
+  /**
+   * Sets the default size returned by preferredSizeFromURI when the uri doesn't
+   * specify a size ref. If this is not invoked first, or 0 is passed to it,
+   * preferredSizeFromURI() will return UINT16_MAX, that matches the biggest
+   * icon available.
+   */
+  void setDefaultIconURIPreferredSize(in unsigned short aDefaultSize);
+
+  /**
+   * Tries to extract the preferred size from an icon uri ref fragment.
+   *
+   * @param aURI
+   *        The URI to parse.
+   * @return The preferred size, or a default size set through
+   *         setDefaultIconURIPreferredSize, or UINT16_MAX if neither are set.
+   */
+  unsigned short preferredSizeFromURI(in nsIURI aURI);
+
+  /**
+   * The default favicon URI
+   */
+  readonly attribute nsIURI defaultFavicon;
+
+  /**
+   * The default favicon mimeType
+   */
+  readonly attribute AUTF8String defaultFaviconMimeType;
+
+  /**
+   * Stores the relation between a page URI and a favicon URI, whose icon data
+   * is provided through a data URL.
+   * The process is asynchronous and a callback with the status of the operation
+   * will be invoked at the end of it.
+   *
+   * @param aPageURI
+   *        URI of the page whose favicon is being set.
+   * @param aFaviconURI
+   *        URI of the favicon to associate with the page.
+   * @param aDataURL
+   *        String that represents a data URL to replace as the favicon content.
+   * @param [optional] aExpiration
+   *        Time in microseconds since the epoch when this favicon expires.
+   *        Until this time, we won't try to load it again.
+   *        If this argument is omitted, the expiration defaults to
+   *        7 days (FaviconHelpers::MAX_FAVICON_EXPIRATION) from now.
+   *
+   * @return Promise that is resolved/rejected when finishing the process.
+   *
+   * @throws NS_ERROR_FILE_TOO_BIG if the icon is excessively large and can not
+   *         be optimized internally.
+   */
+  [implicit_jscontext, must_use]
+  Promise setFaviconForPage(
+    in nsIURI aPageURI,
+    in nsIURI aFaviconURI,
+    in nsIURI aDataURL,
+    [optional] in PRTime aExpiration,
+    [optional] in boolean isRichIcon
+  );
+
+  /**
+   * Retrieves the favicon URI and data URL associated to the given page, if any.
+   * If the page icon is not available, it will try to return the root domain
+   * icon data, when it's known.
+   *
+   * @param aPageURI
+   *        URI of the page whose favicon URI and data we're looking up.
+   * @param [optional] aPreferredWidth
+   *        The preferred icon width, skip or pass 0 for the default value,
+   *        set through setDefaultIconURIPreferredSize.
+   *
+   * @return Promise that is resolved/rejected when finishing the process.
+   *         If succeeded, the promise resolved with nsIFavicon. If there is no
+   *         data in the database, this promise resolved with null. On the other
+   *         hand, rejected if the DB access fails, for example.
+   */
+  [implicit_jscontext, must_use]
+  Promise getFaviconForPage(in nsIURI aPageURI, [optional]
+                            in unsigned short aPreferredWidth);
+
+  /**
+   * Try to copy cached favicons from a page to another one.
+   *
+   * @param aFromPageURI
+   *        URI of the originating page.
+   * @param aToPageURI
+   *        URI of the destination page.
+   * @param aFaviconLoadType
+   *        Set to FAVICON_LOAD_PRIVATE if the copy is started from a private
+   *        browsing window.  Set to FAVICON_LOAD_NON_PRIVATE otherwise.
+   * @return Promise that is resolved/rejected when finishing the process.
+   *         If succeeded to copy, the promise resolved with true. Otherwise
+   *         false. Will reject if the paramter value is illeagal or DB access
+   *         fails etc.
+   */
+  [implicit_jscontext, must_use]
+  Promise tryCopyFavicons(in nsIURI aFromPageURI,
+                          in nsIURI aToPageURI,
+                          in unsigned long aFaviconLoadType);
+};
+
+[scriptable, uuid(c23c74d6-9c36-4223-a9c4-c8b95526f4d3)]
+interface nsIFavicon : nsISupports
+{
+  /**
+   * Favicon location.
+   */
+  readonly attribute nsIURI uri;
+
+  /**
+   * Favicon data as Data URL.
+   */
+  readonly attribute nsIURI dataURI;
+
+  /**
+   * Favicon raw data.
+   */
+  readonly attribute Array<octet> rawData;
+
+  /**
+   * Favicon mime type.
+   */
+  readonly attribute ACString mimeType;
+
+  /**
+   * Favicon width.
+   */
+  readonly attribute unsigned short width;
+};
+
+%{C++
+
+/**
+ * Notification sent when all favicons are expired.
+ */
+#define NS_PLACES_FAVICONS_EXPIRED_TOPIC_ID "places-favicons-expired"
+
+#define FAVICON_DEFAULT_URL "chrome://global/skin/icons/defaultFavicon.svg"
+#define FAVICON_DEFAULT_MIMETYPE "image/svg+xml"
+
+#define FAVICON_ERRORPAGE_URL "chrome://global/skin/icons/info.svg"
+#define FAVICON_CERTERRORPAGE_URL "chrome://global/skin/icons/warning.svg"
+
+%}

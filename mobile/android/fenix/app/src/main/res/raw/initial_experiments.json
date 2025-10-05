@@ -1,0 +1,466 @@
+{
+  "data": [
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "android-compose-toolbar-refactor",
+      "id": "android-compose-toolbar-refactor",
+      "arguments": {},
+      "application": "org.mozilla.firefox_beta",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox_beta",
+      "channel": "beta",
+      "userFacingName": "Android Compose Toolbar Refactor",
+      "userFacingDescription": "Android Compose Toolbar Refactor",
+      "isEnrollmentPaused": false,
+      "isRollout": true,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-composable-toolbar-beta-no_targeting-rollout-1",
+        "start": 0,
+        "count": 10000,
+        "total": 10000
+      },
+      "featureIds": [
+        "composable-toolbar"
+      ],
+      "probeSets": [],
+      "outcomes": [],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "composable-toolbar",
+              "enabled": true,
+              "value": {
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "(app_version|versionCompare('144.!') >= 0)",
+      "startDate": "2025-09-18",
+      "enrollmentEndDate": null,
+      "endDate": null,
+      "proposedDuration": 28,
+      "proposedEnrollment": 7,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2025-09-18T16:15:54.477642Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": "",
+      "firefoxLabsDescription": "",
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": "",
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "long-term-holdback-2025-h1-growth-android",
+      "id": "long-term-holdback-2025-h1-growth-android",
+      "arguments": {},
+      "application": "org.mozilla.firefox",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox",
+      "channel": "release",
+      "userFacingName": "Long term holdback 2025 H1 Growth Android",
+      "userFacingDescription": "Long-term holdback for growth experiments",
+      "isEnrollmentPaused": false,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-no-feature-fenix-release-4",
+        "start": 0,
+        "count": 10000,
+        "total": 10000
+      },
+      "featureIds": [
+        "no-feature-fenix"
+      ],
+      "probeSets": [],
+      "outcomes": [],
+      "branches": [
+        {
+          "slug": "delivery",
+          "ratio": 19,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "no-feature-fenix",
+              "enabled": true,
+              "value": {}
+            }
+          ]
+        },
+        {
+          "slug": "holdback",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "no-feature-fenix",
+              "enabled": true,
+              "value": {}
+            }
+          ]
+        }
+      ],
+      "targeting": "((is_already_enrolled) || ((app_version|versionCompare('123.!') >= 0)))",
+      "startDate": "2024-12-12",
+      "enrollmentEndDate": null,
+      "endDate": null,
+      "proposedDuration": 100,
+      "proposedEnrollment": 100,
+      "referenceBranch": "holdback",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2024-12-12T20:20:50.686475Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": null,
+      "firefoxLabsDescription": null,
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": null,
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "no-sponsored-tiles-for-14-days",
+      "id": "no-sponsored-tiles-for-14-days",
+      "arguments": {},
+      "application": "org.mozilla.firefox",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox",
+      "channel": "release",
+      "userFacingName": "No sponsored tiles for 14 days",
+      "userFacingDescription": "Do not show sponsored tiles to new users for 14 days.",
+      "isEnrollmentPaused": false,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-suppress-sponsored-top-sites-release-1",
+        "start": 0,
+        "count": 10000,
+        "total": 10000
+      },
+      "featureIds": [
+        "suppress-sponsored-top-sites"
+      ],
+      "probeSets": [],
+      "outcomes": [
+        {
+          "slug": "onboarding",
+          "priority": "primary"
+        },
+        {
+          "slug": "sponsored_tiles",
+          "priority": "secondary"
+        }
+      ],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "suppress-sponsored-top-sites",
+              "enabled": true,
+              "value": {
+                "enabled": false
+              }
+            }
+          ]
+        },
+        {
+          "slug": "no-sponsored-tiles",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "suppress-sponsored-top-sites",
+              "enabled": true,
+              "value": {
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "((is_already_enrolled) || ((isFirstRun == 'true') && (app_version|versionCompare('143.3.0') >= 0)))",
+      "startDate": "2025-09-25",
+      "enrollmentEndDate": null,
+      "endDate": null,
+      "proposedDuration": 14,
+      "proposedEnrollment": 14,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2025-09-25T21:14:28.417218Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": "",
+      "firefoxLabsDescription": "",
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": "",
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "search-middle",
+      "id": "search-middle",
+      "arguments": {},
+      "application": "org.mozilla.firefox",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox",
+      "channel": "release",
+      "userFacingName": "Search Middle",
+      "userFacingDescription": "Search Middle",
+      "isEnrollmentPaused": true,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-homepage-search-bar-homescreen-release-1",
+        "start": 0,
+        "count": 10000,
+        "total": 10000
+      },
+      "featureIds": [
+        "homepage-search-bar",
+        "homescreen"
+      ],
+      "probeSets": [],
+      "outcomes": [
+        {
+          "slug": "awesomebar",
+          "priority": "primary"
+        },
+        {
+          "slug": "sponsored_tiles",
+          "priority": "secondary"
+        }
+      ],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "homepage-search-bar",
+              "enabled": true,
+              "value": {
+                "enabled": false
+              }
+            },
+            {
+              "featureId": "homescreen",
+              "enabled": true,
+              "value": {
+                "sections-enabled": {
+                  "header": true,
+                  "top-sites": true,
+                  "jump-back-in": true,
+                  "bookmarks": true,
+                  "recent-explorations": true,
+                  "pocket": true,
+                  "synced-tabs": true,
+                  "pocket-sponsored-stories": true,
+                  "collections": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "slug": "treatment-a",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "homepage-search-bar",
+              "enabled": true,
+              "value": {
+                "enabled": true
+              }
+            },
+            {
+              "featureId": "homescreen",
+              "enabled": true,
+              "value": {
+                "sections-enabled": {
+                  "header": false,
+                  "top-sites": true,
+                  "jump-back-in": false,
+                  "bookmarks": false,
+                  "recent-explorations": false,
+                  "pocket": true,
+                  "synced-tabs": false,
+                  "pocket-sponsored-stories": true,
+                  "collections": false
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "((is_already_enrolled) || ((isFirstRun == 'true') && (app_version|versionCompare('143.!') >= 0)))",
+      "startDate": "2025-09-03",
+      "enrollmentEndDate": "2025-09-25",
+      "endDate": null,
+      "proposedDuration": 28,
+      "proposedEnrollment": 14,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2025-09-03T21:04:57.809501Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": "",
+      "firefoxLabsDescription": "",
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": "",
+      "requiresRestart": false
+    },
+    {
+      "schemaVersion": "1.12.0",
+      "slug": "setup-checklist-all-users",
+      "id": "setup-checklist-all-users",
+      "arguments": {},
+      "application": "org.mozilla.firefox_beta",
+      "appName": "fenix",
+      "appId": "org.mozilla.firefox_beta",
+      "channel": "beta",
+      "userFacingName": "Setup checklist (all users)",
+      "userFacingDescription": "Android Setup Checklist",
+      "isEnrollmentPaused": true,
+      "isRollout": false,
+      "bucketConfig": {
+        "randomizationUnit": "nimbus_id",
+        "namespace": "fenix-setup-checklist-beta-1",
+        "start": 5000,
+        "count": 5000,
+        "total": 10000
+      },
+      "featureIds": [
+        "setup-checklist"
+      ],
+      "probeSets": [],
+      "outcomes": [
+        {
+          "slug": "onboarding",
+          "priority": "primary"
+        }
+      ],
+      "branches": [
+        {
+          "slug": "control",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "setup-checklist",
+              "enabled": true,
+              "value": {
+                "enabled": false,
+                "setup-checklist-type": "collection-1"
+              }
+            }
+          ]
+        },
+        {
+          "slug": "treatment-a",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "setup-checklist",
+              "enabled": true,
+              "value": {
+                "enabled": true,
+                "setup-checklist-type": "collection-1"
+              }
+            }
+          ]
+        },
+        {
+          "slug": "treatment-b",
+          "ratio": 1,
+          "feature": {
+            "featureId": "this-is-included-for-mobile-pre-96-support",
+            "enabled": false,
+            "value": {}
+          },
+          "features": [
+            {
+              "featureId": "setup-checklist",
+              "enabled": true,
+              "value": {
+                "enabled": true,
+                "setup-checklist-type": "collection-2"
+              }
+            }
+          ]
+        }
+      ],
+      "targeting": "((android_sdk_version|versionCompare('26') >= 0)) && (app_version|versionCompare('139.!') >= 0)",
+      "startDate": "2025-07-24",
+      "enrollmentEndDate": "2025-08-18",
+      "endDate": null,
+      "proposedDuration": 28,
+      "proposedEnrollment": 7,
+      "referenceBranch": "control",
+      "featureValidationOptOut": false,
+      "localizations": null,
+      "locales": null,
+      "publishedDate": "2025-07-24T14:49:39.587775Z",
+      "isFirefoxLabsOptIn": false,
+      "firefoxLabsTitle": null,
+      "firefoxLabsDescription": null,
+      "firefoxLabsDescriptionLinks": null,
+      "firefoxLabsGroup": null,
+      "requiresRestart": false
+    }
+  ]
+}

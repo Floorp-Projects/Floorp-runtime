@@ -1,0 +1,7 @@
+[ChildProc=any]
+protocol PLazySend {
+child:
+    [LazySend] async foo();
+parent:
+    [LazySend] async bar() returns (bool baz);
+};

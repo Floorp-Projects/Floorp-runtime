@@ -1,0 +1,298 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: GitHub Actions Bot Per File Patches
+
+'on':
+  issue_comment:
+    types: [created]
+
+jobs:
+  github-actions-bot-per-file:
+    name: Generate per-file patches for PR
+    if: >-
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '@github-actions[bot] patch')) ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.body, '@github-actions[bot] patch'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Get PR information
+        id: pr_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            PR_NUMBER=${{ github.event.issue.number }}
+            PR_INFO=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json headRefName,baseRefName,headRepository)
+            HEAD_REF=$(echo "$PR_INFO" | jq -r .headRefName)
+            BASE_REF=$(echo "$PR_INFO" | jq -r .baseRefName)
+            HEAD_REPO=$(echo "$PR_INFO" | jq -r .headRepository.name)
+            # Use proper fallback for head_owner - fallback to current repo owner if null
+            HEAD_OWNER=$(echo "$PR_INFO" | jq -r '.headRepository.owner.login // empty')
+            # If still null/empty, use the repository owner as fallback
+            if [ -z "$HEAD_OWNER" ] || [ "$HEAD_OWNER" = "null" ]; then
+              HEAD_OWNER="${{ github.repository_owner }}"
+              echo "INFO: Using fallback repository owner: $HEAD_OWNER"
+            fi
+          else
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            HEAD_REF=${{ github.event.pull_request.head.ref }}
+            BASE_REF=${{ github.event.pull_request.base.ref }}
+            HEAD_REPO=${{ github.event.pull_request.head.repo.name }}
+            HEAD_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+            # Add fallback for pull_request event as well
+            if [ -z "$HEAD_OWNER" ] || [ "$HEAD_OWNER" = "null" ]; then
+              HEAD_OWNER="${{ github.repository_owner }}"
+              echo "INFO: Using fallback repository owner: $HEAD_OWNER"
+            fi
+          fi
+
+          echo "Repository: $HEAD_OWNER/$HEAD_REPO (branch: $HEAD_REF)"
+
+          # Final validation before setting outputs
+          if [ -z "$HEAD_OWNER" ] || [ "$HEAD_OWNER" = "null" ]; then
+            echo "ERROR: HEAD_OWNER is still null or empty after fallback"
+            exit 1
+          fi
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "head_ref=$HEAD_REF" >> $GITHUB_OUTPUT
+          echo "base_ref=$BASE_REF" >> $GITHUB_OUTPUT
+          echo "head_repo=$HEAD_REPO" >> $GITHUB_OUTPUT
+          echo "head_owner=$HEAD_OWNER" >> $GITHUB_OUTPUT
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.pr_info.outputs.head_owner }}/${{ steps.pr_info.outputs.head_repo }}
+          ref: ${{ steps.pr_info.outputs.head_ref }}
+          fetch-depth: 0
+
+      - name: Add upstream remote and fetch base
+        run: |
+          git remote add upstream https://github.com/${{ github.repository }}.git
+          git fetch upstream ${{ steps.pr_info.outputs.base_ref }}:base_branch
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate bot command
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          if ! echo "$COMMENT_BODY" | grep -q '@github-actions\[bot\] patch'; then
+            echo "No valid @github-actions[bot] patch command found in comment. Aborting."
+            exit 1
+          fi
+          echo "Valid @github-actions[bot] patch command found."
+
+      - name: Get patches to remove from bot commands
+        id: list_rm_patches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          rm -f github_actions_rm_list.txt
+
+          gh pr view ${{ steps.pr_info.outputs.pr_number }} \
+            --repo ${{ github.repository }} \
+            --json comments -q '.comments[].body' \
+            | grep -E '@github-actions\[bot\].*patch' \
+            | grep -oE 'rm=[^ ]+' \
+            | sed 's/rm=//' \
+            | tr ',' '\n' \
+            | sed 's/$/\.patch/' > github_actions_rm_list.txt || true
+
+          gh pr view ${{ steps.pr_info.outputs.pr_number }} \
+            --repo ${{ github.repository }} \
+            --json body -q .body \
+            | grep -E '@github-actions\[bot\].*patch' \
+            | grep -oE 'rm=[^ ]+' \
+            | sed 's/rm=//' \
+            | tr ',' '\n' \
+            | sed 's/$/\.patch/' >> github_actions_rm_list.txt || true
+
+          sort github_actions_rm_list.txt | uniq | grep -v '^$' > github_actions_rm_list_final.txt || touch github_actions_rm_list_final.txt
+          mv github_actions_rm_list_final.txt github_actions_rm_list.txt
+
+          echo "Patches to remove:"
+          cat github_actions_rm_list.txt || echo "No patches to remove"
+
+      - name: Remove specified patches
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          if [ -d "$PATCH_DIR" ]; then
+            while read PATCH_NAME; do
+              [ -z "$PATCH_NAME" ] && continue
+              PATCH_PATH="$PATCH_DIR/$PATCH_NAME"
+              if [ -f "$PATCH_PATH" ]; then
+                rm -f "$PATCH_PATH"
+                echo "Removed $PATCH_PATH"
+              fi
+            done < github_actions_rm_list.txt
+          fi
+
+      - name: Validate patches compatibility
+        id: patch_check
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          HAS_FAILED=0
+
+          if [ -d "$PATCH_DIR" ]; then
+            for patch in "$PATCH_DIR"/*.patch; do
+              [ -e "$patch" ] || continue
+              PATCH_NAME="$(basename "$patch")"
+
+              if git apply --check "$patch"; then
+                echo "Patch $PATCH_NAME applies cleanly."
+              else
+                echo "ERROR: Patch $PATCH_NAME failed to apply!" >&2
+                HAS_FAILED=1
+              fi
+            done
+          fi
+
+          if [ "$HAS_FAILED" -ne 0 ]; then
+            echo "One or more patches failed to apply cleanly. Aborting."
+            exit 1
+          fi
+
+      - name: Generate per-file patches
+        if: success() && steps.patch_check.conclusion == 'success'
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          mkdir -p "$PATCH_DIR"
+          BASE=base_branch
+
+          git diff --name-only $BASE | \
+            grep -vE '^(\.github|floorp|browser/branding/floorp)($|/)' \
+            > changed_files.txt || true
+
+          while read file; do
+            [ -z "$file" ] && continue
+            patchfile="$PATCH_DIR/${file//\//-}.patch"
+            git diff $BASE -- "$file" > "$patchfile"
+            if [ ! -s "$patchfile" ]; then
+              rm "$patchfile"
+            fi
+          done < changed_files.txt
+
+      - name: Stage patch directory changes
+        if: success() && steps.patch_check.conclusion == 'success'
+        run: |
+          git add .github/patches/upstream/
+
+      - name: Identify new patches
+        if: success() && steps.patch_check.conclusion == 'success'
+        id: new_patches
+        run: |
+          echo 'patches<<EOF' >> $GITHUB_OUTPUT
+          git diff --cached --name-only --diff-filter=AM ".github/patches/upstream/" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Revert source changes (keep only patches)
+        if: success() && steps.patch_check.conclusion == 'success'
+        run: |
+          BASE=base_branch
+
+          git diff --name-only $BASE | \
+            grep -vE '^(\.github|floorp|browser/branding/floorp)($|/)' \
+            > files_to_revert.txt || true
+
+          while read file; do
+            [ -z "$file" ] && continue
+            if [ -f "$file" ]; then
+              git checkout $BASE -- "$file"
+              echo "Reverted $file to base state"
+            fi
+          done < files_to_revert.txt
+
+          rm -f changed_files.txt files_to_revert.txt github_actions_rm_list.txt
+
+      - name: Commit and push patch files
+        if: success() && steps.patch_check.conclusion == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --cached --quiet; then
+            echo "No patch changes to commit."
+          else
+            git commit -m "chore: github-actions[bot] per file patches (reverted source changes)"
+
+            git push origin HEAD:${{ steps.pr_info.outputs.head_ref }}
+          fi
+
+      - name: Comment on success
+        if: >-
+          success() && github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '@github-actions[bot] patch')
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let changelog = "## GitHub Actions Bot Patch Update\n\n";
+
+            try {
+              const removedPatches = fs.readFileSync('github_actions_rm_list.txt', 'utf8').trim().split('\n').filter(p => p);
+              if (removedPatches.length > 0 && removedPatches[0] !== '') {
+                changelog += "### Removed Patches:\n";
+                removedPatches.forEach(patch => {
+                  changelog += `- ${patch}\n`;
+                });
+                changelog += "\n";
+              }
+            } catch (e) { }
+
+            const changedPatchesRaw = `${{ steps.new_patches.outputs.patches }}`;
+            const changedPatches = changedPatchesRaw ? changedPatchesRaw.trim().split('\n').filter(p => p) : [];
+            const patchCount = changedPatches.length;
+
+            if (patchCount > 0) {
+              changelog += `### Generated/Updated Patches: ${patchCount} files\n\n`;
+              changelog += "**Note:** Source files have been reverted to base state - only patch files are kept.\n\n";
+
+              changelog += "### Patch Files Created/Updated For:\n";
+              changedPatches.forEach(patch => {
+                const filename = patch.replace('.github/patches/upstream/', '').replace('.patch', '').replace(/-/g, '/');
+                changelog += `- ${filename}\n`;
+              });
+
+            } else {
+               changelog += "### No new patches were generated or updated.\n";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: changelog
+            });
+
+      - name: Comment on failure
+        if: >-
+          failure() && github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '@github-actions[bot] patch')
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const failureMessage = `## GitHub Actions Bot Patch Update Failed\n\nThe patch update workflow encountered an error. Please check the [workflow run](${runUrl}) for details.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: failureMessage
+            });

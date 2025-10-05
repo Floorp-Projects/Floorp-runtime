@@ -1,0 +1,13 @@
+diff --git a/remote/webdriver-bidi/WebDriverBiDi.sys.mjs b/remote/webdriver-bidi/WebDriverBiDi.sys.mjs
+index 639c5f6080..fe00523f03 100644
+--- a/remote/webdriver-bidi/WebDriverBiDi.sys.mjs
++++ b/remote/webdriver-bidi/WebDriverBiDi.sys.mjs
+@@ -209,7 +209,7 @@ export class WebDriverBiDi {
+ 
+     this.#running = true;
+ 
+-    lazy.RecommendedPreferences.applyPreferences(RECOMMENDED_PREFS);
++    //lazy.RecommendedPreferences.applyPreferences(RECOMMENDED_PREFS);
+ 
+     // Install a HTTP handler for direct WebDriver BiDi connection requests.
+     this.#agent.server.registerPathHandler(

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!--
+Reftest 2 for Bug 1395777 (test file)
+-->
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="common.css">
+<style>
+html {
+  font: 50px/1 Ahem;
+}
+rtc {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+rtc:lang(zh-TW) {
+  font-size: 50%;
+}
+</style>
+</head>
+<body>
+  <ruby>
+    <rbc>BASE</rbc><rtc>LONGRT</rtc>
+  </ruby>
+</body>
+</html>

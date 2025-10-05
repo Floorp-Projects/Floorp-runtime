@@ -1,0 +1,223 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+#! SELF HOST DOES NOT SUPPORTED
+#TODO: separate Publish to other workflow
+
+on:
+  workflow_call:
+    inputs:
+      x86_64_artifact_name:
+        type: string
+        default: ""
+      aarch64_artifact_name:
+        type: string
+        default: ""
+      beta:
+        type: boolean
+        default: false
+      MOZ_BUILD_DATE:
+        type: string
+        default: ""
+      debug:
+        type: boolean
+        default: false
+
+jobs:
+  Integration:
+    runs-on: macos-latest
+    steps:
+      - name: Init
+        run: |
+          export RUNNER_USERDIR=`echo ~`
+          echo "RUNNER_USERDIR=$RUNNER_USERDIR" >> $GITHUB_ENV
+
+      - name: Clone 📥
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: download AArch64 build artifact 📥
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.aarch64_artifact_name }}
+          path: ./
+
+      - name: download x86_64 build artifact 📥
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.x86_64_artifact_name }}
+          path: ./
+
+      - name: Download macOS SDK
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-sdk
+          path: ~/macos-sdk-artifact
+
+      - name: Extract macOS SDK
+        run: |
+          mkdir -p ~/macos-sdk
+          gtar -xzf ~/macos-sdk-artifact/macos_sdk.tar.gz -C ~/macos-sdk --warning=no-unknown-keyword || tar -xzf ~/macos-sdk-artifact/macos_sdk.tar.gz -C ~/macos-sdk
+
+      - name: Extract 📦
+        run: |
+          brew install gnu-tar
+          export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+          tar -xf ./floorp-mac-x86_64-moz-artifact.tar.gz
+          tar -xf ./floorp-mac-aarch64-moz-artifact.tar.gz
+
+      - name: Check Branding Type
+        shell: bash
+        run: |
+          if [[ $GHA_BETA == 'true' ]]; then
+            export APP_NAME=`echo "Floorp Daylight"`
+            echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          else
+            export APP_NAME=`echo "Floorp"`
+            echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+          fi
+        env:
+          GHA_BETA: ${{ inputs.beta }}
+
+      - name: force install python3.12
+        continue-on-error: true
+        run: |
+          brew install python@3.12
+
+      - name: force link python3.12
+        continue-on-error: true
+        run: |
+          # due to "Error: The `brew link` step did not complete successfully" we need to force link python3.12
+          brew link --force --overwrite python@3.12
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: setup environment 🌲
+        continue-on-error: true
+        env:
+          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
+          SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+        run: |
+          if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]]; then
+            export MOZ_BUILD_DATE=${{ inputs.MOZ_BUILD_DATE }}
+          fi
+
+          echo "ac_add_options --disable-bootstrap" >> mozconfig
+
+          # Add macOS SDK path
+          echo "ac_add_options --with-macos-sdk=$(echo ~)/macos-sdk" >> mozconfig
+
+          echo 'mozconfig: **********************'
+          cat ./mozconfig
+          echo '*********************************'
+
+          brew install gnu-tar
+          export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+          ./mach --no-interactive bootstrap --application-choice browser
+
+          # Override mozconfig
+          echo -e "ac_add_options --enable-bootstrap" > mozconfig
+          echo "ac_add_options --with-macos-sdk=$(echo ~)/macos-sdk" >> mozconfig
+
+      - name: Extract .app from dmg 📦
+        run: |
+          rm -rf "./obj-x86_64-apple-darwin/dist/floorp/*.app"
+          rm -rf "./obj-aarch64-apple-darwin/dist/floorp/*.app"
+
+          ls ./obj-x86_64-apple-darwin/dist/
+
+          # Determine the correct app name based on inputs
+          if [[ "$GHA_DEBUG" == "true" ]]; then
+            APP_FILE="${APP_NAME}Debug.app"
+          else
+            APP_FILE="${APP_NAME}.app"
+          fi
+          
+          echo "Looking for app: $APP_FILE"
+
+          hdiutil attach ./obj-x86_64-apple-darwin/dist/floorp*.mac.dmg
+          cp -r "/Volumes/${APP_NAME}/${APP_FILE}" ./obj-x86_64-apple-darwin/dist/floorp/
+          hdiutil detach "/Volumes/${APP_NAME}/"
+
+          hdiutil attach ./obj-aarch64-apple-darwin/dist/floorp*.mac.dmg
+          cp -r "/Volumes/${APP_NAME}/${APP_FILE}" ./obj-aarch64-apple-darwin/dist/floorp/
+          hdiutil detach "/Volumes/${APP_NAME}/"
+        env:
+          GHA_DEBUG: ${{ inputs.debug }}
+
+      - name: Integration 🗃
+        env:
+          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
+          SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+        run: |
+          if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]]; then
+            export MOZ_BUILD_DATE=${{ inputs.MOZ_BUILD_DATE }}
+          fi
+
+          ./mach python "./toolkit/mozapps/installer/unify.py" ./obj-x86_64-apple-darwin/dist/floorp/*.app ./obj-aarch64-apple-darwin/dist/floorp/*.app
+
+      - name: Create DMG 📦
+        env:
+          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
+          SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+        run: |
+          if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]]; then
+            export MOZ_BUILD_DATE=${{ inputs.MOZ_BUILD_DATE }}
+          fi
+
+          ./mach python -m mozbuild.action.make_dmg ./obj-x86_64-apple-darwin/dist/floorp floorp-macOS-universal-moz-artifact.dmg
+
+          cp ./obj-x86_64-apple-darwin/dist/floorp*update_framework_artifacts.zip ./floorp-macOS.update_framework_artifacts.zip
+          cp ./obj-x86_64-apple-darwin/dist/floorp/*.app/Contents/Resources/application.ini ./nora-application.ini
+
+      # Publish Start
+      - name: Remove old uploaded artifacts
+        uses: geekyeggo/delete-artifact@v5.1.0
+        with:
+          name: |
+            floorp-mac-x86_64-package
+            floorp-mac-aarch64-package
+
+      - name: Publish Package Mozilla Artifact for dev 🎁
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-mac-universal-moz-artifact-dev
+          if-no-files-found: ignore
+          path: |
+            ./floorp-macOS-universal-moz-artifact.dmg
+
+      - name: Publish Package Mozilla Artifact for release 🎁
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-mac-universal-moz-artifact-release
+          if-no-files-found: ignore
+          path: |
+            ./floorp-macOS-universal-moz-artifact.dmg
+            ./floorp-macOS.update_framework_artifacts.zip
+
+      - name: Publish dist/host for MAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-universal-dist-host
+          path: obj-x86_64-apple-darwin/dist/host/
+          overwrite: true
+
+      - name: Publish nora-application.ini for MAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-universal-application-ini
+          path: ./nora-application.ini
+          overwrite: true
+      # Publish End
+
+

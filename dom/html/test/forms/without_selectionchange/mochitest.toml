@@ -1,0 +1,4 @@
+[DEFAULT]
+prefs = ["dom.select_events.textcontrols.enabled=false"]
+
+["test_select.html"]

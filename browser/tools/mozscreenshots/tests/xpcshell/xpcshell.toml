@@ -1,0 +1,4 @@
+[DEFAULT]
+support-files = ["../../mozscreenshots/extension/TestRunner.sys.mjs"]
+
+["test_testConfigurations.js"]

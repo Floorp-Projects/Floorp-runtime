@@ -1,0 +1,57 @@
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=470212
+-->
+<head>
+  <title>Test for Bug 470212 -  crash [@ nsContentUtils::ComparePoints]</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/SimpleTest/EventUtils.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=470212">Mozilla Bug 470212</a>
+<div style="width: 200px;">
+<ca>
+<canvas style="border: 1px solid black;" id="dragSource"></canvas>
+</ca>
+</div>
+
+<pre id="test">
+<script>
+function doShiftDrag(){
+  setTimeout(function() {
+    var canvas = document.getElementById("dragSource");
+
+    // Drag canvas element starts with a mouse down event, combine with shift
+    // key, follows by two mouse move events.
+
+    window.addEventListener("dragstart", e => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { once: true });
+
+    // Press on left-top corner of the canvas element.
+    synthesizeMouse(canvas, 0, 0, { type: "mousedown", shiftKey: true });
+    // Move to the center of this cavas element.
+    synthesizeMouseAtCenter(canvas, { type: "mousemove", shiftKey: true });
+    // move out of cavas's region.
+    var canvasRect = canvas.getBoundingClientRect();
+    synthesizeMouse(canvas, canvasRect.width / 2, canvasRect.height + 10,
+                    { type: "mousemove", shiftKey: true });
+
+    is(window.getSelection().rangeCount, 0, "rangeCount should be 0");
+
+    synthesizeMouse(canvas, canvasRect.width / 2, canvasRect.height + 10,
+                    { type: "mouseup", shiftKey: true });
+
+    SimpleTest.finish();
+  }, 0);
+}
+
+SimpleTest.waitForExplicitFinish();
+addLoadEvent(doShiftDrag);
+</script>
+
+</pre>
+</body>
+</html>

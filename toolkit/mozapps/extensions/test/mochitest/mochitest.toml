@@ -1,0 +1,4 @@
+[DEFAULT]
+support-files = ["file_empty.html"]
+
+["test_blocklist_gfx_initialized.html"]

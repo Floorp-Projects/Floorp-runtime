@@ -1,0 +1,66 @@
+name: (U) 🧰 Update Floorp Submodule
+
+on:
+    workflow_dispatch:
+    schedule:
+      - cron: "0 15 * * *"
+permissions:
+  contents: write
+jobs:
+  update-floorp-submodule:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: "true"
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Update Floorp Submodule
+      id: update
+      run: |
+        echo "::group::Fetching latest changes from Floorp"
+        cd floorp
+        git fetch origin
+
+        CURRENT_COMMIT=$(git rev-parse HEAD)
+        echo "Current commit: $CURRENT_COMMIT"
+
+        git checkout origin/main
+        NEW_COMMIT=$(git rev-parse HEAD)
+        echo "New commit: $NEW_COMMIT"
+
+        if [ "$CURRENT_COMMIT" == "$NEW_COMMIT" ]; then
+          echo "No updates available for Floorp submodule."
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        cd ..
+        git add floorp
+
+        git commit -m "Update Floorp submodule to latest main branch" \
+          -m "From: ${CURRENT_COMMIT:0:7}" \
+          -m "To:   ${NEW_COMMIT:0:7}"
+        echo "has_changes=true" >> $GITHUB_OUTPUT
+        echo "::endgroup::"
+
+    - name: Push Changes
+      if: steps.update.outputs.has_changes == 'true'
+      run: |
+        git push origin main
+
+    - name: Summary
+      if: always()
+      run: |
+        if [ "${{ steps.update.outputs.has_changes }}" == "true" ]; then
+          echo "✅ Floorp submodule was successfully updated!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "ℹ️ No updates were available for the Floorp submodule." >> $GITHUB_STEP_SUMMARY
+        fi

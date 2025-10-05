@@ -1,0 +1,22 @@
+ac_add_options --with-app-name=floorp
+ac_add_options --with-app-basename=Floorp
+# ac_add_options --disable-updater
+# this implies disable geckodriver, and puppeteer seems using the geckodriver impl.
+# so you should not disable test
+ac_add_options --disable-tests
+ac_add_options --disable-crashreporter
+ac_add_options --enable-bootstrap
+ac_add_options --enable-rust-simd
+#? https://bugzilla.mozilla.org/show_bug.cgi?id=1617793
+#? https://phabricator.services.mozilla.com/D170170
+ac_add_options --target=aarch64-apple-darwin
+#sccache
+#mk_add_options 'export RUSTC_WRAPPER=sccache'
+#mk_add_options 'export CCACHE_CPP2=yes'
+#ac_add_options --with-ccache
+#mk_add_options 'export SCCACHE_GHA_ENABLED=on'
+# Disable verified updates
+ac_add_options --enable-unverified-updates
+
+# Disable telemetry reporting
+MOZ_TELEMETRY_REPORTING=

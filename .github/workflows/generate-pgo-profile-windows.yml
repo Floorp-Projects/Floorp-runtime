@@ -1,0 +1,152 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Generate PGO Profile (Windows)
+
+on:
+  workflow_call:
+    inputs:
+      browser-artifact-name:
+        description: 'Browser artifact to download'
+        required: true
+        type: string
+      artifact-path:
+        description: 'Path where browser artifact will be placed'
+        required: false
+        type: string
+        default: 'C:\artifact'
+      runner:
+        description: 'Runner label to execute on'
+        required: false
+        type: string
+        default: 'windows-latest'
+      target-arch:
+        description: 'Target architecture (x86_64)'
+        required: false
+        type: string
+        default: 'x86_64'
+      upload-artifact-name:
+        description: 'Name for uploaded profile data artifact'
+        required: false
+        type: string
+
+jobs:
+  generate-profdata-and-jarlog:
+    name: Generate PGO Profile Data (${{ inputs.target-arch }})
+    runs-on: ${{ inputs.runner }}
+    env:
+      ARTIFACT_PATH: ${{ inputs.artifact-path }}
+      TARGET_ARCH: ${{ inputs.target-arch }}
+      UPLOAD_ARTIFACT_NAME: >-
+        ${{ inputs.upload-artifact-name ||
+        format('{0}-profile-generate-output', inputs.browser-artifact-name) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.browser-artifact-name }}
+          path: ${{ env.ARTIFACT_PATH }}
+      
+      - name: Install LLVM 19
+        uses: KyleMayes/install-llvm-action@a7a1a882e2d06ebe05d5bb97c3e1f8c984ae96fc # Pinned to specific commit
+        with:
+          version: "19"
+
+      - name: Setup Mozilla Build
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile "C:\MozillaBuildSetup-Latest.exe"
+          Start-Process -FilePath "C:\MozillaBuildSetup-Latest.exe" -ArgumentList "/S" -Wait -NoNewWindow
+          if (-not (Test-Path "C:\mozilla-build\start-shell.bat")) { Write-Error "Mozilla Build installation failed."; exit 1 }
+          pip install requests
+
+      - name: Generate PGO Profile
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          
+          # --- 1. Find and Extract Browser ---
+          Write-Host "Searching for browser artifact in ${{ env.ARTIFACT_PATH }}"
+          $zipFile = Get-ChildItem -Path ${{ env.ARTIFACT_PATH }} -Filter "*.zip" | Select-Object -First 1
+          if (-not $zipFile) { Write-Error "No .zip artifact found in ${{ env.ARTIFACT_PATH }}"; exit 1 }
+          
+          Write-Host "Extracting $($zipFile.FullName)..."
+          Expand-Archive -Path $zipFile.FullName -DestinationPath ${{ env.ARTIFACT_PATH }} -Force
+          
+          # --- 2. Discover Browser Binary ---
+          $possibleNames = @("floorp.exe", "firefox.exe")
+          $winBrowserPath = $null
+          foreach ($name in $possibleNames) {
+            $found = Get-ChildItem -Path ${{ env.ARTIFACT_PATH }} -Recurse -Filter $name -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) { $winBrowserPath = $found.FullName; break }
+          }
+          if (-not $winBrowserPath) { Write-Error "Could not find a suitable browser binary."; exit 1 }
+          Write-Host "Found browser binary at: $winBrowserPath"
+          
+          # --- 3. Define Paths and Bash Script ---
+          # The install-llvm-action automatically creates the $env:LLVM_PATH variable
+          $winLlvmProfdataPath = Join-Path $env:LLVM_PATH "bin\llvm-profdata.exe"
+          
+          $scriptContent = @"
+          #!/bin/bash
+          set -ex
+
+          # Receive Windows paths from PowerShell
+          WIN_BROWSER_PATH="${winBrowserPath}"
+          WIN_LLVM_PROFDATA_PATH="${winLlvmProfdataPath}"
+
+          # Use cygpath for robust path conversion inside the MSYS2 environment
+          echo "Converting paths..."
+          BROWSER_PATH=`$(cygpath -u "`$WIN_BROWSER_PATH")`
+          LLVM_PROFDATA_PATH=`$(cygpath -u "`$WIN_LLVM_PROFDATA_PATH")`
+          
+          echo "Browser path (Unix): `$BROWSER_PATH"
+          echo "llvm-profdata path (Unix): `$LLVM_PROFDATA_PATH"
+          
+          # Run Mozilla bootstrap to ensure build tools are available
+          ./mach --no-interactive bootstrap --application-choice browser || echo "Bootstrap failed, continuing..."
+
+          # Generate the profile data
+          echo "Starting profile generation..."
+          timeout 1200 env LLVM_PROFDATA="`$LLVM_PROFDATA_PATH" JARLOG_FILE=en-US.log \
+            python3 build/pgo/profileserver.py --binary "`$BROWSER_PATH"
+            
+          # Verify the output files were created
+          if [[ ! -f "merged.profdata" || ! -f "en-US.log" ]]; then
+            echo "ERROR: Required profile files not generated."
+            exit 1
+          fi
+          echo "Profile generation script completed successfully."
+          "@
+          
+          # --- 4. Execute Script and Verify ---
+          $scriptContent | Out-File -FilePath "pgo-generate.sh" -Encoding UTF8
+          
+          Write-Host "Executing profile generation script via Mozilla Build shell..."
+          & "C:\mozilla-build\start-shell.bat" "$($env:GITHUB_WORKSPACE)\pgo-generate.sh"
+          
+          Write-Host "Verifying final output files..."
+          if (-not ((Test-Path "merged.profdata") -and (Test-Path "en-US.log"))) {
+            Write-Error "Profile generation failed - required files not found after script execution."
+            exit 1
+          }
+          Write-Host "Workflow step completed successfully."
+
+      - name: Upload profile data
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.UPLOAD_ARTIFACT_NAME }}
+          path: |
+            merged.profdata
+            en-US.log
+          retention-days: 7

@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.in"
+  },
+  "extensionDescription": {
+    "message": "Amazon.in Search"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.in/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

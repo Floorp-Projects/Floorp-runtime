@@ -1,0 +1,4 @@
+[ChildProc=any]
+protocol Pempty {
+child: async Msg();
+};

@@ -1,0 +1,221 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Common Build Workflow
+
+'on':
+  workflow_call:
+    inputs:
+      platform:
+        description: 'Target platform (linux, windows, mac)'
+        type: string
+        required: true
+      arch:
+        description: 'Target architecture (x86_64, aarch64)'
+        type: string
+        required: true
+      debug:
+        description: 'Enable debug build'
+        type: boolean
+        required: true
+        default: true
+      release:
+        description: 'Enable release build'
+        type: boolean
+        required: false
+        default: true
+      code-coverage:
+        description: 'Enable code coverage'
+        type: boolean
+        required: false
+        default: false
+      pgo:
+        description: 'Enable Profile-Guided Optimization'
+        type: boolean
+        required: false
+        default: false
+      pgo_mode:
+        description: 'PGO mode: generate or use'
+        type: string
+        required: false
+        default: ""
+      pgo_artifact_name:
+        description: 'PGO artifact name for use mode'
+        type: string
+        required: false
+        default: ""
+      MOZ_BUILD_DATE:
+        description: 'Build date override'
+        type: string
+        required: false
+        default: ""
+
+jobs:
+  build:
+    name: Build ${{ inputs.platform }}-${{ inputs.arch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "latest"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: >-
+            ${{ inputs.platform == 'mac' && 'recursive' || 'true' }}
+
+      - name: Download macOS SDK
+        if: inputs.platform == 'mac'
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-sdk
+          path: ~/macos-sdk-artifact
+
+      - name: Setup macOS cross-compilation
+        if: inputs.platform == 'mac'
+        run: |
+          ./.github/workflows/scripts/setup-mac-cross.sh "${{ inputs.arch }}"
+
+      - name: Apply upstream patches
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          if [ -d "$PATCH_DIR" ]; then
+            for patch in "$PATCH_DIR"/*.patch; do
+              [ -e "$patch" ] || continue
+              echo "Applying patch: $(basename "$patch")"
+              git apply --verbose --ignore-space-change --ignore-whitespace "$patch"
+            done
+          else
+            echo "No patches to apply"
+          fi
+
+      - name: Setup sccache
+        if: inputs.platform != 'mac'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Setup Rust toolchain
+        run: |
+          ./.github/workflows/scripts/setup-rust.sh \
+            "${{ inputs.platform }}" \
+            "${{ inputs.arch }}" \
+            "${{ inputs.pgo_artifact_name }}"
+
+      - name: Allocate swap space
+        run: |
+          ./.github/workflows/scripts/allocate-swap.sh "${{ inputs.arch }}"
+
+
+
+      - name: Download PGO artifact
+        if: inputs.pgo_mode == 'use' && inputs.pgo_artifact_name != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.pgo_artifact_name }}
+          path: ~/artifacts
+
+      - name: Setup floorp configuration
+        run: |
+          ./.github/workflows/scripts/setup-floorp.sh \
+            "${{ inputs.platform }}" \
+            "${{ inputs.arch }}" \
+            "${{ toJSON(inputs.debug) }}" \
+            "${{ toJSON(inputs.pgo) }}" \
+            "${{ inputs.pgo_mode }}" \
+            "${{ inputs.pgo_artifact_name }}" \
+            "${{ inputs.MOZ_BUILD_DATE }}"
+        env:
+          SCCACHE_GHA_ENABLED: ${{ inputs.platform != 'mac' && 'on' || '' }}
+          SCCACHE_MAX_FRAME_LENGTH: ${{ inputs.platform != 'mac' && '1048576' || '' }}
+
+      - name: Build and package
+        run: |
+          ./.github/workflows/scripts/build-and-package.sh \
+            "${{ inputs.platform }}" \
+            "${{ inputs.arch }}" \
+            "${{ inputs.MOZ_BUILD_DATE }}"
+        env:
+          SCCACHE_GHA_ENABLED: ${{ inputs.platform != 'mac' && 'on' || '' }}
+          SCCACHE_MAX_FRAME_LENGTH: ${{ inputs.platform != 'mac' && '1048576' || '' }}
+
+      - name: Clean existing Windows artifacts
+        if: inputs.platform == 'windows'
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            floorp-windows-x86_64-moz-artifact
+            windows-x86_64-dist-host
+            windows-x86_64-application-ini
+
+      - name: Clean existing Linux x86_64 artifacts
+        if: inputs.platform == 'linux' && inputs.arch == 'x86_64'
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            floorp-linux-x86_64-moz-artifact
+            linux-x86_64-dist-host
+            linux-x86_64-application-ini
+
+      - name: Clean existing Linux aarch64 artifacts
+        if: inputs.platform == 'linux' && inputs.arch == 'aarch64'
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            floorp-linux-aarch64-moz-artifact
+            linux-aarch64-dist-host
+            linux-aarch64-application-ini
+
+      - name: Clean existing Mac artifacts
+        if: inputs.platform == 'mac'
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            floorp-mac-${{ inputs.arch }}-moz-artifact
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-${{ inputs.platform }}-${{ inputs.arch }}-moz-artifact
+          path: >-
+            ${{ inputs.platform == 'windows' &&
+            format('~/output/floorp-{0}-{1}-moz-artifact.zip',
+            inputs.platform, inputs.arch) ||
+            inputs.platform == 'mac' &&
+            format('~/output/floorp-{0}-{1}-moz-artifact.tar.gz',
+            inputs.platform, inputs.arch) ||
+            format('~/output/floorp-{0}-{1}-moz-artifact.tar.xz',
+            inputs.platform, inputs.arch) }}
+
+      - name: Upload PGO profile generation package
+        if: >-
+          inputs.pgo_mode == 'generate' &&
+          inputs.platform == 'windows' &&
+          inputs.arch == 'x86_64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-windows-x86_64-profile-generate-mode-package
+          path: >-
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact.zip',
+            inputs.platform, inputs.arch) }}
+
+      - name: Upload dist/host for MAR
+        if: inputs.platform != 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.platform }}-${{ inputs.arch }}-dist-host
+          path: >-
+            ${{ inputs.platform == 'windows' &&
+            'obj-x86_64-pc-windows-msvc/dist/host/' ||
+            format('obj-{0}-*-linux-gnu/dist/host/', inputs.arch) }}
+          overwrite: true
+
+      - name: Upload application.ini for MAR
+        if: inputs.platform != 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.platform }}-${{ inputs.arch }}-application-ini
+          path: ./floorp-application.ini
+          overwrite: true

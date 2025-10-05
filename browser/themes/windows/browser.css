@@ -1,0 +1,322 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+@import url("chrome://browser/skin/browser-shared.css");
+@import url("chrome://browser/skin/contextmenu.css");
+
+#menubar-items {
+  flex-direction: column; /* for flex hack */
+  justify-content: normal; /* align the menubar to the top also in customize mode */
+}
+
+#main-menubar > menu {
+  appearance: none;
+  color: inherit;
+
+  &[_moz-menuactive] {
+    background-color: light-dark(hsla(0, 0%, 0%, 0.12), hsla(0, 0%, 100%, 0.22));
+    color: inherit;
+
+    @media (prefers-contrast) {
+      background-color: -moz-menuhover;
+      color: -moz-menuhovertext;
+    }
+  }
+}
+
+:root[customtitlebar]:not([lwtheme]) {
+  @media (-moz-windows-mica) {
+    background-color: transparent;
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("widget.windows.mica.toplevel-backdrop", 2) {
+      /* For acrylic, do the same we do for popups to guarantee some contrast */
+      background-color: light-dark(rgba(255, 255, 255, 0.6), rgba(0, 0, 0, 0.6));
+    }
+
+    /* Using a semitransparent background preserves the tinting from the backdrop.
+     * Note that the toolbar text color from browser-colors.css should be ok,
+     * as the backdrop matches our color scheme. The .6 matches what we do for
+     * acrylic, and the .15 matches the 85% we do for the default toolbar
+     * background on the native theme. */
+    --toolbar-bgcolor: light-dark(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.15));
+  }
+
+  /* stylelint-disable-next-line media-query-no-invalid */
+  @media (-moz-windows-accent-color-in-titlebar) and ((-moz-windows-mica) or -moz-pref("browser.theme.windows.accent-color-in-tabs.enabled")) {
+    .browser-toolbox-background {
+      /* These colors match the Linux/HCM default button colors. We need to
+       * override these on the toolbox-like elements because the accent color
+       * is arbitrary, so the hardcoded brand colors from browser-colors.css
+       * might not provide sufficient contrast. */
+      --toolbarbutton-icon-fill: currentColor;
+      --toolbar-field-color: currentColor;
+      --urlbar-box-bgcolor: var(--button-background-color-hover);
+      --urlbar-box-focus-bgcolor: var(--button-background-color);
+      --urlbar-box-hover-bgcolor: var(--button-background-color-hover);
+      --urlbar-box-active-bgcolor: var(--button-background-color-active);
+    }
+  }
+}
+
+/* This is needed for Windows 10, see bug 1961257 */
+@media (-moz-windows-accent-color-in-titlebar) {
+  :root[customtitlebar][sizemode="normal"] #navigator-toolbox {
+    border-top: 0.5px solid ActiveBorder;
+    &:-moz-window-inactive {
+      border-top-color: InactiveBorder;
+    }
+  }
+}
+
+/* Titlebar */
+
+.titlebar-buttonbox {
+  appearance: none;
+  /* The button box must appear on top of the navigator-toolbox in order for
+   * click and hover mouse events to work properly for the button in the restored
+   * window state. Otherwise, elements in the navigator-toolbox, like the menubar,
+   * can swallow those events.
+   */
+  z-index: 1;
+}
+
+.titlebar-buttonbox-container {
+  align-items: stretch;
+}
+
+/* Window control buttons */
+
+.titlebar-button {
+  appearance: none;
+  border: none;
+  margin: 0;
+  padding: 8px 18px;
+  color: inherit;
+
+  /* Segoe Fluent Icons is the preferred font for Windows 11, and
+   * Segoe MDL2 Assets is there for windows 10. Luckily, the relevant glyphs
+   * are the same, so we can just fall back.
+   * See: https://learn.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font */
+  font:
+    round(10px, env(hairline)) / 1 "Segoe Fluent Icons",
+    "Segoe MDL2 Assets"; /* stylelint-disable-line font-family-no-missing-generic-family-keyword */
+
+  /* Win10's tablet mode is non-windowed -- windows can't be moved or resized
+     freely. In theory "minimize" might still make sense, but for simplicity we
+     just hide everything but "close".
+
+     (This is not called for in Win11's tablet mode, which _is_ windowed.)
+  */
+  :root[win10-tablet-mode] &:not(.titlebar-close) {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+  }
+
+  > .toolbarbutton-icon {
+    display: none;
+  }
+
+  &::before {
+    display: inline-block;
+    content: inherit;
+
+    &:-moz-locale-dir(rtl) {
+      transform: scaleX(-1);
+    }
+  }
+
+  @media not (prefers-contrast) {
+    &:hover {
+      background-color: var(--toolbarbutton-hover-background);
+
+      &:active {
+        background-color: var(--toolbarbutton-active-background);
+      }
+    }
+
+    &.titlebar-close:hover {
+      color: white;
+      background-color: hsl(355, 86%, 49%);
+
+      &:active {
+        background-color: hsl(355, 82%, 69%);
+      }
+    }
+  }
+
+  @media (prefers-contrast) {
+    background-color: Field;
+    color: ButtonText; /* FIXME: shouldn't it be FieldText? */
+
+    &:hover {
+      background-color: SelectedItem;
+      color: SelectedItemText;
+    }
+  }
+}
+
+.titlebar-min {
+  /* Even though we use appearance: none, -moz-default-appearance is necessary
+   * for Windows 11's "snap layouts" feature, see
+   * DealWithWindowsAppearanceHacks */
+  -moz-default-appearance: -moz-window-button-minimize;
+  content: "\e921"; /* ChromeMinimize */
+  @media (prefers-contrast) {
+    content: "\ef2d"; /* ChromeMinimizeContrast */
+  }
+}
+
+.titlebar-max {
+  -moz-default-appearance: -moz-window-button-maximize;
+  content: "\e922"; /* ChromeMaximize */
+  @media (prefers-contrast) {
+    content: "\ef2e"; /* ChromeMaximizeContrast */
+  }
+}
+
+.titlebar-restore {
+  -moz-default-appearance: -moz-window-button-restore;
+  content: "\e923"; /* ChromeRestore */
+  @media (prefers-contrast) {
+    content: "\ef2f"; /* ChromeRestoreContrast */
+  }
+}
+
+.titlebar-close {
+  -moz-default-appearance: -moz-window-button-close;
+  content: "\e8bb"; /* ChromeClose */
+  @media (prefers-contrast) {
+    content: "\ef2c"; /* ChromeCloseContrast */
+  }
+}
+
+/* Bookmark menus */
+
+.bookmark-item {
+  &:is(menu, menuitem) {
+    min-width: 0;
+    max-width: 32em;
+  }
+
+  &:not(.subviewbutton) > .menu-icon {
+    margin-block: 0;
+  }
+
+  &:is(toolbarbutton)[dragover="true"][open="true"] {
+    appearance: none;
+    background: SelectedItem !important;
+    color: SelectedItemText !important;
+    fill: SelectedItemText;
+  }
+}
+
+/* Address bar */
+
+.urlbar,
+#searchbar {
+  font-size: 1.15em;
+}
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("browser.urlbar.experimental.expandTextOnFocus") {
+  #urlbar[breakout-extend] {
+    font-size: 1.25em;
+  }
+}
+
+@media (prefers-contrast) {
+  :root {
+    /* Windows HCM conventions use these colors for chiclets. We can't use them on
+       other platforms because AccentColor can be shown atop SelectedItem,
+       which has zero contrast. */
+    --urlbar-box-hover-bgcolor: SelectedItem;
+    --urlbar-box-active-bgcolor: SelectedItem;
+    --urlbar-box-hover-text-color: SelectedItemText;
+  }
+
+  :root:not([lwtheme]) {
+    :not([focused]) > .urlbar-background,
+    #searchbar:not(:focus-within),
+    .findbar-textbox:not(:focus) {
+      border-color: ThreeDShadow;
+    }
+  }
+}
+
+/* Autocomplete */
+
+#PopupAutoComplete > richlistbox > richlistitem[originaltype~="datalist-first"] {
+  border-top: 1px solid ThreeDShadow;
+}
+
+/* Tabstrip */
+
+#TabsToolbar {
+  min-height: 0;
+  padding: 0;
+}
+
+@media (prefers-contrast) {
+  /* For high contrast themes. XXX is this needed anymore? */
+  #tabbrowser-tabpanels,
+  :root[privatebrowsingmode="temporary"] #tabbrowser-tabpanels {
+    background-color: -moz-default-background-color;
+  }
+}
+
+/* All tabs menupopup */
+
+.alltabs-item[selected="true"] {
+  font-weight: bold;
+}
+
+#UITourTooltipButtons {
+  /**
+   * Override the --arrowpanel-padding so the background extends
+   * to the sides and bottom of the panel.
+   */
+  margin-inline: -10px;
+  margin-bottom: -10px;
+}
+
+/* Make menu items larger when opened through touch. */
+panel[touchmode],
+menupopup[touchmode] {
+  --arrowpanel-menuitem-padding-block: 12px;
+  --arrowpanel-menuitem-padding: var(--arrowpanel-menuitem-padding-block) var(--arrowpanel-menuitem-padding-inline);
+  /* The value for the header back icon padding is selected in a way that the
+   * height of the header and its separator will be equal to the panel inner
+   * top padding plus standard menuitem, so that the header's separator will
+   * be located excatly where a normal toolbarseparator would be located after
+   * the first menuitem, in a menu without a header. */
+  --arrowpanel-header-back-icon-padding: 10px;
+}
+
+:root[uidensity="compact"] panel[touchmode] {
+  --arrowpanel-header-back-icon-padding: 12px;
+}
+
+menupopup[touchmode] :is(menu, menuitem, menucaption) {
+  /* Use the var set in the rule above to increase menu items height in menupopups when
+   * they are opened through touch.
+   * Panel menu items already have their padding set in panelUI-shared.css with the same var. */
+  padding-block: var(--arrowpanel-menuitem-padding-block);
+}
+
+#contentAreaContextMenu[touchmode] > #context-navigation > menuitem {
+  /* The navigation menuitems are bigger to begin with because of their inner padding,
+   * so calculate the padding-block to match normal menuitems height when in touchmode.
+   * 3.5em is the desired menuitem height (~42px), minus the menuitem actual height devided by 2. */
+  padding-block: calc((3.5em - 32px) / 2);
+}
+
+/* Other menu separators don't extend all the way to the menu edges, but the
+   one below the navigation buttons in the content context menu should. */
+#context-sep-navigation {
+  padding-inline: 0;
+}

@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.de"
+  },
+  "extensionDescription": {
+    "message": "Amazon.de Suche"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.de/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

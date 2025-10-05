@@ -1,0 +1,32 @@
+[DEFAULT]
+subsuite = "media"
+tags = "webcodecs"
+prefs = [
+  "dom.media.webcodecs.enabled=true",
+  "dom.media.webcodecs.image-decoder.enabled=true",
+]
+support-files = [
+  "bug1921817.jpg",
+  "green.png"
+]
+
+["test_bug1921817.html"]
+scheme = "https"
+
+["test_imageDecoder_desiredSize.html"]
+scheme = "https"
+
+["test_resistFingerprinting.html"]
+scheme = "https"
+skip-if = ["os == 'android'"] # WebCodecs isn't enabled yet on Android
+
+["test_rfp_api_disabling_disabled.html"]
+scheme = "https"
+
+["test_rfp_api_disabling_enabled.html"]
+scheme = "https"
+
+["test_rfp_api_disabling_exemption.html"]
+scheme = "https"
+
+["test_videoFrame_mismatched_codedSize.html"]

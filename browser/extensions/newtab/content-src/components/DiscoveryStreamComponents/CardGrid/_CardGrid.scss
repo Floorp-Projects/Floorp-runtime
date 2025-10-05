@@ -1,0 +1,339 @@
+.ds-onboarding-container,
+.ds-card-grid .ds-card {
+  background: var(--newtab-background-color-secondary);
+  border-radius: var(--border-radius-small);
+
+  &:not(.placeholder) {
+    border-radius: var(--border-radius-medium);
+    box-shadow: $shadow-card;
+
+    img,
+    .placeholder-image {
+      border-radius: var(--border-radius-medium) var(--border-radius-medium) 0 0;
+    }
+  }
+}
+
+.ds-card.refined-cards:not(.placeholder) {
+  .img-wrapper .img {
+    height: 160px;
+    width: 100%;
+  }
+}
+
+.ds-onboarding-container {
+  padding-inline: var(--space-large);
+
+  @media (min-width: $break-point-medium) {
+    // Bug 1967304 - Large number (48px)
+    padding-inline-end: calc(var(--space-xlarge) * 2);
+  }
+
+  @media (min-width: $break-point-large) {
+    // Bug 1967304 - Large number (56px)
+    padding-inline-end: calc(var(--space-xlarge) + var(--space-xxlarge));
+  }
+
+  margin-block-end: var(--space-xlarge);
+  // This is to position the dismiss button to the right most of this element.
+  position: relative;
+
+  .ds-onboarding {
+    position: static;
+    display: flex;
+
+    .ds-dismiss-button {
+      inset-inline-end: var(--space-small);
+      inset-block-start: var(--space-small);
+    }
+  }
+
+  header {
+    @include dark-theme-only {
+      color: var(--newtab-background-color-primary);
+    }
+
+    display: flex;
+    margin: var(--space-xxlarge) 0 var(--space-small);
+
+    @media (min-width: $break-point-medium) {
+      margin: var(--space-large) 0 var(--space-small);
+      display: block;
+      height: 24px;
+    }
+
+    font-size: var(--font-size-large);
+    font-weight: var(--font-weight-bold);
+    color: $pocket-icon-fill;
+  }
+
+  p {
+    margin: var(--space-small) 0 var(--space-large);
+    font-size: var(--font-size-small);
+  }
+
+  .icon-pocket {
+    @include dark-theme-only {
+      @media (forced-colors: active) {
+        fill: CurrentColor;
+      }
+
+      fill: var(--newtab-text-primary-color);
+    }
+
+    @media (forced-colors: active) {
+      fill: CurrentColor;
+    }
+
+    fill: $pocket-icon-fill;
+    margin-block-start: var(--space-xxsmall);;
+    margin-inline-end: var(--space-small);
+    height: 22px;
+    width: 22px;
+    background-image: url('chrome://global/skin/icons/help.svg');
+
+    @media (min-width: $break-point-medium) {
+      margin-block-start: calc(var(--space-small) * -1);
+      margin-inline-start: calc(var(--space-xxsmall) * -1);
+      margin-inline-end: var(--space-large);
+      height: 30px;
+      width: 30px;
+    }
+
+    background-size: contain;
+  }
+
+  .ds-onboarding-graphic {
+    background-image: image-set(url('chrome://newtab/content/data/content/assets/pocket-onboarding.avif'), url('chrome://newtab/content/data/content/assets/pocket-onboarding@2x.avif') 2x);
+    border-radius: var(--border-radius-medium);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    height: 120px;
+    width: 200px;
+    margin-block-start: var(--space-large);
+    margin-block-end: var(--space-large);
+    // Bug 1967304 - Large Token (56px)
+    margin-inline-start: calc(var(--space-xlarge) + var(--space-xxlarge));
+    flex-shrink: 0;
+    display: none;
+
+    @media (min-width: $break-point-large) {
+      display: block;
+    }
+  }
+}
+
+.ds-card-grid {
+  display: grid;
+  grid-gap: var(--space-xlarge);
+  position: relative;
+
+  &.ds-card-grid-compact {
+    grid-gap: var(--space-large);
+  }
+
+  &.ad-sizing-variant-a,
+  &.ad-sizing-variant-b {
+    row-gap: var(--space-xlarge);
+    column-gap: var(--space-large);
+  }
+
+  .ds-card-link:focus {
+    @include ds-focus;
+
+    transition: none;
+    border-radius: var(--border-radius-medium);
+  }
+
+  // "2/3 width layout"
+  .ds-column-5 &,
+  .ds-column-6 &,
+  .ds-column-7 &,
+  .ds-column-8 & {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  // "Full width layout"
+  .ds-column-9 &,
+  .ds-column-10 &,
+  .ds-column-11 &,
+  .ds-column-12 & {
+    grid-template-columns: repeat(1, 1fr);
+
+    @media (min-width: $break-point-medium) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (min-width: $break-point-large) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .title {
+      font-size: var(--font-size-large);
+    }
+
+    .excerpt {
+      @include limit-visible-lines(3, 24, 15);
+    }
+  }
+
+  &.empty {
+    grid-template-columns: auto;
+  }
+
+  @mixin small-cards {
+    .ds-card {
+      &.placeholder {
+        min-height: 247px;
+      }
+
+      .meta {
+        .story-footer {
+          margin-block-start: var(--space-small);
+        }
+
+        .source,
+        .story-sponsored-label,
+        .status-message .story-context-label {
+          color: var(--newtab-text-secondary-color);
+          -webkit-line-clamp: 2;
+        }
+
+        .source,
+        .story-sponsored-label {
+          font-size: var(--font-size-small);
+        }
+
+        .status-message .story-context-label {
+          font-size: var(--font-size-small);
+        }
+
+        .story-badge-icon {
+          margin-inline-end: var(--space-xxsmall);
+          margin-block-end: var(--space-xxsmall);
+          height: 14px;
+          width: 14px;
+          background-size: 14px;
+        }
+
+        .title {
+          font-size: inherit;
+        }
+
+        .info-wrap {
+          flex-grow: 0;
+        }
+      }
+    }
+  }
+
+  &.ds-card-grid-four-card-variant {
+    // "Full width layout"
+    .ds-column-9 &,
+    .ds-column-10 &,
+    .ds-column-11 &,
+    .ds-column-12 & {
+      grid-template-columns: repeat(1, 1fr);
+
+      @media (min-width: $break-point-medium) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (min-width: $break-point-large) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      @media (min-width: $break-point-widest) {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @include small-cards;
+  }
+
+  &.ds-card-grid-hybrid-layout {
+    .ds-column-9 &,
+    .ds-column-10 &,
+    .ds-column-11 &,
+    .ds-column-12 & {
+      grid-template-columns: repeat(1, 1fr);
+
+      @media (min-width: $break-point-medium) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (min-width: $break-point-large) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      @media (height <= 1065px) {
+        .excerpt {
+          display: none;
+        }
+      }
+
+      @media (max-width: $break-point-widest) {
+        @include small-cards;
+      }
+
+      @media (min-width: $break-point-widest) and (height <= 964px) {
+        @include small-cards;
+
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+  }
+}
+
+.outer-wrapper .ds-card-grid.ds-card-grid-hide-background .ds-card,
+.outer-wrapper.newtab-experience .ds-card-grid.ds-card-grid-hide-background .ds-card {
+  &:not(.placeholder) {
+    box-shadow: none;
+    background: none;
+
+    .ds-card-link:focus {
+      box-shadow: none;
+
+      .img-wrapper .img img {
+        @include ds-focus;
+      }
+    }
+
+    .img-wrapper .img img {
+      border-radius: var(--border-radius-medium);
+      box-shadow: $shadow-card;
+    }
+
+    .meta {
+      padding: var(--space-medium) 0 0;
+    }
+  }
+}
+
+.ds-layout {
+  .ds-sub-header {
+    margin-block-start: var(--space-xlarge);
+
+    .section-title-container {
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: space-between;
+      display: flex;
+    }
+
+    .section-sub-link {
+      color: var(--newtab-primary-action-background);
+      font-size: inherit;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:active {
+        color: var(--newtab-primary-element-active-color);
+      }
+    }
+  }
+}

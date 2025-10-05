@@ -1,0 +1,151 @@
+.ad-banner-wrapper {
+  --banner-padding: var(--space-large);
+  --billboard-width: 970px;
+  --billboard-container-width: calc( var(--billboard-width) + ( var(--banner-padding) * 2 ));
+  --billboard-height: 250px;
+  --leaderboard-width: 728px;
+  --leaderboard-container-width: calc(var(--leaderboard-width) + ( var(--banner-padding) * 2 ));
+  --leaderboard-height: 90px;
+
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  grid-column: 1/-1;
+  // allow the ad banner to take up full width
+  // of screen rather than card-grid width
+  width: 100%;
+  inset-inline-start: 50%;
+  transform: translate3d(-50%, 0, 0);
+  margin-block-start: var(--space-medium);
+  margin-block-end: var(--space-xlarge);
+
+  // in a 4-column layout, the promo card fills remaining space
+  @media (min-width: $break-point-sections-variant) {
+    &.promo-card {
+      justify-content: space-between;
+    }
+  }
+
+  // Adding min-width if .billboard/.leaderboard exist within
+  // .ad-banner-inner to keep the banners from shrinking on smaller screens
+  &:has(.ad-banner-inner.billboard) {
+    min-width: var(--billboard-container-width);
+
+    @media (width <= 1015px) {
+      min-width: auto;
+    }
+  }
+
+  &:has(.ad-banner-inner.leaderboard) {
+    min-width: var(--leaderboard-container-width);
+
+    @media (width <= 758px) {
+      min-width: auto;
+    }
+  }
+
+  .ad-banner-inner {
+    position: relative;
+    background: var(--newtab-background-card);
+    box-shadow: var(--box-shadow-card);
+    border-radius: var(--border-radius-large);
+
+    &:hover {
+      box-shadow: var(--box-shadow-card-hover);
+    }
+
+    .ad-banner-link {
+      text-decoration: none;
+      padding-block-start: var(--banner-padding);
+      padding-inline: var(--banner-padding);
+      display: inline-block;
+
+      &:focus {
+        outline: var(--focus-outline);
+        border-radius: var(--border-radius-large);
+      }
+
+      &:hover + .ad-banner-hover-background,
+      &:focus + .ad-banner-hover-background {
+        opacity: 1;
+      }
+    }
+
+    .ad-banner-hover-background {
+      opacity: 0;
+      position: absolute;
+      inset-block-start: 0;
+      pointer-events: none;
+      height: 100%;
+
+      &:hover, &:focus-within {
+        opacity: 1;
+      }
+
+      .ads-context-menu-wrapper {
+        pointer-events: auto;
+      }
+    }
+
+    &.leaderboard {
+      max-width: var(--leaderboard-container-width);
+
+      .ad-banner-content {
+        height: var(--leaderboard-height);
+        width: var(--leaderboard-width);
+      }
+
+      .ad-banner-hover-background {
+        width: var(--leaderboard-container-width);
+      }
+
+      .ad-banner-sponsored {
+        width: var(--leaderboard-width);
+      }
+
+      @media (width <= 758px) {
+        display: none;
+      }
+    }
+
+    &.billboard {
+      width: var(--billboard-container-width);
+
+      .ad-banner-content {
+        height: var(--billboard-height);
+        width: var(--billboard-width);
+      }
+
+      .ad-banner-hover-background {
+        width: var(--billboard-container-width);
+      }
+
+      .ad-banner-sponsored {
+        width: var(--billboard-width);
+      }
+
+      @media (width <= 1015px) {
+        display: none;
+      }
+    }
+
+    .ad-banner-sponsored {
+      height: 32px;
+      display: flex;
+      align-items: center;
+
+      span {
+        font-size: var(--font-size-small);
+        color: var(--newtab-contextual-text-secondary-color);
+      }
+    }
+  }
+
+  &.active {
+    .ad-banner-hover-background {
+      opacity: 1;
+    }
+
+    z-index: 1;
+  }
+}

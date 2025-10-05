@@ -1,0 +1,8 @@
+include protocol PManualDealloc;
+
+// [ManualDealloc] types must have a manager, as all toplevel protocols are
+// refcounted.
+[ChildProc=any]
+async protocol PManualDealloc_manager {
+    manages PManualDealloc;
+};

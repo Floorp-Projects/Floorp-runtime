@@ -1,0 +1,342 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MozFieldset tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <script
+      type="module"
+      src="chrome://global/content/elements/moz-fieldset.mjs"
+    ></script>
+    <script>
+      let html, render, renderTarget;
+
+      add_setup(async function setup() {
+        ({ html, render } = await import(
+          "chrome://global/content/vendor/lit.all.mjs"
+        ));
+        renderTarget = document.getElementById("render");
+      });
+
+      add_task(async function testMozFieldsetAttributes() {
+        render(
+          html`
+            <moz-fieldset label="Test label" description="Test description">
+              <label><input type="checkbox" /> First setting</label>
+              <label><input type="checkbox" /> Second setting</label>
+              <label><input type="checkbox" /> Third setting</label>
+            </moz-fieldset>
+          `,
+          renderTarget
+        );
+        // Check initial rendered attributes.
+        let fieldset = renderTarget.querySelector("moz-fieldset");
+        await fieldset.updateComplete;
+
+        let fieldsetEl = fieldset.shadowRoot.querySelector("fieldset");
+        let legend = fieldset.shadowRoot.querySelector("fieldset > legend");
+        let description = fieldset.shadowRoot.querySelector(
+          "fieldset > #description"
+        );
+
+        is(
+          legend.childElementCount,
+          0,
+          "There are no child elements in the legend"
+        );
+        is(legend.innerText, "Test label", "legend is set");
+        is(description.innerText, "Test description", "description is set");
+        ok(
+          description.classList.contains("text-deemphasized"),
+          "description is styled"
+        );
+        is(
+          fieldset.shadowRoot.getElementById(
+            fieldsetEl.getAttribute("aria-describedby")
+          ),
+          description,
+          "description describes fieldset"
+        );
+
+        // Changing the attributes should update the DOM.
+        fieldset.label = "New label";
+        fieldset.description = "New description";
+        await fieldset.updateComplete;
+
+        is(legend.innerText, "New label", "legend is set");
+        is(description.innerText, "New description", "description is set");
+
+        // Removing the description should remove the describedby association.
+        fieldset.description = null;
+        await fieldset.updateComplete;
+
+        ok(
+          !fieldsetEl.hasAttribute("aria-describedby"),
+          "aria-describedby removed when no description"
+        );
+
+        // Validate that adding iconSrc displays an image
+        let icon = fieldset.shadowRoot.querySelector(".icon");
+        ok(!icon, "Icon is not rendered when iconSrc is not present.");
+
+        fieldset.iconSrc = "chrome://global/skin/icons/info.svg";
+        await fieldset.updateComplete;
+
+        icon = fieldset.shadowRoot.querySelector(".icon");
+        ok(icon, "Icon is rendered after iconSrc is supplied.");
+        is(
+          icon.src,
+          "chrome://global/skin/icons/info.svg",
+          "Icon src is set to the expected value."
+        );
+      });
+
+      add_task(async function testMozFieldsetSupportLink() {
+        render(
+          html`
+            <moz-fieldset
+              label="Test label"
+              description="Test description"
+              support-page="test"
+            >
+              <label><input type="checkbox" /> First setting</label>
+              <label><input type="checkbox" /> Second setting</label>
+              <label><input type="checkbox" /> Third setting</label>
+            </moz-fieldset>
+          `,
+          renderTarget
+        );
+        let fieldset = renderTarget.querySelector("moz-fieldset");
+        await fieldset.updateComplete;
+
+        let legendEl = fieldset.shadowRoot.querySelector("legend");
+        let fieldsetEl = fieldset.shadowRoot.querySelector("fieldset");
+        let supportLinkEl = fieldsetEl.querySelector(
+          "a[is='moz-support-link']"
+        );
+        ok(supportLinkEl, "support-link element should be rendered");
+        is(
+          supportLinkEl.getAttribute("support-page"),
+          "test",
+          "'support-page' attribute is set"
+        );
+        is(
+          supportLinkEl.getAttribute("part"),
+          "support-link",
+          "'part' attribute is set"
+        );
+
+        // Update the support-page attribute
+        fieldset.supportPage = "foo";
+        await fieldset.updateComplete;
+        is(
+          supportLinkEl.getAttribute("support-page"),
+          "foo",
+          "'support-page' attribute should update"
+        );
+
+        // Remove the support-page attribute
+        fieldset.supportPage = null;
+        await fieldset.updateComplete;
+        ok(
+          !fieldsetEl.querySelector("a[is='moz-support-link']"),
+          "support link element should be removed"
+        );
+
+        // Verify placement of support link
+        fieldset.supportPage = "foo";
+        fieldset.description = "";
+        await fieldset.updateComplete;
+        // The support link is re-rendered, so we need an updated reference
+        supportLinkEl = fieldsetEl.querySelector("a[is='moz-support-link']");
+        ok(
+          supportLinkEl.previousElementSibling == legendEl,
+          "support link element should be inline after the legend element if there's no description"
+        );
+
+        fieldset.description = "a test description";
+        await fieldset.updateComplete;
+        let descriptionEl = fieldset.shadowRoot.querySelector("#description");
+        // The support link is re-rendered, so we need an updated reference
+        supportLinkEl = fieldsetEl.querySelector("a[is='moz-support-link']");
+        ok(
+          supportLinkEl.previousElementSibling == descriptionEl,
+          "support link element should be placed after the description if there's one"
+        );
+
+        // Verify that slotted support link's placement renders as expected
+        fieldset.removeAttribute("support-page");
+        let slottedSupportLink = document.createElement("div");
+        slottedSupportLink.slot = "support-link";
+        slottedSupportLink.innerText = "slotted element";
+        fieldset.appendChild(slottedSupportLink);
+        await fieldset.updateComplete;
+
+        ok(
+          !fieldset.getAttribute("support-page"),
+          "There should not be a support-page attribute"
+        );
+        let slottedEl = fieldset.shadowRoot.querySelector(
+          "slot[name='support-link']"
+        );
+        ok(slottedEl, "Slotted support link should exist");
+        ok(
+          slottedEl.previousElementSibling == descriptionEl,
+          "Slotted support link element should be placed after the description if there's one"
+        );
+
+        fieldset.description = "";
+        await fieldset.updateComplete;
+        fieldset.appendChild(slottedSupportLink);
+        await fieldset.updateComplete;
+        slottedEl = fieldset.shadowRoot.querySelector(
+          "slot[name='support-link']"
+        );
+        ok(slottedEl, "Slotted support link should exist");
+        ok(
+          slottedEl.previousElementSibling == legendEl,
+          "Slotted support link element should be placed inline with the legend when there is no description"
+        );
+      });
+
+      add_task(async function testMozFieldsetHeadingLevel() {
+        render(
+          html`
+            <moz-fieldset label="Test label" headinglevel="3">
+              <label><input type="checkbox" /> First setting</label>
+              <label><input type="checkbox" /> Second setting</label>
+              <label><input type="checkbox" /> Third setting</label>
+            </moz-fieldset>
+          `,
+          renderTarget
+        );
+
+        let fieldset = renderTarget.querySelector("moz-fieldset");
+        await fieldset.updateComplete;
+
+        let legendEl = fieldset.shadowRoot.querySelector("fieldset > legend");
+
+        is(legendEl.childElementCount, 1, "The legend has a child");
+        is(legendEl.innerText, "Test label", "The legend text is correct");
+        let headingEl = legendEl.firstElementChild;
+        is(headingEl.localName, "h3", "The legend has an h3");
+        is(headingEl.innerText, "Test label", "The heading has the text");
+
+        fieldset.headingLevel = 7;
+        await fieldset.updateComplete;
+
+        is(legendEl.childElementCount, 0, "The legend has no child elements");
+        is(legendEl.innerText, "Test label", "The legend text is correct");
+
+        fieldset.headingLevel = 0;
+        await fieldset.updateComplete;
+
+        is(legendEl.childElementCount, 0, "The legend has no child elements");
+        is(legendEl.innerText, "Test label", "The legend text is correct");
+
+        // Check 1-6
+        for (let i = 1; i <= 6; i++) {
+          fieldset.headingLevel = i;
+          await fieldset.updateComplete;
+
+          is(legendEl.childElementCount, 1, "The legend has a child");
+          is(legendEl.innerText, "Test label", "The legend text is correct");
+          headingEl = legendEl.firstElementChild;
+          is(headingEl.localName, `h${i}`, `The legend has an h${i}`);
+          is(headingEl.innerText, "Test label", "The heading has the text");
+        }
+      });
+
+      add_task(async function testMozFieldsetDisabled() {
+        render(
+          html`
+            <moz-fieldset label="Test label" description="Test description">
+              <input type="text" />
+              <select>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+              <textarea></textarea>
+              <button>Click me!</button>
+              <moz-toggle
+                pressed
+                label="First setting"
+                description="These could have descriptions too."
+              ></moz-toggle>
+              <moz-checkbox label="Second setting"></moz-checkbox>
+              <moz-select label="Make a choice">
+                <moz-option label="Option One" value="1"></moz-option>
+                <moz-option label="Option A" value="a"></moz-option>
+              </moz-select>
+              <moz-radio-group label="Radio group setting">
+                <moz-radio label="Option 1" value="1"></moz-radio>
+                <moz-radio label="Option 2" value="2"></moz-radio>
+                <moz-radio label="Option 3" value="3"></moz-radio>
+              </moz-radio-group>
+              <moz-button label="Button"></moz-button>
+            </moz-fieldset>
+          `,
+          renderTarget
+        );
+
+        let fieldset = renderTarget.querySelector("moz-fieldset");
+        await fieldset.updateComplete;
+
+        let fieldsetEl = fieldset.shadowRoot.querySelector("fieldset");
+
+        ok(
+          !fieldsetEl.hasAttribute("disabled"),
+          "Fieldset should not be disabled initially"
+        );
+
+        let allFormElements = fieldset.querySelectorAll(
+          "input, button, select, textarea, moz-toggle, moz-checkbox, moz-select, moz-button, moz-radio-group"
+        );
+        allFormElements.forEach(el => {
+          ok(
+            !el.hasAttribute("disabled"),
+            `${el.tagName} should not be disabled initially`
+          );
+        });
+
+        fieldset.disabled = true;
+        await fieldset.updateComplete;
+
+        ok(
+          fieldsetEl.hasAttribute("disabled"),
+          "Fieldset should be disabled when disabled=true"
+        );
+
+        allFormElements.forEach(el => {
+          ok(
+            el.hasAttribute("disabled"),
+            `${el.tagName} should be disabled when fieldset is disabled`
+          );
+        });
+
+        fieldset.disabled = false;
+        await fieldset.updateComplete;
+
+        ok(
+          !fieldsetEl.hasAttribute("disabled"),
+          "Fieldset should not be disabled when disabled=false"
+        );
+
+        allFormElements.forEach(el => {
+          ok(
+            !el.hasAttribute("disabled"),
+            `${el.tagName} should be enabled when fieldset is re-enabled`
+          );
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div id="render"></div>
+  </body>
+</html>

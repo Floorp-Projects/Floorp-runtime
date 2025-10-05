@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.com.au"
+  },
+  "extensionDescription": {
+    "message": "Amazon.com.au Search"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.com.au/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

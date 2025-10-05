@@ -1,0 +1,40 @@
+[DEFAULT]
+prefs = ["browser.ml.modelHubRootUrl='chrome://mochitests/content/browser/toolkit/components/ml/tests/browser/data'"]
+support-files = [
+  "head.js",
+  "shared-head.js",
+  "data/**/*.*"
+]
+
+["browser_ml_cache.js"]
+
+["browser_ml_cluster_algos.js"]
+
+["browser_ml_embeddings_generator.js"]
+
+["browser_ml_engine.js"]
+
+["browser_ml_engine_process.js"]
+
+["browser_ml_native.js"]
+skip-if = [
+  "os == 'android'",
+  "bits == 32",
+  "debug",
+  "asan",
+  "tsan"
+]
+
+["browser_ml_nlp_utils.js"]
+
+["browser_ml_opfs.js"]
+
+["browser_ml_pipeline.js"]
+
+["browser_ml_privatebrowsing.js"]
+
+["browser_ml_telemetry.js"]
+
+["browser_ml_thompson_sample.js"]
+
+["browser_ml_utils.js"]

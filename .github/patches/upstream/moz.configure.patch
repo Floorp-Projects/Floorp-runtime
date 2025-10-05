@@ -1,0 +1,37 @@
+diff --git a/browser/moz.configure b/browser/moz.configure
+index e8b401a7df..ff13cf69ba 100644
+--- a/browser/moz.configure
++++ b/browser/moz.configure
+@@ -5,15 +5,21 @@
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+ imply_option("MOZ_PLACES", True)
+-imply_option("MOZ_SERVICES_HEALTHREPORT", True)
++# Noraneko Patch
++imply_option("MOZ_SERVICES_HEALTHREPORT", False)
++# End of Noraneko Patch
+ imply_option("MOZ_SERVICES_SYNC", True)
+ imply_option("MOZ_DEDICATED_PROFILES", True)
+-imply_option("MOZ_BLOCK_PROFILE_DOWNGRADE", True)
++# Noraneko Patch
++imply_option("MOZ_BLOCK_PROFILE_DOWNGRADE", False)
++# End of Noraneko Patch
+ imply_option("MOZ_NORMANDY", True)
+ imply_option("MOZ_PROFILE_MIGRATOR", True)
+ 
+ 
+-imply_option("MOZ_APP_VENDOR", "Mozilla")
++# Noraneko Patch
++# imply_option("MOZ_APP_VENDOR", "Mozilla")
++# End of Noraneko Patch
+ imply_option("MOZ_APP_ID", "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}")
+ # Include the DevTools client, not just the server (which is the default)
+ imply_option("MOZ_DEVTOOLS", "all")
+@@ -70,3 +76,7 @@ def requires_stub_installer(
+ imply_option("MOZ_STUB_INSTALLER", True, when=requires_stub_installer)
+ 
+ include("../toolkit/moz.configure")
++
++## Noraneko Patch
++include("../.github/assets/config/moz.configure")
++## End of Noraneko Patch

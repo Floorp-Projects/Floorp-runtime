@@ -1,0 +1,36 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+include protocol PBackground;
+include protocol PBoundStorageKey;
+include IPCStream;
+
+using struct nsID from "nsID.h";
+
+namespace mozilla {
+namespace dom {
+namespace cache {
+
+protocol PCacheStreamControl
+{
+  // PBoundStorageKey is a new top-level actor and is exclusively used
+  // for loading cached service worker scripts Off-main thread. However,
+  // it would be ideal to use it for all cache/storage related messages,
+  // look at https://bugzilla.mozilla.org/show_bug.cgi?id=1853726 and
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1853706
+
+  manager PBackground or PBoundStorageKey;
+
+parent:
+  async OpenStream(nsID aStreamId) returns(IPCStream? aStream);
+  async NoteClosed(nsID aStreamId);
+
+child:
+  async CloseAll();
+  async __delete__();
+};
+
+} // namespace cache
+} // namespace dom
+} // namespace mozilla

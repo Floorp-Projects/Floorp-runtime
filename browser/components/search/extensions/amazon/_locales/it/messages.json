@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.it"
+  },
+  "extensionDescription": {
+    "message": "Ricerca Amazon.it"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.it/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

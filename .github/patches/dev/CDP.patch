@@ -1,0 +1,22 @@
+diff --git a/remote/cdp/CDP.sys.mjs b/remote/cdp/CDP.sys.mjs
+index 1715e8a54b..bcf4c379e8 100644
+--- a/remote/cdp/CDP.sys.mjs
++++ b/remote/cdp/CDP.sys.mjs
+@@ -77,7 +77,7 @@ export class CDP {
+     // avoid potential race conditions.
+     this._running = true;
+ 
+-    lazy.RecommendedPreferences.applyPreferences(RECOMMENDED_PREFS);
++    //lazy.RecommendedPreferences.applyPreferences(RECOMMENDED_PREFS);
+ 
+     // Starting CDP too early can cause issues with clients in not being able
+     // to find any available target. Also when closing the application while
+@@ -137,7 +137,7 @@ export class CDP {
+       this.targetList?.destructor();
+       this.targetList = null;
+ 
+-      lazy.RecommendedPreferences.restorePreferences(RECOMMENDED_PREFS);
++      //lazy.RecommendedPreferences.restorePreferences(RECOMMENDED_PREFS);
+     } catch (e) {
+       lazy.logger.error("Failed to stop protocol", e);
+     } finally {

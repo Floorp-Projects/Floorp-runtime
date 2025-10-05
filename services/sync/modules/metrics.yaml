@@ -1,0 +1,1200 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Adding a new metric? We have docs for that!
+# https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/new_definitions_file.html
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - 'Firefox :: Sync'
+
+synced_tabs:
+  click_fxa_avatar_menu:
+    type: event
+    description: >
+      Record how users access and use synced tabs component
+      This event was generated to correspond to the Legacy Telemetry event
+      synced_tabs.click#fxa_avatar_menu.
+    bugs: &synced_tabs_click_bugs
+      - https://bugzil.la/1756252
+    data_reviews: &synced_tabs_click_data_reviews
+      - https://bugzil.la/1756252
+    notification_emails: &synced_tabs_click_emails
+      - sync-dev@mozilla.org
+    expires: never
+    extra_keys: &synced_tabs_click_extra
+      tab_pos:
+        description: >
+          position of the tab clicked
+        type: string
+      filter:
+        description: >
+          was there a filter enabled
+        type: string
+    telemetry_mirror: Synced_tabs_Click_FxaAvatarMenu
+    no_lint:
+      - COMMON_PREFIX
+
+  click_fxa_app_menu:
+    type: event
+    description: >
+      Record how users access and use synced tabs component
+      This event was generated to correspond to the Legacy Telemetry event
+      synced_tabs.click#fxa_app_menu.
+    bugs: *synced_tabs_click_bugs
+    data_reviews: *synced_tabs_click_data_reviews
+    notification_emails: *synced_tabs_click_emails
+    expires: never
+    extra_keys: *synced_tabs_click_extra
+    telemetry_mirror: Synced_tabs_Click_FxaAppMenu
+    no_lint:
+      - COMMON_PREFIX
+
+  click_synced_tabs_sidebar:
+    type: event
+    description: >
+      Record how users access and use synced tabs component
+      This event was generated to correspond to the Legacy Telemetry event
+      synced_tabs.click#synced_tabs_sidebar.
+    bugs: *synced_tabs_click_bugs
+    data_reviews: *synced_tabs_click_data_reviews
+    notification_emails: *synced_tabs_click_emails
+    expires: never
+    extra_keys: *synced_tabs_click_extra
+    telemetry_mirror: Synced_tabs_Click_SyncedTabsSidebar
+    no_lint:
+      - COMMON_PREFIX
+
+fxa_avatar_menu:
+  click_account_settings:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#account_settings.
+    bugs: &fxa_avatar_menu_click_bugs
+      - https://bugzil.la/1524665
+      - https://bugzil.la/1585459
+      - https://bugzil.la/1606203
+    data_reviews: &fxa_avatar_menu_click_data_reviews
+      - https://bugzil.la/1524665
+      - https://bugzil.la/1585459
+      - https://bugzil.la/1606203
+    notification_emails: &fxa_avatar_menu_click_emails
+      - vbudhram@mozilla.com
+      - loines@mozilla.com
+    expires: never
+    extra_keys: &fxa_avatar_menu_click_extra
+      fxa_status:
+        description: >
+          The current state of the user. Possible states are "not_configured", "unverified", "signedin" and "login_failed".
+
+        type: string
+      fxa_avatar:
+        description: >
+          Boolean for whether or not account has set an avatar
+        type: string
+      fxa_sync_on:
+        description: >
+          Boolean for whether or not sync was configured at the time the event fired.
+        type: string
+    telemetry_mirror: Fxa_avatar_menu_Click_AccountSettings
+    no_lint:
+      - COMMON_PREFIX
+
+  click_cad:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#cad.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_Cad
+    no_lint:
+      - COMMON_PREFIX
+
+  click_login:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#login.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_Login
+    no_lint:
+      - COMMON_PREFIX
+
+  click_send_tab:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#send_tab.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_SendTab
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_now:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#sync_now.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_SyncNow
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_settings:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#sync_settings.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_SyncSettings
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_tabs:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#sync_tabs.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_SyncTabs
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_tabs_sidebar:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#sync_tabs_sidebar.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_SyncTabsSidebar
+    no_lint:
+      - COMMON_PREFIX
+
+  click_toolbar_icon:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#toolbar_icon.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_ToolbarIcon
+    no_lint:
+      - COMMON_PREFIX
+
+  click_unver_sync_settings:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#unver_sync_settings.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_UnverSyncSettings
+    no_lint:
+      - COMMON_PREFIX
+
+  click_open_monitor:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#open_monitor.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_OpenMonitor
+    no_lint:
+      - COMMON_PREFIX
+
+  click_open_send:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#open_send.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_OpenSend
+    no_lint:
+      - COMMON_PREFIX
+
+  click_monitor_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#monitor_cta.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_MonitorCta
+    no_lint:
+      - COMMON_PREFIX
+
+  click_relay_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#relay_cta.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_RelayCta
+    no_lint:
+      - COMMON_PREFIX
+
+  click_vpn_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#vpn_cta.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_VpnCta
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA avatar menu on the
+      toolbar
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_avatar_menu.click#sync_cta.
+    bugs: *fxa_avatar_menu_click_bugs
+    data_reviews: *fxa_avatar_menu_click_data_reviews
+    notification_emails: *fxa_avatar_menu_click_emails
+    expires: never
+    extra_keys: *fxa_avatar_menu_click_extra
+    telemetry_mirror: Fxa_avatar_menu_Click_SyncCta
+    no_lint:
+      - COMMON_PREFIX
+
+fxa_app_menu:
+  click_account_settings:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#account_settings.
+    bugs: &fxa_app_menu_click_bugs
+      - https://bugzil.la/1542334
+      - https://bugzil.la/1606203
+    data_reviews: &fxa_app_menu_click_data_reviews
+      - https://bugzil.la/1542334
+      - https://bugzil.la/1606203
+    notification_emails: &fxa_app_menu_click_emails
+      - vbudhram@mozilla.com
+      - loines@mozilla.com
+    expires: never
+    extra_keys: &fxa_app_menu_click_extra
+      fxa_status:
+        description: >
+          The current state of the user. Possible states are "not_configured", "unverified", "signedin" and "login_failed".
+
+        type: string
+      fxa_avatar:
+        description: >
+          Boolean for whether or not account has set an avatar
+        type: string
+      fxa_sync_on:
+        description: >
+          Boolean for whether or not sync was configured at the time the event fired.
+        type: string
+    telemetry_mirror: Fxa_app_menu_Click_AccountSettings
+    no_lint:
+      - COMMON_PREFIX
+
+  click_cad:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#cad.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_Cad
+    no_lint:
+      - COMMON_PREFIX
+
+  click_login:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#login.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_Login
+    no_lint:
+      - COMMON_PREFIX
+
+  click_send_tab:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#send_tab.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_SendTab
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_now:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#sync_now.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_SyncNow
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_settings:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#sync_settings.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_SyncSettings
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_tabs:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#sync_tabs.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_SyncTabs
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_tabs_sidebar:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#sync_tabs_sidebar.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_SyncTabsSidebar
+    no_lint:
+      - COMMON_PREFIX
+
+  click_toolbar_icon:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#toolbar_icon.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_ToolbarIcon
+    no_lint:
+      - COMMON_PREFIX
+
+  click_unver_sync_settings:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#unver_sync_settings.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_UnverSyncSettings
+    no_lint:
+      - COMMON_PREFIX
+
+  click_open_monitor:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#open_monitor.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_OpenMonitor
+    no_lint:
+      - COMMON_PREFIX
+
+  click_open_send:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#open_send.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_OpenSend
+    no_lint:
+      - COMMON_PREFIX
+
+  click_monitor_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#monitor_cta.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_MonitorCta
+    no_lint:
+      - COMMON_PREFIX
+
+  click_relay_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#relay_cta.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_RelayCta
+    no_lint:
+      - COMMON_PREFIX
+
+  click_vpn_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#vpn_cta.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_VpnCta
+    no_lint:
+      - COMMON_PREFIX
+
+  click_sync_cta:
+    type: event
+    description: >
+      This is recorded on interactions with the FxA menu in the app
+      (hamburger) menu
+      This event was generated to correspond to the Legacy Telemetry event
+      fxa_app_menu.click#sync_cta.
+    bugs: *fxa_app_menu_click_bugs
+    data_reviews: *fxa_app_menu_click_data_reviews
+    notification_emails: *fxa_app_menu_click_emails
+    expires: never
+    extra_keys: *fxa_app_menu_click_extra
+    telemetry_mirror: Fxa_app_menu_Click_SyncCta
+    no_lint:
+      - COMMON_PREFIX
+
+deletion.request:
+  sync_device_id:
+    type: string
+    description: >
+      An identifier used by sync ping, to identify the current Firefox
+      profile for a specific Account.
+      This metric was generated to correspond to the Legacy Telemetry
+      scalar deletion.request.sync_device_id.
+    bugs:
+      - https://bugzil.la/1604844
+    data_reviews:
+      - https://bugzil.la/1604844
+    notification_emails:
+      - rfkelly@mozilla.com
+      - sync-team@mozilla.com
+    expires: never
+    send_in_pings: ["deletion-request"]
+    telemetry_mirror: DELETION_REQUEST_SYNC_DEVICE_ID
+
+sync_merge_dialog:
+  clicked:
+    type: event
+    description: >
+      Event to record that showed the user a warning for potentially merging
+      data from multiple accounts and recorded
+    notification_emails:
+      - sync-team@mozilla.com
+    bugs:
+      - https://bugzilla.mozilla.org/1929705/
+    data_reviews:
+      - https://bugzilla.mozilla.org/1929705/
+    expires: never
+    extra_keys:
+      option_clicked:
+        description: >
+          Which option the user actually clicked. Which can be "cancel",
+          "continue", "create-profile" or "switch-profile"
+        type: string
+      variant_shown:
+        description: >
+          Which variant we showed the user. Which can be "sync-warning", "sync-warning-allow-merge",
+          "merge-warning", "merge-warning-allow-merge", "old-merge"
+        type: string
+
+sync:
+  device_count_desktop:
+    type: custom_distribution
+    description: >
+      Number of desktop devices (including this device) associated with this
+      Sync account. Recorded each time Sync successfully completes the 'clients'
+      engine.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram WEAVE_DEVICE_COUNT_DESKTOP.
+    range_min: 0
+    range_max: 10
+    bucket_count: 11
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1232050
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1232050
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    telemetry_mirror: WEAVE_DEVICE_COUNT_DESKTOP
+    no_lint:
+      - COMMON_PREFIX
+
+  device_count_mobile:
+    type: custom_distribution
+    description: >
+      Number of mobile devices associated with this Sync account. Recorded each
+      time Sync successfully completes the 'clients' engine.
+
+      This metric was generated to correspond to the Legacy Telemetry enumerated
+      histogram WEAVE_DEVICE_COUNT_MOBILE.
+    range_min: 0
+    range_max: 10
+    bucket_count: 11
+    histogram_type: linear
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1232050
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1232050
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    telemetry_mirror: WEAVE_DEVICE_COUNT_MOBILE
+    no_lint:
+      - COMMON_PREFIX
+
+  maintenance_fix_bookmarks:
+    type: event
+    description: |
+      If the last sync failed and we ran maintainenance and this sync succeeded,
+      maintenance likely fixed the issue.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+  maintenance_run_bookmarks:
+    type: event
+    description: |
+      Bookmark sync failed, and it's been long enough since our last maintenance,
+      so we're running Places maintenance.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+sync.client:
+  sendcommand:
+    type: event
+    description: |
+      Records that Sync wrote a remote "command" to another client.
+      These are sync-specific commands for that other client to take some
+      action such as resetting Sync on that client or wiping the local sync
+      data.
+      (It is not used for FxA-specific commands like opening/closing tabs.)
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+    extra_keys:
+      flow_id:
+        description: |
+          A GUID which uniquely identifies this command invocation.
+          This GUID is the same for every device the command is sent to.
+        type: string
+      reason:
+        description: |
+          Sent when a remote client needs to take some action because of some
+          event which happened on this device, such as restoring bookmarks,
+          which means remote clients need to wipe local bookmarks before syncing
+          the newly restored set.
+          e.g. "bookmark-restore", "wipe-remote"
+        type: string
+      command:
+        description: |
+          The specific command being written.
+        type: string
+      device_id:
+        description: |
+          A GUID which identifies the device the command is being sent to.
+        type: string
+      server_time: &sync_server_time_extra
+        description: |
+           The most recent unix timestamp sent from the sync server via the
+           `X-Weave-Timestamp` HTTP header.
+           Omitted in cases where the client has not yet made a request of the
+           server and whenever else it's unavailable.
+           Included to improve flow analysis across multiple clients.
+        type: string
+
+  processcommand:
+    type: event
+    description: |
+      When the local client has any remote commands and we're processing them.
+      Almost identical to `sync.client.sendcommand` but is recorded by the
+      receiving device rather than the sending device.
+      See `sync.client.sendcommand` for more details.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+    extra_keys:
+      flow_id:
+        description: |
+          A GUID which uniquely identifies this command invocation.
+          The value for this GUID will be the same as the `flow_id` sent to the
+          client via `sync.client.sendcommand`.
+        type: string
+      command:
+        description: |
+          The specific command being processed.
+        type: string
+      server_time: *sync_server_time_extra
+
+syncs:
+  discarded:
+    type: quantity
+    unit: discarded syncs
+    description: |
+      How many syncs happened which were not reported in detail
+      due to being over the number of syncs we report detailed information for.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+  hashed_fxa_uid:
+    type: string
+    description: |
+      Hashed FxA unique ID, or string of 32 zeroes.
+      If this changes between syncs, the "sync" ping is submitted with reason "idchanged".
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+  hashed_device_id:
+    type: string
+    description: |
+      Hashed FxA device ID, hex string of 64 characters.
+      Not included if the user is not logged in.
+      If this changes between syncs, the "sync" ping is submitted with reason "idchanged".
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+  session_start_date:
+    type: datetime
+    time_unit: hour
+    description: |
+      When the sync telemetry session begins (the `SyncTelemetryImpl`
+      constructor runs).
+      Typically useful for ordering "sync" pings.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+  sync_node_type:
+    type: string
+    description: |
+      The "node type" as reported by the token server.
+      This will not change from sync to sync.
+      May not be present if the token server omits this information.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+
+  syncs:
+    type: object
+    description: |
+      Recorded syncs.
+      The "sync" ping is not submitted if this is empty.
+      ```text
+        [{
+          when: integer ms since epoch,
+          took: integer ms duration,
+          didLogin: true if first sync after login,
+          why:
+            - "startup" if first sync after browser startup
+            - "schedule" if it's been too long since the last sync
+            - "score" if one of sync's trackers has a high score value indicating many changes since the last sync
+            - "user" if the user manually triggered the sync
+            - "tabs" if the user opened the synced tabs sidebar, triggering a sync
+          failureReason: { // if there was an error
+            name: {"httperror"|"networkerror"|...},
+            code: error code for "httperror" and "networkerror" only,
+            error: error string for "othererror" and "unexpectederror" only,
+            from: for "autherror" only,
+          },
+          devices: [{ // excluded if we couldn't get a valid uid or local device id
+            os: provided by `Services.appinfo.OS`,
+            version: provided by `Services.appinfo.version`,
+            id: hashed FxA device id,
+            device_type: e.g. "mobile", "tv", etc.,
+            syncID: hashed sync device id for device, if user is a sync user,
+                    (May be different from the FxA device ID)
+          }, ...],
+          status: {
+            sync: value of the Status.sync property, unless we succeeded,
+            service: value of Status.service, unless we succeeded,
+          },
+          engines: [{
+            name: Engine name: "bookmarks", "tabs", etc.,
+            took: milliseconds (optional),
+            status: value of Status.engines, if not success,
+            incoming: {
+              applied: number of records applied,
+              succeeded: number of records that applied without error,
+              failed: number of records that failed to apply,
+              failedReasons: [{
+                name: Error message when trying to apply the record,
+                count: How many times this particular error happened,
+              }, ...],
+            },
+            outgoing: [{
+              sent: Number of outgoing records sent,
+              failed: Number that failed to send,
+              failedReasons: [{
+                name: Error message while trying to send the record,
+                count: How many times this particular error happened,
+              }],
+            }, ...],
+            failureReason: { // if there was an error for this specific engine
+              name: {"httperror"|"networkerror"|...},
+              code: error code for "httperror" and "networkerror" only,
+              error: error string for "othererror" and "unexpectederror" only,
+              from: for "autherror" only,
+            },
+            steps: [{ // Timings and counts for detailed steps that the bookmarks engine took
+              name: Step name (e.g. "clients", "tabs", "bookmarks-buffered" see `ProgressTracker.STEPS`),
+              took: milliseconds the step took to execute,
+              counts: [{
+                name: Counter name (e.g. "items", "fetchLocalTree"),
+                count: Counter value,
+              }, ...],
+            }, ...],
+            validation: { // If the engine ran validation on itself.
+              version: integer version,
+              checked: how many records were checked,
+              took: non-monotonic integer duration in millis,
+              problems: [{
+                name: the problem (e.g. "parentChildDisagreements", "missingChildren"),
+                count: the records with this problem,
+              }, ...]
+              failureReason: { // if there was an error running validation
+                name: error name (e.g. "nserror", "unexpectederror"),
+                code: error code for "httperror" and "networkerror" only,
+                error: error string for "othererror" and "unexpectederror" only,
+                from: for "autherror" only,
+              },
+            },
+          }, ...]
+        }, ...]
+      ```
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          when:
+            type: number
+          took:
+            type: number
+          didLogin:
+            type: boolean
+          why:
+            type: string
+          failureReason: &sync_failure_reason
+            type: object
+            properties:
+              name:
+                type: string
+              code:
+                type: number
+              error:
+                type: string
+              from:
+                type: string
+          devices:
+            type: array
+            items:
+              type: object
+              properties:
+                os:
+                  type: string
+                version:
+                  type: string
+                id:
+                  type: string
+                device_type:
+                  type: string
+                syncID:
+                  type: string
+          status:
+            type: object
+            properties:
+              sync:
+                type: string
+              service:
+                type: string
+          engines:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                took:
+                  type: number
+                status:
+                  type: string
+                incoming:
+                  type: object
+                  properties:
+                    applied:
+                      type: number
+                    succeeded:
+                      type: number
+                    failed:
+                      type: number
+                    failedReasons: &sync_named_counts
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          count:
+                            type: number
+                outgoing:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      sent:
+                        type: number
+                      failed:
+                        type: number
+                      failedReasons: *sync_named_counts
+                failureReason: *sync_failure_reason
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      took:
+                        type: number
+                      counts: *sync_named_counts
+                validation:
+                  type: object
+                  properties:
+                    checked:
+                      type: number
+                    failureReason: *sync_failure_reason
+                    took:
+                      type: number
+                    version:
+                      type: number
+                    problems: *sync_named_counts
+
+  migrations:
+    type: object
+    description: |
+      The application-services developers are in the process of oxidizing parts
+      of firefox sync and the related data storage code,
+      which typically requires migrating the old storage into a new database and/or format.
+
+      When a migration like this occurs,
+      a record is reported in this list the next time the sync ping is submitted.
+
+      ```text
+        [{
+          migration_type: Presently this is only ever "webext-storage",
+          entries: The number of entries/preferences in the source (legacy) database, including ones we failed to read,
+          entriesSuccessful: he number of entries/preferences (see below) which we have successfully migrated into the destination database,
+          extensions: The number of distinct extensions which have at least one preference in the source (legacy) database,
+          extensionsSuccessful: The number of distinct extensions which have at least one preference in the destination (migrated) database,
+          openFailure: A boolean flag that is true if we hit a read error prior to . This likely indicates complete corruption, or a bug in an underlying library like rusqlite,
+        }]
+      ```
+
+      **Note: "entries" vs "extensions"**
+      The `webext-storage` migration record detailed above contains counts for both:
+          * The number of “entries” detected vs successfully migrated.
+          * The number of “extensions” detected vs successfully migrated.
+
+      This may seem redundant, but these refer to different (but related) things.
+      The distinction here has to do with the way the two databases store extension-storage data:
+          * The legacy database stores one row for each
+            (`extension_id`, `preference_name`, `preference_value`) triple.
+            These are referred to as `entries`.
+          * Conversely, the new database stores one row per extension,
+            which is a pair containing both the `extension_id`,
+            as well as a dictionary holding all preference data,
+            and so are equivalent to extensions.
+
+      (The description above is a somewhat simplified view of things,
+      as it ignores a number values each database stores which is irrelevant for migration)
+
+      That is, entries represent each individual preference setting,
+      and extensions represent the collected set of preferences for a given extension.
+
+      Counts for are both of these are present as it’s likely that the disparity
+      would point to different kinds of issues with the migration code.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1963812
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    send_in_pings:
+      - sync
+    structure:
+      type: array
+      items:
+        type: object
+        properties:
+          migration_type:
+            type: string
+          entries:
+            type: number
+          entriesSuccessful:
+            type: number
+          extensions:
+            type: number
+          extensionsSuccessful:
+            type: number
+          openFailure:
+            type: boolean

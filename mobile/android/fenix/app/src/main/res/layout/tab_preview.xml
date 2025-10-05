@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <mozilla.components.browser.tabstray.thumbnail.TabThumbnailView
+        android:id="@+id/previewThumbnail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?layer2" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/composableTopToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:elevation="5dp"
+        android:foregroundGravity="top"
+        android:visibility="gone" />
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/composableBottomToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:elevation="5dp"
+        android:foregroundGravity="bottom"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/fakeToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/browser_toolbar_height"
+        android:layout_gravity="bottom"
+        android:background="?bottomBarBackground"
+        android:elevation="5dp"
+        android:foregroundGravity="bottom"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        >
+
+        <View
+            android:id="@+id/toolbar_wrapper"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/search_url_background" />
+
+        <mozilla.components.ui.tabcounter.TabCounterView
+            android:id="@+id/tab_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:layout_marginEnd="6dp"
+            />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/menuButton"
+            android:layout_width="36dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="4dp"
+            android:layout_marginEnd="6dp"
+            app:srcCompat="@drawable/mozac_ic_ellipsis_vertical_24"
+            app:tint="?attr/textPrimary"
+            />
+    </LinearLayout>
+</merge>

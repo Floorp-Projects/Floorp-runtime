@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <!-- This page will accept some url as the uri query and navigate to it by clicking a link -->
+  <head>
+    <title>Navigation tests</title>
+    <script type="text/javascript">
+      /* exported navigate */
+      function navigate() {
+        let url = decodeURIComponent(document.location.search.substring(1));
+        let link = document.getElementById("link");
+        link.href = url;
+        SpecialPowers.wrap(document).notifyUserGestureActivation();
+        link.click();
+      }
+
+      window.onload = function () {
+        navigate();
+      };
+    </script>
+  </head>
+  <body>
+    <p><a id="link">Test Link</a></p>
+  </body>
+</html>

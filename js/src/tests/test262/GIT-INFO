@@ -1,0 +1,5 @@
+commit 823f4cfd2004cf410bc0344304e22e12d243e955
+Author: Ms2ger <Ms2ger@igalia.com>
+Date:   Mon Jun 9 15:35:15 2025 +0200
+
+    Fix some esids that should have been lower case

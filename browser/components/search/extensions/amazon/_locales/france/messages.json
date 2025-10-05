@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Amazon.fr"
+  },
+  "extensionDescription": {
+    "message": "Recherche Amazon.fr"
+  },
+  "searchUrl": {
+    "message": "https://www.amazon.fr/s"
+  },
+  "searchUrlGetParams": {
+    "message": "k={searchTerms}"
+  }
+}

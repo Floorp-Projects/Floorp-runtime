@@ -1,0 +1,4 @@
+[DEFAULT]
+support-files = ["../head-common.js"]
+
+["test_migration_wizard.html"]

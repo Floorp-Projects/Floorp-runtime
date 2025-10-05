@@ -1,0 +1,7 @@
+[[repos]]
+name = 'spec'
+commit = 'c022fb15'
+
+[[repos]]
+name = 'threads'
+commit = '3635ca51'

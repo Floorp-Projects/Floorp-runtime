@@ -1,0 +1,86 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Windows Build
+
+'on':
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug build'
+        type: boolean
+        required: true
+      pgo:
+        description: 'Enable Profile-Guided Optimization'
+        type: boolean
+        default: false
+        required: true
+
+  workflow_call:
+    inputs:
+      debug:
+        description: 'Enable debug build'
+        type: boolean
+        required: true
+      pgo:
+        description: 'Enable Profile-Guided Optimization'
+        type: boolean
+        default: false
+        required: true
+
+run-name: >-
+  ${{ inputs.pgo && '[PGO] ' || '' }}Windows x64
+  ${{ inputs.debug && ' Debug' || '' }}
+
+jobs:
+  build-normal:
+    name: Windows x64${{ inputs.debug && ' Debug' || '' }}
+    if: ${{ !inputs.pgo }}
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: windows
+      arch: x86_64
+      debug: ${{ inputs.debug }}
+      pgo: false
+
+  build-pgo-stage1:
+    name: >-
+      Windows x64 PGO Stage 1${{ inputs.debug && ' Debug' || '' }}
+    if: ${{ inputs.pgo }}
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: windows
+      arch: x86_64
+      debug: ${{ inputs.debug }}
+      pgo: true
+      pgo_mode: 'generate'
+
+  collect-profiles:
+    name: Windows x64 PGO Stage 2
+    if: ${{ inputs.pgo }}
+    needs: build-pgo-stage1
+    uses: ./.github/workflows/generate-pgo-profile-windows.yml
+    secrets: inherit
+    with:
+      browser-artifact-name: >-
+        floorp-windows-x86_64-profile-generate-mode-package
+      artifact-path: C:\artifact
+      runner: windows-latest
+      target-arch: x86_64
+      upload-artifact-name: >-
+        floorp-windows-x86_64-profile-generate-output
+
+  build-pgo-final:
+    name: >-
+      Windows x64 PGO Stage 3${{ inputs.debug && ' Debug' || '' }}
+    if: ${{ inputs.pgo }}
+    needs: collect-profiles
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: windows
+      arch: x86_64
+      debug: ${{ inputs.debug }}
+      pgo: true
+      pgo_mode: 'use'
+      pgo_artifact_name: >-
+        floorp-windows-x86_64-profile-generate-output

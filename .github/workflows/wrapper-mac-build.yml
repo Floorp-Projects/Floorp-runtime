@@ -1,0 +1,136 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+name: "(A) ⚒ Mac build"
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug:
+        type: boolean
+        required: true
+      pgo:
+        type: boolean
+        required: true
+
+  workflow_call:
+    inputs:
+      debug:
+        type: boolean
+        required: true
+      pgo:
+        type: boolean
+        required: true
+
+run-name: ${{toJSON(inputs.pgo) == 'true' && '[PGO] ' || ''}}Mac x64 build${{toJSON(inputs.debug) == 'true' && ' Debug' || ''}}
+jobs:
+  get-buildid:
+    runs-on: ubuntu-latest
+    outputs:
+      buildids: ${{ steps.get.outputs.bid }}
+    steps:
+      - id: get
+        shell: bash -xe {0}
+        run: |
+          bdat=`date +"%Y%m%d%I%M%S"`
+          echo "bid=${bdat}" >> $GITHUB_OUTPUT
+
+  download-macos-sdk:
+    runs-on: macos-15
+    steps:
+      - name: Get macOS SDK path
+        id: get-sdk
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app
+
+          SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
+          echo "SDK_PATH=$SDK_PATH" >> $GITHUB_ENV
+          echo "sdk_path=$SDK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Tar and upload macOS SDK as artifact
+        run: |
+          tar -czf macos_sdk.tar.gz -C "${{ env.SDK_PATH }}" .
+
+      - name: Upload macOS SDK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-sdk
+          path: macos_sdk.tar.gz
+          retention-days: 1
+          overwrite: true
+
+  part1-x86_64:
+    needs: [get-buildid, download-macos-sdk]
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: mac
+      arch: x86_64
+      debug: ${{ inputs.debug }}
+      pgo: ${{ inputs.pgo }}
+      pgo_mode: ${{ inputs.pgo && 'generate' || '' }}
+      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+
+  part1-aarch64:
+    needs: [get-buildid, download-macos-sdk]
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: mac
+      arch: aarch64
+      debug: ${{ inputs.debug }}
+      pgo: ${{ inputs.pgo }}
+      pgo_mode: ${{ inputs.pgo && 'generate' || '' }}
+      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+
+  part2:
+    needs: [get-buildid, part1-x86_64, part1-aarch64]
+    if: ${{ inputs.pgo }}
+    uses: ./.github/workflows/mac_pgo.yml
+
+  part3-x86_64:
+    needs: [get-buildid, part2]
+    if: ${{ inputs.pgo }}
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: mac
+      arch: x86_64
+      debug: ${{ inputs.debug }}
+      pgo: ${{ inputs.pgo }}
+      pgo_mode: use
+      pgo_artifact_name: floorp-x86_64-apple-darwin-profdata-and-jarlog
+      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+
+  part3-aarch64:
+    needs: [get-buildid, part2]
+    if: ${{ inputs.pgo }}
+    uses: ./.github/workflows/common-build.yml
+    with:
+      platform: mac
+      arch: aarch64
+      debug: ${{ inputs.debug }}
+      pgo: ${{ inputs.pgo }}
+      pgo_mode: use
+      pgo_artifact_name: floorp-aarch64-apple-darwin-profdata-and-jarlog
+      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+
+  part2_no_pgo:
+    name: "Integration (No PGO)"
+    needs: [get-buildid, part1-x86_64, part1-aarch64]
+    if: ${{ !inputs.pgo }}
+    uses: ./.github/workflows/mac_integration.yml
+    secrets: inherit
+    with:
+      x86_64_artifact_name: floorp-mac-x86_64-moz-artifact
+      aarch64_artifact_name: floorp-mac-aarch64-moz-artifact
+      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+
+  part4_pgo:
+    name: "Integration (With PGO)"
+    needs: [get-buildid, part3-x86_64, part3-aarch64]
+    if: ${{ inputs.pgo }}
+    uses: ./.github/workflows/mac_integration.yml
+    secrets: inherit
+    with:
+      x86_64_artifact_name: floorp-mac-x86_64-moz-artifact
+      aarch64_artifact_name: floorp-mac-aarch64-moz-artifact
+      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}

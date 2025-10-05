@@ -1,0 +1,135 @@
+.personalized-card-wrapper {
+  background-color: var(--background-color-canvas);
+  border: 2px solid var(--border-color-card);
+  color: var(--text-color);
+  padding: var(--space-xlarge);
+  border-radius: var(--border-radius-large);
+  margin: var(--space-xlarge) 0;
+  position: relative;
+
+  .personalized-card-dismiss {
+    position: absolute;
+    inset-inline-end: var(--space-medium);
+    inset-block-start: var(--space-medium);
+  }
+
+  .personalized-card-inner {
+    display: grid;
+    grid-template-columns: 0.5fr 1fr 1fr 1fr;
+    align-items: start;
+
+    .personalized-card-cta-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-medium);
+    }
+
+    img {
+      max-width: 200px;
+      max-height: 200px;
+      object-fit: contain;
+      justify-self: center;
+      align-self: start;
+    }
+
+    h2, p {
+      margin-block-start: 0;
+    }
+
+    h2 {
+      font-size: var(--font-size-xxlarge);
+      font-weight: var(--font-weight-bold);
+    }
+
+    .personalized-card-link {
+      color: var(--link-color);
+      font-size: var(--font-size-small);
+    }
+
+    // 1-column layout
+    @media (max-width: $break-point-layout-variant) {
+      grid-template-columns: 1fr;
+      gap: var(--space-small);
+
+      img {
+        justify-self: initial;
+      }
+
+      h2 {
+        margin-block-end: var(--space-xsmall);
+      }
+    }
+
+    // 2-column layout
+    @media (min-width: $break-point-layout-variant){
+      grid-template-columns: 0.2fr 1fr 1.2fr;
+      gap: var(--space-large);
+
+      img {
+        width: 75px;
+      }
+
+      .personalized-card-cta-wrapper {
+        align-items: center;
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-row: 2;
+        grid-column: 2 / span 2;
+      }
+    }
+
+    // 3 and 4-column layout
+    @media (min-width: $break-point-widest) {
+      grid-template-columns: 0.2fr 1fr 1fr 1fr;
+      gap: var(--space-small);
+
+      img {
+        width: 75px;
+      }
+
+      h2 {
+        grid-column:  2;
+        grid-row: 1;
+        width: initial;
+      }
+
+      p {
+        grid-column:  3;
+        grid-row: 1;
+        width: 400px;
+      }
+
+      .personalized-card-cta-wrapper {
+        grid-column: 4;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        justify-self: end;
+        gap: var(--space-medium);
+        width: max-content;
+        margin-inline-end: var(--space-medium);
+      }
+
+      .personalized-card-cta {
+        align-self: baseline;
+      }
+    }
+
+    // rules for 3-col
+    @media (min-width: $break-point-widest) and (max-width: $break-point-sections-variant) {
+      gap: var(--space-small);
+
+      h2 {
+        max-width: 200px;
+      }
+
+      p {
+        width: 300px;
+      }
+    }
+  }
+
+  @media (min-width: $break-point-layout-variant) {
+    padding: var(--space-xxlarge);
+  }
+}

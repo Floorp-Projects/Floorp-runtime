@@ -1,0 +1,4 @@
+[DEFAULT]
+support-files = ["file_invalidEmailCase.sjs"]
+
+["test_invalidEmailCase.html"]

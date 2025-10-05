@@ -1,0 +1,27 @@
+schema: 1
+
+bugzilla:
+  product: "Firefox Build System"
+  component: "General"
+
+origin:
+  name: speedometer3-benchmark
+  description: An open source repository for the Speedometer benchmark, v3
+
+  url: https://github.com/WebKit/Speedometer
+
+  release: 1386415be8fef2f6b6bbdbe1828872471c5d802a (2025-03-11T16:16:00Z).
+  revision: 1386415be8fef2f6b6bbdbe1828872471c5d802a
+
+  license: BSD-2-Clause
+
+vendoring:
+  url: https://github.com/WebKit/Speedometer
+  source-hosting: github
+  tracking: commit
+
+  exclude:
+    - '.*'
+
+  keep:
+    - LICENSE

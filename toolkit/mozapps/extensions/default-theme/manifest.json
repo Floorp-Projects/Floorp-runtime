@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "default-theme@mozilla.org"
+    }
+  },
+
+  "name": "System theme — auto",
+  "description": "Follow the operating system setting for buttons, menus, and windows.",
+  "author": "Mozilla",
+  "version": "1.4.2",
+
+  "icons": { "32": "icon.svg" },
+
+  "theme": {}
+}

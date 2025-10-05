@@ -1,0 +1,43 @@
+[DEFAULT]
+subsuite = "a11y"
+skip-if = [
+  "os != 'win'",
+  "headless",
+  "artifact",
+]
+support-files = [
+  "head.js",
+  "!/accessible/tests/mochitest/moz.png",
+]
+prefs = [
+  # The browser test harness clears the clipboard after each test. Copying to
+  # the clipboard activates Windows accessibility suppression by default.
+  # Disable this so that accessibility isn't suppressed for our tests.
+  "accessibility.windows.suppress-after-clipboard-copy=0",
+  # Required for the eval in invokeContentTask in shared-head.js
+  "security.allow_eval_with_system_principal=true",
+]
+
+["browser_controlType.js"]
+
+["browser_elementFromPoint.js"]
+
+["browser_focus.js"]
+
+["browser_generalEvents.js"]
+
+["browser_generalProps.js"]
+
+["browser_gridPatterns.js"]
+
+["browser_liveRegions.js"]
+
+["browser_relationProps.js"]
+
+["browser_selectionPatterns.js"]
+
+["browser_simplePatterns.js"]
+
+["browser_textPatterns.js"]
+
+["browser_tree.js"]

@@ -1,0 +1,29 @@
+schema: 1
+
+bugzilla:
+  product: Core
+  component: "Graphics: WebGPU"
+
+origin:
+  name: wgpu
+  description: A cross-platform pure-Rust graphics API, modeled on the WebGPU standard
+  url: https://github.com/gfx-rs/wgpu
+  release: 54be6a2b5b780e356976ef7e30d00244f2bad651 (2025-08-13T15:27:51Z).
+  revision: 54be6a2b5b780e356976ef7e30d00244f2bad651
+  license: ['MIT', 'Apache-2.0']
+
+updatebot:
+    maintainer-phab: "#webgpu-reviewers"
+    maintainer-bz: jimb@mozilla.com
+    try-preset: webgpu
+    tasks:
+      - type: vendoring
+        enabled: false
+        frequency: 1 week
+        blocking: 1851881  # webgpu-update-wgpu
+
+vendoring:
+  url: https://github.com/gfx-rs/wgpu
+  source-hosting: github
+  vendor-directory: gfx/wgpu_bindings/
+  flavor: rust

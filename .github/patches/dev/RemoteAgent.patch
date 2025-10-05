@@ -1,0 +1,13 @@
+diff --git a/remote/components/RemoteAgent.sys.mjs b/remote/components/RemoteAgent.sys.mjs
+index 1b2ad4649b..43d7dd3154 100644
+--- a/remote/components/RemoteAgent.sys.mjs
++++ b/remote/components/RemoteAgent.sys.mjs
+@@ -395,7 +395,7 @@ class RemoteAgentParentProcess {
+           Services.obs.addObserver(this, "quit-application");
+ 
+           // Apply the common set of preferences for all supported protocols
+-          lazy.RecommendedPreferences.applyPreferences();
++          //lazy.RecommendedPreferences.applyPreferences();
+ 
+           // With Bug 1717899 we will extend the lifetime of the Remote Agent to
+           // the whole Firefox session, which will be identical to Marionette. For

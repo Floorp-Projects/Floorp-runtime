@@ -1,0 +1,6 @@
+[DEFAULT]
+head =  ""
+support-files = ["chromeWorker_messageChannel.js"]
+run-if = ["os != 'android'"]
+
+["test_messageChannel.js"]

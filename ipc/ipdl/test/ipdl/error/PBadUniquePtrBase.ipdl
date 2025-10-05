@@ -1,0 +1,8 @@
+//error: argument typename `UndeclaredType' of message `Test' has not been declared
+
+[ChildProc=any]
+protocol PBadUniquePtrBase {
+child:
+  async Test(UniquePtr<UndeclaredType> x);
+  async __delete__();
+};

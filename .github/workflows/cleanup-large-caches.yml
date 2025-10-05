@@ -1,0 +1,146 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Cleanup Large Caches
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      size_threshold_mb:
+        description: 'Size threshold in MB (default: 1)'
+        required: false
+        default: '1'
+        type: string
+      dry_run:
+        description: 'Dry run mode (list caches without deleting)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup-caches:
+    name: Cleanup Caches Larger Than Threshold
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Create cache cleanup script
+        run: |
+          cat > cleanup_caches.js << 'EOF'
+          const { Octokit } = require('@octokit/rest');
+          
+          async function cleanupLargeCaches() {
+            const octokit = new Octokit({
+              auth: process.env.GITHUB_TOKEN,
+            });
+            
+            const [owner, repo] = process.env.REPOSITORY.split('/');
+            const sizeThresholdMB = parseFloat(process.env.SIZE_THRESHOLD_MB || '1');
+            const sizeThresholdBytes = sizeThresholdMB * 1024 * 1024;
+            const dryRun = process.env.DRY_RUN === 'true';
+            
+            console.log('🧹 Starting cache cleanup process');
+            console.log(`Repository: ${process.env.REPOSITORY}`);
+            console.log(`Size threshold: ${sizeThresholdMB} MB (${sizeThresholdBytes} bytes)`);
+            console.log(`Dry run mode: ${dryRun}`);
+            console.log('');
+            
+            try {
+              // Get all caches with pagination
+              console.log('📋 Fetching all caches...');
+              const caches = await octokit.paginate(octokit.rest.actions.getActionsCacheList, {
+                owner,
+                repo,
+                per_page: 100,
+              });
+              
+              console.log(`Found ${caches.length} total caches`);
+              console.log('');
+              
+              // Filter caches larger than threshold
+              console.log('🔍 Analyzing cache sizes...');
+              const largeCaches = caches.filter(cache => cache.size_in_bytes > sizeThresholdBytes);
+              
+              if (largeCaches.length === 0) {
+                console.log(`✅ No caches found larger than ${sizeThresholdMB} MB`);
+                return;
+              }
+              
+              console.log(`Found ${largeCaches.length} caches larger than ${sizeThresholdMB} MB:`);
+              console.log('');
+              
+              // Display caches to be deleted
+              largeCaches.forEach(cache => {
+                const sizeMB = (cache.size_in_bytes / 1024 / 1024).toFixed(2);
+                console.log(`ID: ${cache.id}, Key: ${cache.key}, Size: ${sizeMB} MB, Created: ${cache.created_at}`);
+              });
+              console.log('');
+              
+              if (dryRun) {
+                const totalSizeMB = largeCaches.reduce((sum, cache) => sum + cache.size_in_bytes, 0) / 1024 / 1024;
+                console.log('🧪 Dry run mode - no caches will be deleted');
+                console.log(`Would delete ${largeCaches.length} caches totaling ${totalSizeMB.toFixed(2)} MB`);
+                return;
+              }
+              
+              // Delete large caches
+              console.log(`🗑️  Deleting ${largeCaches.length} large caches...`);
+              let deletedCount = 0;
+              let failedCount = 0;
+              
+              for (const cache of largeCaches) {
+                try {
+                  console.log(`Deleting cache ID: ${cache.id}`);
+                  await octokit.rest.actions.deleteActionsCacheById({
+                    owner,
+                    repo,
+                    cache_id: cache.id,
+                  });
+                  console.log(`✅ Successfully deleted cache ${cache.id}`);
+                  deletedCount++;
+                } catch (error) {
+                  console.log(`❌ Failed to delete cache ${cache.id}: ${error.message}`);
+                  failedCount++;
+                }
+              }
+              
+              console.log('');
+              console.log('🎉 Cache cleanup completed!');
+              console.log(`Successfully deleted: ${deletedCount} caches`);
+              if (failedCount > 0) {
+                console.log(`Failed to delete: ${failedCount} caches`);
+              }
+              
+            } catch (error) {
+              console.error('❌ Error during cache cleanup:', error.message);
+              process.exit(1);
+            }
+          }
+          
+          cleanupLargeCaches();
+          EOF
+          
+      - name: Install dependencies
+        run: npm install @octokit/rest
+        
+      - name: Run cache cleanup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          SIZE_THRESHOLD_MB: ${{ inputs.size_threshold_mb || '1' }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: node cleanup_caches.js

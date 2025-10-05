@@ -1,0 +1,11 @@
+[DEFAULT]
+
+["test_Fetch.js"]
+
+["test_PromiseDebugging.js"]
+
+["test_bug319968.js"]
+
+["test_bug465752.js"]
+
+["test_xhr_init.js"]

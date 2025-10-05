@@ -1,0 +1,59 @@
+# -*- Mode: python; python-indent: 4; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+EXPORTS.mozilla += [
+    "SandboxLaunch.h",
+]
+
+UNIFIED_SOURCES += [
+    "LinuxCapabilities.cpp",
+    "SandboxLaunch.cpp",
+]
+
+SOURCES += [
+    "../../chromium-shim/base/logging.cpp",
+    "../../chromium/base/check.cc",
+    "../../chromium/base/check_op.cc",
+    "../../chromium/base/debug/alias.cc",
+    "../../chromium/base/debug/crash_logging.cc",
+    "../../chromium/base/location.cc",
+    "../../chromium/base/strings/string_number_conversions.cc",
+    "../../chromium/base/strings/string_util_constants.cc",
+    "../../chromium/base/strings/stringprintf.cc",
+    "../../chromium/base/trace_event/trace_event_stub.cc",
+    "../../chromium/sandbox/linux/services/syscall_wrappers.cc",
+]
+
+if CONFIG["CC_TYPE"] in ("clang", "gcc"):
+    SOURCES["../../chromium/sandbox/linux/services/syscall_wrappers.cc"].flags += [
+        "-Wno-empty-body",
+    ]
+
+# The include of chromium-config.mozbuild will add include path of the other
+# chromium headers living within ipc/chromium where base/compiler_specific.h
+# exists but is not the right version used in syscall_wrappers.cc
+LOCAL_INCLUDES += [
+    # Need this for safe_sprintf.h used by SandboxLogging.h,
+    # but it has to be after ipc/chromium/src.
+    "/security/sandbox/chromium",
+    "/security/sandbox/chromium-shim",
+    "/security/sandbox/chromium-shim/base/allocator/partition_allocator/src",
+    "/security/sandbox/chromium/base/allocator/partition_allocator/src",
+    "/security/sandbox/linux",
+    "/third_party/abseil-cpp",
+]
+
+include("/ipc/chromium/chromium-config.mozbuild")
+
+USE_LIBS += [
+    "mozsandbox",
+]
+
+# For the X11 socket domain inspection in SandboxLaunch:
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
+    CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
+
+FINAL_LIBRARY = "xul"

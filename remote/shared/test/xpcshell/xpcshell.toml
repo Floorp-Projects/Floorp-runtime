@@ -1,0 +1,29 @@
+[DEFAULT]
+head = "head.js"
+
+["test_AppInfo.js"]
+
+["test_AsyncQueue.js"]
+
+["test_ChallengeHeaderParser.js"]
+
+["test_DOM.js"]
+
+["test_Format.js"]
+
+["test_Navigate.js"]
+
+["test_NetworkDecodedBodySizeMap.js"]
+
+["test_Realm.js"]
+
+["test_RecommendedPreferences.js"]
+
+["test_Stack.js"]
+
+["test_Sync.js"]
+skip-if = [
+  "os == 'linux' && os_version == '24.04' && processor == 'x86_64' && display == 'x11' && opt", # Bug 1970358
+]
+
+["test_UUID.js"]

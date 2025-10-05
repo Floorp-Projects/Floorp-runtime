@@ -1,0 +1,6 @@
+[ChildProc=any]
+sync protocol Pmedia {
+child:
+    async __delete__();
+
+};

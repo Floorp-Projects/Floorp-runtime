@@ -1,0 +1,13 @@
+diff --git a/moz.build b/moz.build
+index 559182bb0a..584db92065 100644
+--- a/moz.build
++++ b/moz.build
+@@ -226,3 +226,7 @@ SPHINX_TREES["content-security"] = "docs/content-security"
+ SPHINX_TREES["jsloader"] = "docs/jsloader"
+ 
+ include("build/templates.mozbuild")
++
++DIRS += [
++    "floorp/gecko/pre-build",
++]
+\ No newline at end of file

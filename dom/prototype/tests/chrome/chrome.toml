@@ -1,0 +1,9 @@
+[DEFAULT]
+support-files = [
+  "csp.xhtml",
+  "whitespace.xhtml",
+  "no_whitespace.xhtml",
+  "form.xhtml",
+]
+
+["test_prototype_document.xhtml"]
