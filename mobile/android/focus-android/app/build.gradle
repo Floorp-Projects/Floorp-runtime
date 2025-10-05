@@ -182,6 +182,12 @@ android {
         klarNightly.root = 'src/klarNightly'
     }
 
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     namespace = 'org.mozilla.focus'
 }
 
