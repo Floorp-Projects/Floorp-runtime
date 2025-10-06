@@ -138,16 +138,30 @@ jobs:
           else
             APP_FILE="${APP_NAME}.app"
           fi
-          
+
           echo "Looking for app: $APP_FILE"
 
-          hdiutil attach ./obj-x86_64-apple-darwin/dist/floorp*.mac.dmg
-          cp -r "/Volumes/${APP_NAME}/${APP_FILE}" ./obj-x86_64-apple-darwin/dist/floorp/
-          hdiutil detach "/Volumes/${APP_NAME}/"
+          # Mount x86_64 DMG
+          x86_64_dmg=$(ls ./obj-x86_64-apple-darwin/dist/floorp*.mac.dmg | head -n 1)
+          hdiutil attach "$x86_64_dmg"
 
-          hdiutil attach ./obj-aarch64-apple-darwin/dist/floorp*.mac.dmg
-          cp -r "/Volumes/${APP_NAME}/${APP_FILE}" ./obj-aarch64-apple-darwin/dist/floorp/
-          hdiutil detach "/Volumes/${APP_NAME}/"
+          # Find the actual volume name (it may vary)
+          VOLUME_NAME=$(ls /Volumes/ | grep -i floorp | head -n 1)
+          echo "Found volume: $VOLUME_NAME"
+
+          cp -r "/Volumes/${VOLUME_NAME}/${APP_FILE}" ./obj-x86_64-apple-darwin/dist/floorp/
+          hdiutil detach "/Volumes/${VOLUME_NAME}/"
+
+          # Mount aarch64 DMG
+          aarch64_dmg=$(ls ./obj-aarch64-apple-darwin/dist/floorp*.mac.dmg | head -n 1)
+          hdiutil attach "$aarch64_dmg"
+
+          # Find the actual volume name (it may vary)
+          VOLUME_NAME=$(ls /Volumes/ | grep -i floorp | head -n 1)
+          echo "Found volume: $VOLUME_NAME"
+
+          cp -r "/Volumes/${VOLUME_NAME}/${APP_FILE}" ./obj-aarch64-apple-darwin/dist/floorp/
+          hdiutil detach "/Volumes/${VOLUME_NAME}/"
         env:
           GHA_DEBUG: ${{ inputs.debug }}
 
@@ -178,7 +192,10 @@ jobs:
           ./mach python -m mozbuild.action.make_dmg ./obj-x86_64-apple-darwin/dist/floorp floorp-macOS-universal-moz-artifact.dmg
 
           cp ./obj-x86_64-apple-darwin/dist/floorp*update_framework_artifacts.zip ./floorp-macOS.update_framework_artifacts.zip
-          cp ./obj-x86_64-apple-darwin/dist/floorp/*.app/Contents/Resources/application.ini ./nora-application.ini
+
+          # Find the correct .app directory (handles both Floorp.app and FloorpDebug.app)
+          APP_DIR=$(find ./obj-x86_64-apple-darwin/dist/floorp -maxdepth 1 -name "*.app" -type d | head -n 1)
+          cp "${APP_DIR}/Contents/Resources/application.ini" ./nora-application.ini
 
       # Publish Start
       - name: Remove old uploaded artifacts

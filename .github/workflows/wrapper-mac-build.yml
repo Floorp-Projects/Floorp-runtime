@@ -123,6 +123,7 @@ jobs:
       x86_64_artifact_name: floorp-mac-x86_64-moz-artifact
       aarch64_artifact_name: floorp-mac-aarch64-moz-artifact
       MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      debug: ${{ inputs.debug }}
 
   part4_pgo:
     name: "Integration (With PGO)"
@@ -134,3 +135,4 @@ jobs:
       x86_64_artifact_name: floorp-mac-x86_64-moz-artifact
       aarch64_artifact_name: floorp-mac-aarch64-moz-artifact
       MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      debug: ${{ inputs.debug }}
