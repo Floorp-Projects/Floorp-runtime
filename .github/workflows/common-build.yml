@@ -94,7 +94,6 @@ jobs:
           fi
 
       - name: Setup sccache
-        if: inputs.platform != 'mac'
         uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Setup Rust toolchain
@@ -128,8 +127,8 @@ jobs:
             "${{ inputs.pgo_artifact_name }}" \
             "${{ inputs.MOZ_BUILD_DATE }}"
         env:
-          SCCACHE_GHA_ENABLED: ${{ inputs.platform != 'mac' && 'on' || '' }}
-          SCCACHE_MAX_FRAME_LENGTH: ${{ inputs.platform != 'mac' && '1048576' || '' }}
+            SCCACHE_GHA_ENABLED: 'on'
+            SCCACHE_MAX_FRAME_LENGTH: '1048576'
 
       - name: Build and package
         run: |
@@ -138,8 +137,8 @@ jobs:
             "${{ inputs.arch }}" \
             "${{ inputs.MOZ_BUILD_DATE }}"
         env:
-          SCCACHE_GHA_ENABLED: ${{ inputs.platform != 'mac' && 'on' || '' }}
-          SCCACHE_MAX_FRAME_LENGTH: ${{ inputs.platform != 'mac' && '1048576' || '' }}
+          SCCACHE_GHA_ENABLED: 'on'
+          SCCACHE_MAX_FRAME_LENGTH: '1048576'
 
       - name: Clean existing Windows artifacts
         if: inputs.platform == 'windows'
@@ -202,7 +201,6 @@ jobs:
             inputs.platform, inputs.arch) }}
 
       - name: Upload dist/host for MAR
-        if: inputs.platform != 'mac'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.platform }}-${{ inputs.arch }}-dist-host
@@ -213,7 +211,6 @@ jobs:
           overwrite: true
 
       - name: Upload application.ini for MAR
-        if: inputs.platform != 'mac'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.platform }}-${{ inputs.arch }}-application-ini
