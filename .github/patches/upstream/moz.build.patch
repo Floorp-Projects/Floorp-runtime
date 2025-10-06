@@ -8,6 +8,6 @@ index 559182bb0a..584db92065 100644
  include("build/templates.mozbuild")
 +
 +DIRS += [
-+    "floorp/gecko/pre-build",
++    ".github/assets/pre-build",
 +]
 \ No newline at end of file
