@@ -3017,7 +3017,8 @@ mozilla::ipc::IPCResult BrowserChild::RecvRenderLayers(const bool& aEnabled) {
     ProcessHangMonitor::MaybeStartPaintWhileInterruptingJS();
   }
 
-  mRenderLayers = aEnabled;
+  bool splitViewIsEnabled = Preferences::GetBool("floorp.browser.splitView.working", false);
+  mRenderLayers = splitViewIsEnabled ? true : aEnabled;
   const bool wasVisible = IsVisible();
 
   UpdateVisibility();
