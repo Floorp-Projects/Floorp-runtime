@@ -1,0 +1,14 @@
+diff --git a/dom/ipc/BrowserParent.cpp b/dom/ipc/BrowserParent.cpp
+index fc12ac8df3..c5588e4eb7 100644
+--- a/dom/ipc/BrowserParent.cpp
++++ b/dom/ipc/BrowserParent.cpp
+@@ -3695,7 +3695,8 @@ void BrowserParent::SetRenderLayers(bool aEnabled) {
+     return;
+   }
+ 
+-  mRenderLayers = aEnabled;
++  bool splitViewIsEnabled = Preferences::GetBool("floorp.browser.splitView.working", false);
++  mRenderLayers = splitViewIsEnabled ? true : aEnabled;
+ 
+   SetRenderLayersInternal(aEnabled);
+ }
