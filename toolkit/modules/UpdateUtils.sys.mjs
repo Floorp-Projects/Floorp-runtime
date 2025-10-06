@@ -77,11 +77,6 @@ export var UpdateUtils = {
     return url.replace(/%(\w+)%/g, (match, name) => {
       let replacement = match;
       switch (name) {
-        case "NORA_UPDATE_HOST":
-          replacement = `
-            REPLACE_THIS_NORA_UPDATE_HOST_TARGET_PLACEHOLDER
-          `.trim();
-          break;
         case "PRODUCT":
           replacement = Services.appinfo.name;
           break;
