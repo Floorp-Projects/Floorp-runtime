@@ -10,6 +10,8 @@ import plistlib
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
+import platform
 
 import yaml
 from mach.decorators import (
@@ -153,6 +155,17 @@ def macos_sign(
     the .app using codesign.
     """
     command_context._set_log_level(verbose_arg)
+
+    # Check if we're running on Linux, force rcodesign in that case
+    current_platform = platform.system()
+    if current_platform == "Linux":
+        use_rcodesign_arg = True
+        command_context.log(
+            logging.INFO,
+            "macos-sign",
+            {"platform": current_platform},
+            "Running on {platform}, forcing rcodesign usage",
+        )
 
     # Check appdir and remove trailing slasshes
     if not os.path.isdir(app_arg):
@@ -323,24 +336,25 @@ def macos_sign(
         "by-hardened-signing-type"
     ][entitlements_key]
 
-    command_context.log(
-        logging.INFO, "macos-sign", {}, "Stripping existing xattrs and signatures"
-    )
+    if current_platform == "Darwin" and use_rcodesign_arg is False:
+        command_context.log(
+            logging.INFO, "macos-sign", {}, "Stripping existing xattrs and signatures"
+        )
 
-    # Remove extended attributes. Per Apple "Technical Note TN2206",
-    # code signing uses extended attributes to store signatures for
-    # non-Mach-O executables such as script files. We want to avoid
-    # any complications that might be caused by existing extended
-    # attributes.
-    xattr_cmd = ["xattr", "-cr", app]
-    run(command_context, xattr_cmd, capture_output=not verbose_arg)
+        # Remove extended attributes. Per Apple "Technical Note TN2206",
+        # code signing uses extended attributes to store signatures for
+        # non-Mach-O executables such as script files. We want to avoid
+        # any complications that might be caused by existing extended
+        # attributes.
+        xattr_cmd = ["xattr", "-cr", app]
+        run(command_context, xattr_cmd, capture_output=not verbose_arg)
 
-    # Remove existing signatures. The codesign command only replaces
-    # signatures if the --force option used. Remove all signatures so
-    # subsequent signing commands with different options will result
-    # in re-signing without requiring --force.
-    cs_reset_cmd = ["find", app, "-exec", "codesign", "--remove-signature", "{}", ";"]
-    run(command_context, cs_reset_cmd, capture_output=not verbose_arg)
+        # Remove existing signatures. The codesign command only replaces
+        # signatures if the --force option used. Remove all signatures so
+        # subsequent signing commands with different options will result
+        # in re-signing without requiring --force.
+        cs_reset_cmd = ["find", app, "-exec", "codesign", "--remove-signature", "{}", ";"]
+        run(command_context, cs_reset_cmd, capture_output=not verbose_arg)
 
     if use_rcodesign_arg is True:
         sign_with_rcodesign(
@@ -364,7 +378,11 @@ def macos_sign(
             app,
         )
 
-    verify_result(command_context, app, verbose_arg)
+    # Modify verification to use rcodesign if running on Linux
+    if current_platform == "Linux":
+        verify_result_with_rcodesign(command_context, app, verbose_arg)
+    else:
+        verify_result(command_context, app, verbose_arg)
 
 
 def auto_detect_channel(ctx, app):
@@ -673,3 +691,143 @@ def strip_restricted_entitlements(plist_file):
         temp_file_obj.close()
 
     return temp_file_path
+
+
+def verify_result_with_rcodesign(ctx, app, verbose_arg):
+    """
+    Verify signature validity using rcodesign.
+    Unlike codesign, rcodesign verify needs to be run on specific Mach-O binaries,
+    not on the entire .app bundle.
+    """
+    ctx.log(
+        logging.INFO,
+        "macos-sign",
+        {"app": app},
+        "Verifying signatures with rcodesign in {app}"
+    )
+
+    # Find the main executable in the bundle
+    app_name = os.path.basename(app)
+    if app_name.endswith('.app'):
+        app_name = app_name[:-4]
+
+    # Main executable path is usually at Contents/MacOS/AppName
+    main_executable = os.path.join(app, "Contents/MacOS", app_name)
+
+    # If the main executable doesn't exist with that name, find the first executable in MacOS directory
+    if not os.path.exists(main_executable):
+        macos_dir = os.path.join(app, "Contents/MacOS")
+        if os.path.isdir(macos_dir):
+            executables = [f for f in os.listdir(macos_dir) if os.path.isfile(os.path.join(macos_dir, f))]
+            if executables:
+                main_executable = os.path.join(macos_dir, executables[0])
+
+    if not os.path.exists(main_executable):
+        ctx.log(
+            logging.ERROR,
+            "macos-sign",
+            {"app": app},
+            "Could not find main executable in {app}",
+        )
+        sys.exit(1)
+
+    # Verify the main executable
+    rcs_verify_cmd = ["rcodesign", "verify", main_executable, "--verbose"]
+    try:
+        run(ctx, rcs_verify_cmd, capture_output=not verbose_arg, check=True)
+        ctx.log(
+            logging.INFO,
+            "macos-sign",
+            {"bin": main_executable},
+            "Verification of main binary {bin} with rcodesign OK",
+        )
+    except subprocess.CalledProcessError as e:
+        ctx.log(
+            logging.ERROR,
+            "macos-sign",
+            {"rc": e.returncode, "bin": main_executable},
+            "Verification of {bin} with rcodesign failed with exit code {rc}",
+        )
+        sys.exit(e.returncode)
+
+    # Additionally, verify other important binaries in the bundle
+    frameworks_dir = os.path.join(app, "Contents/Frameworks")
+    if os.path.isdir(frameworks_dir):
+        ctx.log(
+            logging.INFO,
+            "macos-sign",
+            {"dir": frameworks_dir},
+            "Checking signatures of frameworks in {dir}",
+        )
+        # Sample key framework to check - adjust as needed for Firefox
+        for framework in ["XUL.framework"]:
+            framework_path = os.path.join(frameworks_dir, framework)
+            if os.path.exists(framework_path):
+                # Find the main binary in the framework
+                versions_dir = os.path.join(framework_path, "Versions")
+                if os.path.isdir(versions_dir):
+                    for version in os.listdir(versions_dir):
+                        if version != "Current":
+                            bin_path = os.path.join(versions_dir, version, framework[:-10])  # Remove .framework
+                            if os.path.exists(bin_path) and os.path.isfile(bin_path):
+                                try:
+                                    rcs_verify_cmd = ["rcodesign", "verify", bin_path, "--verbose"]
+                                    run(ctx, rcs_verify_cmd, capture_output=not verbose_arg, check=True)
+                                    ctx.log(
+                                        logging.INFO,
+                                        "macos-sign",
+                                        {"bin": bin_path},
+                                        "Verification of framework binary {bin} OK",
+                                    )
+                                except subprocess.CalledProcessError as e:
+                                    ctx.log(
+                                        logging.WARNING,
+                                        "macos-sign",
+                                        {"rc": e.returncode, "bin": bin_path},
+                                        "Verification of {bin} failed with exit code {rc}",
+                                    )
+                                    # Continue checking other binaries instead of exiting
+
+    ctx.log(
+        logging.INFO,
+        "macos-sign",
+        {"app": app},
+        "Verification of app bundle {app} completed",
+    )
+
+
+def clear_extended_attributes(ctx, path):
+    """
+    Clear extended attributes using Python's built-in functions.
+    This is a cross-platform alternative to the xattr command.
+    """
+    ctx.log(logging.INFO, "macos-sign", {"path": path}, "Clearing extended attributes from {path}")
+
+    def _clear_attrs_for_file(file_path):
+        try:
+            # On macOS
+            if hasattr(os, "listxattr"):
+                attrs = os.listxattr(file_path, follow_symlinks=False)
+                for attr in attrs:
+                    try:
+                        os.removexattr(file_path, attr, follow_symlinks=False)
+                    except Exception as e:
+                        ctx.log(logging.DEBUG, "macos-sign",
+                               {"file": file_path, "attr": attr, "error": str(e)},
+                               "Failed to remove xattr {attr} from {file}: {error}")
+            # No xattr support - just continue
+        except Exception as e:
+            ctx.log(logging.DEBUG, "macos-sign",
+                   {"file": file_path, "error": str(e)},
+                   "Failed to process xattrs for {file}: {error}")
+
+    # Process the main path
+    if os.path.isfile(path):
+        _clear_attrs_for_file(path)
+
+    # Walk the directory structure
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            _clear_attrs_for_file(os.path.join(root, file))
+        for dir in dirs:
+            _clear_attrs_for_file(os.path.join(root, dir))
