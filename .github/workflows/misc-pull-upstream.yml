@@ -181,7 +181,8 @@ jobs:
           CHANGE_TYPE="${{ steps.version_diff.outputs.change_type }}"
           VERSION="${{ steps.new_version.outputs.version }}"
           
-          git add .
+          # Add all files including those in .gitignore
+          git add --force .
           
           if [ "$CHANGE_TYPE" = "no_version_change" ]; then
             git commit -m "sync: upstream gecko-dev (file changes without version change)"
@@ -214,7 +215,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH_NAME"
-          git add .
+          
+          # Add all files including those in .gitignore
+          git add --force .
           
           if [ "$CHANGE_TYPE" = "no_version_change" ]; then
             git commit -m "sync: upstream gecko-dev (file changes without version change)"
