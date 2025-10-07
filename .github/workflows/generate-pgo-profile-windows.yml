@@ -55,7 +55,7 @@ jobs:
         with:
           name: ${{ inputs.browser-artifact-name }}
           path: ${{ env.ARTIFACT_PATH }}
-      
+
       - name: Install LLVM 19
         uses: KyleMayes/install-llvm-action@a7a1a882e2d06ebe05d5bb97c3e1f8c984ae96fc # Pinned to specific commit
         with:
@@ -82,7 +82,7 @@ jobs:
           
           Write-Host "Extracting $($zipFile.FullName)..."
           Expand-Archive -Path $zipFile.FullName -DestinationPath ${{ env.ARTIFACT_PATH }} -Force
-          
+
           # --- 2. Discover Browser Binary ---
           $possibleNames = @("floorp.exe", "firefox.exe")
           $winBrowserPath = $null
@@ -94,8 +94,8 @@ jobs:
           Write-Host "Found browser binary at: $winBrowserPath"
           
           # --- 3. Define Paths and Bash Script ---
-          # The install-llvm-action automatically creates the $env:LLVM_PATH variable
           $winLlvmProfdataPath = Join-Path $env:LLVM_PATH "bin\llvm-profdata.exe"
+          $winWorkspaceRoot = $env:GITHUB_WORKSPACE
           
           $scriptContent = @"
           #!/bin/bash
@@ -104,43 +104,91 @@ jobs:
           # Receive Windows paths from PowerShell
           WIN_BROWSER_PATH="${winBrowserPath}"
           WIN_LLVM_PROFDATA_PATH="${winLlvmProfdataPath}"
+          WIN_WORKSPACE="${winWorkspaceRoot}"
 
           # Use cygpath for robust path conversion inside the MSYS2 environment
           echo "Converting paths..."
           BROWSER_PATH=`$(cygpath -u "`$WIN_BROWSER_PATH")`
           LLVM_PROFDATA_PATH=`$(cygpath -u "`$WIN_LLVM_PROFDATA_PATH")`
+          WORKSPACE_PATH=`$(cygpath -u "`$WIN_WORKSPACE")`
           
           echo "Browser path (Unix): `$BROWSER_PATH"
           echo "llvm-profdata path (Unix): `$LLVM_PROFDATA_PATH"
+          echo "Workspace path (Unix): `$WORKSPACE_PATH"
+          
+          # Change to workspace directory
+          cd "`$WORKSPACE_PATH"
           
           # Run Mozilla bootstrap to ensure build tools are available
-          ./mach --no-interactive bootstrap --application-choice browser || echo "Bootstrap failed, continuing..."
+          ./mach --no-interactive bootstrap --application-choice browser || echo "Bootstrap warning, continuing..."
 
           # Generate the profile data
           echo "Starting profile generation..."
-          timeout 1200 env LLVM_PROFDATA="`$LLVM_PROFDATA_PATH" JARLOG_FILE=en-US.log \
-            python3 build/pgo/profileserver.py --binary "`$BROWSER_PATH"
-            
-          # Verify the output files were created
-          if [[ ! -f "merged.profdata" || ! -f "en-US.log" ]]; then
-            echo "ERROR: Required profile files not generated."
-            exit 1
-          fi
-          echo "Profile generation script completed successfully."
-          "@
+          export LLVM_PROFDATA="`$LLVM_PROFDATA_PATH"
+          export JARLOG_FILE="en-US.log"
+          export MOZ_FETCHES_DIR="/tmp"
           
-          # --- 4. Execute Script and Verify ---
-          $scriptContent | Out-File -FilePath "pgo-generate.sh" -Encoding UTF8
-          
-          Write-Host "Executing profile generation script via Mozilla Build shell..."
-          & "C:\mozilla-build\start-shell.bat" "$($env:GITHUB_WORKSPACE)\pgo-generate.sh"
-          
-          Write-Host "Verifying final output files..."
-          if (-not ((Test-Path "merged.profdata") -and (Test-Path "en-US.log"))) {
-            Write-Error "Profile generation failed - required files not found after script execution."
+          # Run profileserver with timeout and proper error handling
+          python3 build/pgo/profileserver.py --binary "`$BROWSER_PATH" || {
+            echo "ERROR: Profile generation script failed with exit code `$?"
+            echo "Checking for partial output files..."
+            ls -la merged.profdata en-US.log 2>/dev/null || echo "No output files found"
             exit 1
           }
-          Write-Host "Workflow step completed successfully."
+
+          # Verify the output files were created
+          echo "Checking output files..."
+          ls -la
+          
+          if [[ ! -f "merged.profdata" ]]; then
+            echo "ERROR: merged.profdata not found"
+            exit 1
+          fi
+          
+          if [[ ! -f "en-US.log" ]]; then
+            echo "ERROR: en-US.log not found"
+            exit 1
+          fi
+
+          echo "Profile files generated successfully:"
+          ls -lh merged.profdata en-US.log
+          "@
+
+          # --- 4. Save Script ---
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "pgo-generate.sh"
+          $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8 -NoNewline
+          
+          # --- 5. Execute Script ---
+          Write-Host "Executing profile generation script via Mozilla Build shell..."
+          $exitCode = 0
+          & "C:\mozilla-build\start-shell.bat" "$scriptPath"
+          $exitCode = $LASTEXITCODE
+
+          Write-Host "Shell script exited with code: $exitCode"
+          
+          if ($exitCode -ne 0) {
+            Write-Error "Profile generation script failed with exit code $exitCode"
+            exit $exitCode
+          }
+
+          # --- 6. Verify Final Output ---
+          Write-Host "Verifying final output files in workspace..."
+          $mergedProf = Join-Path $env:GITHUB_WORKSPACE "merged.profdata"
+          $jarLog = Join-Path $env:GITHUB_WORKSPACE "en-US.log"
+          
+          if (-not (Test-Path $mergedProf)) {
+            Write-Error "merged.profdata not found at: $mergedProf"
+            exit 1
+          }
+
+          if (-not (Test-Path $jarLog)) {
+            Write-Error "en-US.log not found at: $jarLog"
+            exit 1
+          }
+          
+          Write-Host "Profile generation completed successfully!"
+          Write-Host "merged.profdata size: $((Get-Item $mergedProf).Length) bytes"
+          Write-Host "en-US.log size: $((Get-Item $jarLog).Length) bytes"
 
       - name: Upload profile data
         uses: actions/upload-artifact@v4
