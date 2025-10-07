@@ -94,7 +94,21 @@ jobs:
           Write-Host "Found browser binary at: $winBrowserPath"
           
           # --- 3. Define Paths and Bash Script ---
-          $winLlvmProfdataPath = Join-Path $env:LLVM_PATH "bin\llvm-profdata.exe"
+          # Resolve llvm-profdata.exe from PATH first; fall back to LLVM_PATH/bin
+          $winLlvmProfdataPath = $null
+          try {
+            $winLlvmProfdataPath = (Get-Command llvm-profdata.exe -ErrorAction Stop).Source
+          } catch {
+            if ($env:LLVM_PATH) {
+              $candidate = Join-Path $env:LLVM_PATH "bin\llvm-profdata.exe"
+              if (Test-Path $candidate) { $winLlvmProfdataPath = $candidate }
+            }
+          }
+          if (-not $winLlvmProfdataPath) {
+            Write-Error "llvm-profdata.exe not found in PATH or LLVM_PATH/bin"
+            exit 1
+          }
+          Write-Host "Using llvm-profdata at: $winLlvmProfdataPath"
           $winWorkspaceRoot = $env:GITHUB_WORKSPACE
           
           $scriptContent = @"
@@ -126,6 +140,7 @@ jobs:
           # Generate the profile data
           echo "Starting profile generation..."
           export LLVM_PROFDATA="`$LLVM_PROFDATA_PATH"
+          export MOZ_HEADLESS=1
           export JARLOG_FILE="en-US.log"
           export MOZ_FETCHES_DIR="/tmp"
           
