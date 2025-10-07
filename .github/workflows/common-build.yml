@@ -188,7 +188,7 @@ jobs:
             format('~/output/floorp-{0}-{1}-moz-artifact.tar.xz',
             inputs.platform, inputs.arch) }}
 
-      - name: Upload PGO profile generation package
+      - name: Upload PGO profile generation package (Windows)
         if: >-
           inputs.pgo_mode == 'generate' &&
           inputs.platform == 'windows' &&
@@ -198,6 +198,17 @@ jobs:
           name: floorp-windows-x86_64-profile-generate-mode-package
           path: >-
             ${{ format('~/output/floorp-{0}-{1}-moz-artifact.zip',
+            inputs.platform, inputs.arch) }}
+
+      - name: Upload PGO profile generation package (Mac)
+        if: >-
+          inputs.pgo_mode == 'generate' &&
+          inputs.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-mac-${{ inputs.arch }}-build-with-profgen
+          path: >-
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact.tar.gz',
             inputs.platform, inputs.arch) }}
 
       - name: Upload dist/host for MAR

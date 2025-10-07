@@ -131,9 +131,13 @@ jobs:
 
       - name: Extract artifact 📂
         run: |
-          mkdir -p ./floorp
-          cp ${{ steps.download-artifacts-mac-enable-profgen.outputs.download-path }}/${ARCH_TYPE}-apple-darwin-output.tar.xz ./
-          tar xf ${ARCH_TYPE}-apple-darwin-output.tar.xz
+          cd ${{ steps.download-artifacts-mac-enable-profgen.outputs.download-path }}
+          echo "Contents of download path:"
+          ls -la
+          echo "Extracting floorp-mac-${ARCH_TYPE}-moz-artifact.tar.gz..."
+          tar xzf floorp-mac-${ARCH_TYPE}-moz-artifact.tar.gz -C ${{ github.workspace }}
+          echo "Extraction complete. Checking workspace:"
+          ls -la ${{ github.workspace }}/obj-${ARCH_TYPE}-apple-darwin/ || echo "Directory not found"
 
 ## ./mach python python/mozbuild/mozbuild/action/install.py $MOZ_FETCHES_DIR/target.dmg $MOZ_FETCHES_DIR
       - name: Generate Profdata 📊

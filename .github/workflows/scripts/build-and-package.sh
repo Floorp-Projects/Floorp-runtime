@@ -67,10 +67,10 @@ elif [[ "$PLATFORM" == "linux" ]]; then
 elif [[ "$PLATFORM" == "mac" ]]; then
   # Mac-specific packaging
   if [[ "$ARCH" == "aarch64" ]]; then
-    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/dist/
+    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/
     mv floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
   else
-    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/dist/
+    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/
     mv floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
   fi
 fi
