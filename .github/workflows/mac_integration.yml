@@ -205,18 +205,10 @@ jobs:
             floorp-mac-x86_64-package
             floorp-mac-aarch64-package
 
-      - name: Publish Package Mozilla Artifact for dev 🎁
+      - name: Publish Package Mozilla Artifact 🎁
         uses: actions/upload-artifact@v4
         with:
-          name: floorp-mac-universal-moz-artifact-dev
-          if-no-files-found: ignore
-          path: |
-            ./floorp-macOS-universal-moz-artifact.dmg
-
-      - name: Publish Package Mozilla Artifact for release 🎁
-        uses: actions/upload-artifact@v4
-        with:
-          name: floorp-mac-universal-moz-artifact-release
+          name: floorp-mac-universal-moz-artifact
           if-no-files-found: ignore
           path: |
             ./floorp-macOS-universal-moz-artifact.dmg
