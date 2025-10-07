@@ -66,11 +66,15 @@ jobs:
               gcc-aarch64-linux-gnu \
               g++-aarch64-linux-gnu \
               libc6-dev-arm64-cross \
+              libc6-arm64-cross \
               xvfb \
               mesa-utils
 
-            # Install ARM64 LLVM tools via Docker approach
+            # Register QEMU ARM64 handler with binfmt_misc
             docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+            # Setup QEMU_LD_PREFIX for ARM64 dynamic linker
+            echo "QEMU_LD_PREFIX=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
           else
             sudo apt install -y xvfb llvm-19 clang-19 mesa-utils
           fi
@@ -212,29 +216,29 @@ jobs:
             # Make sure the binary is executable
             chmod +x "$BROWSER"
 
-            # Test if binfmt handles ARM64 execution transparently
-            echo "Testing direct ARM64 execution with binfmt_misc..."
-            if timeout 15s "$BROWSER" --version >/dev/null 2>&1; then
-              echo "✓ Direct ARM64 execution successful (binfmt_misc is working)"
-              # binfmt_misc works, use browser path as-is
-            else
-              echo "✗ Direct execution failed, creating QEMU wrapper script"
+            # Create a wrapper script with QEMU_LD_PREFIX
+            echo "Creating QEMU wrapper script with library path..."
+            cat > browser-wrapper.sh << 'EOF'
+            #!/bin/bash
+            export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
+            export LD_LIBRARY_PATH=/usr/aarch64-linux-gnu/lib
+            exec "$BROWSER" "$@"
+            EOF
 
-              # Create a wrapper script that properly invokes QEMU
-              cat > browser-wrapper.sh << EOF
-          #!/bin/bash
-          exec "$QEMU_PATH" "$BROWSER" "\$@"
-          EOF
+            chmod +x browser-wrapper.sh
 
-              chmod +x browser-wrapper.sh
-
-              # Update BROWSER to point to wrapper
+            # Test if binfmt handles ARM64 execution with the wrapper
+            echo "Testing ARM64 execution with QEMU and library prefix..."
+            if timeout 15s bash browser-wrapper.sh --version 2>&1; then
+              echo "✓ ARM64 execution test passed"
+              # Use the wrapper for execution
               BROWSER="$GITHUB_WORKSPACE/browser-wrapper.sh"
-
-              echo "Created wrapper script at: $BROWSER"
-              echo "Wrapper content:"
-              cat browser-wrapper.sh
+            else
+              echo "⚠ Direct execution test failed, but continuing with wrapper"
+              BROWSER="$GITHUB_WORKSPACE/browser-wrapper.sh"
             fi
+
+            echo "Final browser wrapper at: $BROWSER"
           else
             chmod +x "$BROWSER"
           fi
