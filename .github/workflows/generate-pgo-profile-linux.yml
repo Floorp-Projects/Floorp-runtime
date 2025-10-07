@@ -38,7 +38,7 @@ jobs:
       UPLOAD_ARTIFACT_NAME: >-
         ${{ inputs.upload-artifact-name ||
         format('{0}-profile-generate-output', inputs.browser-artifact-name) }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
               libc6-dev-arm64-cross \
               xvfb \
               mesa-utils
-            
+
             # Install ARM64 LLVM tools via Docker approach
             docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
           else
@@ -90,13 +90,13 @@ jobs:
           mkdir -p obj-firefox/dist
           mkdir -p /tmp/output
           mkdir -p /tmp/clang/bin
-          
+
           if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
             # Setup ARM64 cross-compilation tools
             # Use Docker container to get ARM64 LLVM tools
             docker run --rm -v /tmp/clang:/tmp/clang --platform linux/arm64 ubuntu:24.04 bash -c "
-              apt update -qq && 
-              apt install -y llvm-19 && 
+              apt update -qq &&
+              apt install -y llvm-19 &&
               cp /usr/bin/llvm-profdata-19 /tmp/clang/llvm-profdata-arm64
             "
             ln -sf /tmp/clang/llvm-profdata-arm64 /tmp/clang/bin/llvm-profdata
@@ -114,13 +114,13 @@ jobs:
           elif ls *.zip >/dev/null 2>&1; then
             unzip -q *.zip
           fi
-          
+
           echo "Contents after extraction:"
           ls -la
-          
+
           # Find browser directory - look for directories first, then check subdirectories
           BROWSER_DIR=""
-          
+
           # Look for top-level directories containing browser
           for dir in */; do
             if [[ -d "$dir" ]]; then
@@ -130,12 +130,12 @@ jobs:
               fi
             fi
           done
-          
+
           # If not found, look for any directory with floorp or firefox in name
           if [[ -z "$BROWSER_DIR" ]]; then
             BROWSER_DIR=$(find . -maxdepth 1 -type d \( -name "*floorp*" -o -name "*firefox*" \) | head -1)
           fi
-          
+
           if [[ -n "$BROWSER_DIR" && -d "$BROWSER_DIR" ]]; then
             echo "Found browser directory: $BROWSER_DIR"
             mv "$BROWSER_DIR" $GITHUB_WORKSPACE/obj-firefox/dist/firefox
@@ -153,16 +153,16 @@ jobs:
           export JARLOG_FILE=en-US.log
           export LLVM_PROFDATA=/tmp/clang/bin/llvm-profdata
           export DISPLAY=:99
-          
+
           # Start Xvfb
           Xvfb :99 -screen 0 1024x768x24 &
           XVFB_PID=$!
           sleep 3
-          
+
           # Find browser binary (look for actual executable files, not directories)
           echo "Looking for browser binary in obj-firefox/dist/firefox/..."
           ls -la obj-firefox/dist/firefox/ || echo "Directory doesn't exist or is empty"
-          
+
           BROWSER=""
           for binary_name in floorp firefox firefox-bin; do
             if [[ -f "obj-firefox/dist/firefox/$binary_name" ]]; then
@@ -170,7 +170,7 @@ jobs:
               break
             fi
           done
-          
+
           if [[ -z "$BROWSER" ]]; then
             echo "No browser binary found. Available files:"
             find obj-firefox/dist/firefox -type f -executable 2>/dev/null || echo "No executable files found"
@@ -178,17 +178,17 @@ jobs:
             kill $XVFB_PID
             exit 1
           fi
-          
+
           echo "Found browser binary: $BROWSER"
-          
+
           # Check architecture and handle accordingly
           ARCH=$(file "$BROWSER" | grep -o "ARM aarch64\|x86-64\|x86_64")
           echo "Browser binary architecture: $ARCH"
-          
-          if [[ "aarch64" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
+
+          if [[ "${{ inputs.target-arch }}" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
             echo "Running ARM64 binary with QEMU user-mode emulation"
-            
-            # Ensure QEMU is available and create symlink if needed
+
+            # Ensure QEMU is available
             QEMU_PATH=""
             if [[ -f "/usr/bin/qemu-aarch64-static" ]]; then
               QEMU_PATH="/usr/bin/qemu-aarch64-static"
@@ -199,65 +199,71 @@ jobs:
               kill $XVFB_PID
               exit 1
             fi
-            
+
             echo "Found QEMU at: $QEMU_PATH"
-            
-            # Create symlink in current directory for convenience
-            if [[ ! -f "./qemu-aarch64-static" ]]; then
-              ln -sf "$QEMU_PATH" ./qemu-aarch64-static
-            fi
-            
-            # Ensure QEMU static is properly registered
+
+            # Ensure QEMU static is properly registered with binfmt_misc
             if [[ ! -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
-              echo "Registering QEMU ARM64 handler"
+              echo "Registering QEMU ARM64 handler with binfmt_misc"
               docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-              sleep 2
+              sleep 3
             fi
-            
+
             # Make sure the binary is executable
             chmod +x "$BROWSER"
-            
+
             # Test if binfmt handles ARM64 execution transparently
-            echo "Testing direct ARM64 execution..."
-            if timeout 10s "$BROWSER" --version >/dev/null 2>&1; then
-              echo "Direct ARM64 execution successful (binfmt working)"
+            echo "Testing direct ARM64 execution with binfmt_misc..."
+            if timeout 15s "$BROWSER" --version >/dev/null 2>&1; then
+              echo "✓ Direct ARM64 execution successful (binfmt_misc is working)"
+              # binfmt_misc works, use browser path as-is
             else
-              echo "Direct execution failed, using explicit QEMU"
-              BROWSER="$QEMU_PATH $BROWSER"
+              echo "✗ Direct execution failed, creating QEMU wrapper script"
+
+              # Create a wrapper script that properly invokes QEMU
+              cat > browser-wrapper.sh << EOF
+          #!/bin/bash
+          exec "$QEMU_PATH" "$BROWSER" "\$@"
+          EOF
+
+              chmod +x browser-wrapper.sh
+
+              # Update BROWSER to point to wrapper
+              BROWSER="$GITHUB_WORKSPACE/browser-wrapper.sh"
+
+              echo "Created wrapper script at: $BROWSER"
+              echo "Wrapper content:"
+              cat browser-wrapper.sh
             fi
           else
             chmod +x "$BROWSER"
           fi
-          
-          # Verify it's executable
+
+          # Verify browser is executable
           echo "Testing browser execution..."
-          if [[ "aarch64" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
-            # For ARM64 binaries, test with timeout since QEMU can be slow
-            timeout 30s $BROWSER --version || echo "Browser version check timed out or failed (this may be expected for QEMU)"
+          if timeout 30s "$BROWSER" --version 2>&1; then
+            echo "✓ Browser execution test passed"
           else
-            "$BROWSER" --version
+            EXIT_CODE=$?
+            echo "✗ Browser execution test failed with exit code: $EXIT_CODE"
+            if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
+              echo "Debugging QEMU/binfmt setup:"
+              which qemu-aarch64-static || echo "  qemu-aarch64-static not in PATH"
+              ls -la /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null || echo "  QEMU ARM64 binfmt not registered"
+              file "$BROWSER"
+              echo "  This may still work for profile generation..."
+            else
+              kill $XVFB_PID
+              exit 1
+            fi
           fi
-          
-          # Check if browser test was successful enough to proceed
-          if [[ $? -ne 0 ]] && [[ "aarch64" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
-            echo "Browser execution test failed. Checking QEMU setup..."
-            
-            # Debug QEMU setup
-            echo "QEMU debug info:"
-            which qemu-aarch64-static || echo "qemu-aarch64-static not in PATH"
-            ls -la /proc/sys/fs/binfmt_misc/qemu-aarch64 || echo "QEMU ARM64 binfmt not registered"
-            
-            # Try one more time with explicit QEMU
-            echo "Final attempt with explicit QEMU path..."
-            BROWSER="$QEMU_PATH $(echo $BROWSER | sed 's/.*qemu-aarch64-static //')"
-          fi
-          
-          echo "Final browser command: $BROWSER"
-          
+
+          echo "Final browser path: $BROWSER"
+
           # Generate profile
           echo "Starting profile generation..."
           ./mach python build/pgo/profileserver.py --binary "$BROWSER"
-          
+
           # Cleanup
           kill $XVFB_PID
 
