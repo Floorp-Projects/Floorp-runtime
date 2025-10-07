@@ -216,29 +216,33 @@ jobs:
             # Make sure the binary is executable
             chmod +x "$BROWSER"
 
-            # Create a wrapper script with QEMU_LD_PREFIX
+            # Store the actual browser path
+            ACTUAL_BROWSER="$BROWSER"
+
+            # Create a wrapper script with QEMU_LD_PREFIX  
             echo "Creating QEMU wrapper script with library path..."
-            cat > browser-wrapper.sh << 'EOF'
-            #!/bin/bash
-            export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
-            export LD_LIBRARY_PATH=/usr/aarch64-linux-gnu/lib
-            exec "$BROWSER" "$@"
-            EOF
+            cat > browser-wrapper.sh << 'WRAPPER_SCRIPT_END'
+          #!/bin/bash
+          export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
+          export LD_LIBRARY_PATH=/usr/aarch64-linux-gnu/lib
+          BROWSER_BIN="$1"
+          shift
+          exec "$BROWSER_BIN" "$@"
+          WRAPPER_SCRIPT_END
 
             chmod +x browser-wrapper.sh
-
+            
             # Test if binfmt handles ARM64 execution with the wrapper
             echo "Testing ARM64 execution with QEMU and library prefix..."
-            if timeout 15s bash browser-wrapper.sh --version 2>&1; then
+            if timeout 15s bash browser-wrapper.sh "$ACTUAL_BROWSER" --version 2>&1; then
               echo "✓ ARM64 execution test passed"
-              # Use the wrapper for execution
-              BROWSER="$GITHUB_WORKSPACE/browser-wrapper.sh"
             else
               echo "⚠ Direct execution test failed, but continuing with wrapper"
-              BROWSER="$GITHUB_WORKSPACE/browser-wrapper.sh"
             fi
 
-            echo "Final browser wrapper at: $BROWSER"
+            # Update BROWSER to use wrapper with actual browser as argument
+            BROWSER="bash $GITHUB_WORKSPACE/browser-wrapper.sh $ACTUAL_BROWSER"
+            echo "Final browser command: $BROWSER"
           else
             chmod +x "$BROWSER"
           fi

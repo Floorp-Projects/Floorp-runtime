@@ -118,6 +118,7 @@ jobs:
           
           # Change to workspace directory
           cd "`$WORKSPACE_PATH"
+          pwd
           
           # Run Mozilla bootstrap to ensure build tools are available
           ./mach --no-interactive bootstrap --application-choice browser || echo "Bootstrap warning, continuing..."
@@ -137,21 +138,33 @@ jobs:
           }
 
           # Verify the output files were created
-          echo "Checking output files..."
+          echo "Checking output files in current directory..."
+          pwd
           ls -la
           
           if [[ ! -f "merged.profdata" ]]; then
-            echo "ERROR: merged.profdata not found"
+            echo "ERROR: merged.profdata not found in current directory"
+            echo "Searching for merged.profdata in workspace..."
+            find "`$WORKSPACE_PATH" -name "merged.profdata" -type f || echo "Not found anywhere"
             exit 1
           fi
           
           if [[ ! -f "en-US.log" ]]; then
-            echo "ERROR: en-US.log not found"
+            echo "ERROR: en-US.log not found in current directory"
+            echo "Searching for en-US.log in workspace..."
+            find "`$WORKSPACE_PATH" -name "en-US.log" -type f || echo "Not found anywhere"
             exit 1
           fi
 
-          echo "Profile files generated successfully:"
+          echo "Profile files generated successfully in workspace:"
           ls -lh merged.profdata en-US.log
+          
+          # Verify files exist at expected Windows paths
+          MERGED_PROFDATA_WIN=`$(cygpath -w "`$WORKSPACE_PATH/merged.profdata")`
+          JARLOG_WIN=`$(cygpath -w "`$WORKSPACE_PATH/en-US.log")`
+          echo "Windows paths for verification:"
+          echo "  merged.profdata: `$MERGED_PROFDATA_WIN"
+          echo "  en-US.log: `$JARLOG_WIN"
           "@
 
           # --- 4. Save Script ---
@@ -173,20 +186,49 @@ jobs:
 
           # --- 6. Verify Final Output ---
           Write-Host "Verifying final output files in workspace..."
+          Write-Host "Current PowerShell directory: $(Get-Location)"
+          Write-Host "Workspace directory: $env:GITHUB_WORKSPACE"
+          
+          # Check workspace directory contents
+          Write-Host "`nWorkspace contents:"
+          Get-ChildItem -Path $env:GITHUB_WORKSPACE | Select-Object Name, Length, LastWriteTime | Format-Table
+          
           $mergedProf = Join-Path $env:GITHUB_WORKSPACE "merged.profdata"
           $jarLog = Join-Path $env:GITHUB_WORKSPACE "en-US.log"
           
+          Write-Host "`nLooking for:"
+          Write-Host "  merged.profdata at: $mergedProf"
+          Write-Host "  en-US.log at: $jarLog"
+          
           if (-not (Test-Path $mergedProf)) {
-            Write-Error "merged.profdata not found at: $mergedProf"
-            exit 1
+            Write-Host "ERROR: merged.profdata not found at expected location"
+            Write-Host "Searching entire workspace for merged.profdata..."
+            $foundProf = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "merged.profdata" -ErrorAction SilentlyContinue
+            if ($foundProf) {
+              Write-Host "Found at: $($foundProf.FullName)"
+              Copy-Item -Path $foundProf.FullName -Destination $mergedProf -Force
+              Write-Host "Copied to workspace root"
+            } else {
+              Write-Error "merged.profdata not found anywhere in workspace"
+              exit 1
+            }
           }
 
           if (-not (Test-Path $jarLog)) {
-            Write-Error "en-US.log not found at: $jarLog"
-            exit 1
+            Write-Host "ERROR: en-US.log not found at expected location"
+            Write-Host "Searching entire workspace for en-US.log..."
+            $foundLog = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "en-US.log" -ErrorAction SilentlyContinue
+            if ($foundLog) {
+              Write-Host "Found at: $($foundLog.FullName)"
+              Copy-Item -Path $foundLog.FullName -Destination $jarLog -Force
+              Write-Host "Copied to workspace root"
+            } else {
+              Write-Error "en-US.log not found anywhere in workspace"
+              exit 1
+            }
           }
           
-          Write-Host "Profile generation completed successfully!"
+          Write-Host "`n✓ Profile generation completed successfully!"
           Write-Host "merged.profdata size: $((Get-Item $mergedProf).Length) bytes"
           Write-Host "en-US.log size: $((Get-Item $jarLog).Length) bytes"
 
