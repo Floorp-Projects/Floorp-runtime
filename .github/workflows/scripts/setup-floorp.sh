@@ -25,6 +25,21 @@ fi
 
 cd "$GITHUB_WORKSPACE"
 
+# Apply debug patches if in debug mode
+if [[ "$DEBUG" == "true" ]]; then
+  PATCH_DIR=".github/patches/debug"
+  if [ -d "$PATCH_DIR" ]; then
+    echo "Applying debug patches..."
+    for patch in "$PATCH_DIR"/*.patch; do
+      [ -e "$patch" ] || continue
+      echo "Applying debug patch: $(basename "$patch")"
+      git apply --verbose --ignore-space-change --ignore-whitespace "$patch"
+    done
+  else
+    echo "No debug patches to apply"
+  fi
+fi
+
 if [[ "$PLATFORM" == "windows" ]]; then
   cp ./.github/workflows/mozconfigs/windows-x86_64.mozconfig mozconfig
 elif [[ "$PLATFORM" == "linux" ]]; then

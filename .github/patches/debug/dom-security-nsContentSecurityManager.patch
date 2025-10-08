@@ -1,0 +1,16 @@
+diff --git a/dom/security/nsContentSecurityManager.cpp b/dom/security/nsContentSecurityManager.cpp
+index 524d0cf7dd..097aa0135b 100644
+--- a/dom/security/nsContentSecurityManager.cpp
++++ b/dom/security/nsContentSecurityManager.cpp
+@@ -1050,8 +1050,10 @@ nsresult nsContentSecurityManager::CheckAllowLoadInSystemPrivilegedContext(
+   // http://mochitest is actually local and allowed. (2) The marionette test
+   // framework uses injections and data URLs to execute scripts, checking for
+   // the environment variable breaks the attack but not the tests.
++  // (3) MOZ_ALLOW_PRIVILEGED_REMOTE_LOADS allows HTTP loads in debug builds
+   if (xpc::AreNonLocalConnectionsDisabled() ||
+-      mozilla::EnvHasValue("MOZ_MARIONETTE")) {
++      mozilla::EnvHasValue("MOZ_MARIONETTE") ||
++      mozilla::EnvHasValue("MOZ_ALLOW_PRIVILEGED_REMOTE_LOADS")) {
+     bool disallowSystemPrincipalRemoteDocuments = Preferences::GetBool(
+         "security.disallow_non_local_systemprincipal_in_tests");
+     if (disallowSystemPrincipalRemoteDocuments) {
