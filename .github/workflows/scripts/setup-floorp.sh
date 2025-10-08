@@ -109,11 +109,31 @@ else
   sed -i 's|https://@MOZ_APPUPDATE_HOST@/update/6/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%SYSTEM_CAPABILITIES%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml|https://github.com/f3liz-dev/Floorp-runtime/releases/download/%CHANNEL%/%BUILD_TARGET%.update.xml|g' ./build/application.ini.in
 fi
 
-# Update Rust toolchain for PGO use mode to avoid version conflicts
+# Note: Rust toolchain and targets are configured in setup-rust.sh
+# Ensure targets are available after any toolchain changes
 if [[ "$PGO" == "true" && "$PGO_MODE" == "use" ]]; then
-  echo "Updating Rust toolchain for PGO use mode..."
-  rustup update stable
-  rustup default stable
+  echo "PGO use mode - re-adding Rust targets if needed..."
+  
+  if [[ "$PLATFORM" == "mac" ]]; then
+    if [[ "$ARCH" == "x86_64" ]]; then
+      TARGET="x86_64-apple-darwin"
+    else
+      TARGET="aarch64-apple-darwin"
+    fi
+    rustup target add "$TARGET" 2>/dev/null || true
+  elif [[ "$PLATFORM" == "linux" ]]; then
+    if [[ "$ARCH" == "aarch64" ]]; then
+      rustup target add aarch64-unknown-linux-gnu 2>/dev/null || true
+    else
+      rustup target add x86_64-unknown-linux-gnu 2>/dev/null || true
+    fi
+  elif [[ "$PLATFORM" == "windows" ]]; then
+    if [[ "$ARCH" == "aarch64" ]]; then
+      rustup target add aarch64-pc-windows-msvc 2>/dev/null || true
+    else
+      rustup target add x86_64-pc-windows-msvc 2>/dev/null || true
+    fi
+  fi
 fi
 
 ./mach --no-interactive bootstrap --application-choice browser

@@ -45,21 +45,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.browser-artifact-name }}
           path: ${{ env.ARTIFACT_PATH }}
-
-      - name: Install LLVM 19
-        uses: KyleMayes/install-llvm-action@a7a1a882e2d06ebe05d5bb97c3e1f8c984ae96fc # Pinned to specific commit
-        with:
-          version: "19"
 
       - name: Setup Mozilla Build
         shell: pwsh
@@ -68,284 +58,37 @@ jobs:
           Invoke-WebRequest -Uri "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe" -OutFile "C:\MozillaBuildSetup-Latest.exe"
           Start-Process -FilePath "C:\MozillaBuildSetup-Latest.exe" -ArgumentList "/S" -Wait -NoNewWindow
           if (-not (Test-Path "C:\mozilla-build\start-shell.bat")) { Write-Error "Mozilla Build installation failed."; exit 1 }
-          pip install requests
 
       - name: Generate PGO Profile
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          
-          # --- 1. Find and Extract Browser ---
-          Write-Host "Searching for browser artifact in ${{ env.ARTIFACT_PATH }}"
-          $zipFile = Get-ChildItem -Path ${{ env.ARTIFACT_PATH }} -Filter "*.zip" | Select-Object -First 1
-          if (-not $zipFile) { Write-Error "No .zip artifact found in ${{ env.ARTIFACT_PATH }}"; exit 1 }
-          
-          Write-Host "Extracting $($zipFile.FullName)..."
-          Expand-Archive -Path $zipFile.FullName -DestinationPath ${{ env.ARTIFACT_PATH }} -Force
-
-          # --- 2. Discover Browser Binary ---
-          $possibleNames = @("floorp.exe", "firefox.exe")
-          $winBrowserPath = $null
-          foreach ($name in $possibleNames) {
-            $found = Get-ChildItem -Path ${{ env.ARTIFACT_PATH }} -Recurse -Filter $name -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($found) { $winBrowserPath = $found.FullName; break }
-          }
-          if (-not $winBrowserPath) { Write-Error "Could not find a suitable browser binary."; exit 1 }
-          Write-Host "Found browser binary at: $winBrowserPath"
-          
-          # --- 3. Define Paths and Bash Script ---
-          # Resolve llvm-profdata.exe from PATH first; fall back to LLVM_PATH/bin
-          $winLlvmProfdataPath = $null
-          try {
-            $winLlvmProfdataPath = (Get-Command llvm-profdata.exe -ErrorAction Stop).Source
-          } catch {
-            if ($env:LLVM_PATH) {
-              $candidate = Join-Path $env:LLVM_PATH "bin\llvm-profdata.exe"
-              if (Test-Path $candidate) { $winLlvmProfdataPath = $candidate }
-            }
-          }
-          if (-not $winLlvmProfdataPath) {
-            Write-Error "llvm-profdata.exe not found in PATH or LLVM_PATH/bin"
+          $workspace_dir = [regex]::replace($env:GITHUB_WORKSPACE, "^([A-Z]):", { "/" + $args.value.Substring(0, 1).toLower() }) -replace "\\","/"
+          $browser_path = "/c/artifact/floorp/floorp.exe"
+          # The llvm-profdata path can be dynamic, let's find it within the mozbuild directory
+          $llvm_profdata_path_win = (Get-ChildItem -Path "C:\Users\runneradmin\.mozbuild" -Recurse -Filter "llvm-profdata.exe" | Select-Object -First 1).FullName
+          if (-not $llvm_profdata_path_win) {
+            Write-Error "llvm-profdata.exe not found in C:\Users\runneradmin\.mozbuild"
             exit 1
           }
-          Write-Host "Using llvm-profdata at: $winLlvmProfdataPath"
-          $winWorkspaceRoot = $env:GITHUB_WORKSPACE
-          
+          $llvm_profdata_path = [regex]::replace($llvm_profdata_path_win, "^([A-Z]):", { "/" + $args.value.Substring(0, 1).toLower() }) -replace "\\","/"
+
           $scriptContent = @"
           #!/bin/bash
           set -ex
 
-          # Receive Windows paths from PowerShell
-          WIN_BROWSER_PATH="${winBrowserPath}"
-          WIN_LLVM_PROFDATA_PATH="${winLlvmProfdataPath}"
-          WIN_WORKSPACE="${winWorkspaceRoot}"
+          cd "$workspace_dir"
 
-          # Use cygpath for robust path conversion inside the MSYS2 environment
-          echo "Converting paths..."
-          BROWSER_PATH=`$(cygpath -u "`$WIN_BROWSER_PATH")`
-          LLVM_PROFDATA_PATH=`$(cygpath -u "`$WIN_LLVM_PROFDATA_PATH")`
-          WORKSPACE_PATH=`$(cygpath -u "`$WIN_WORKSPACE")`
-          
-          echo "Browser path (Unix): `$BROWSER_PATH"
-          echo "llvm-profdata path (Unix): `$LLVM_PROFDATA_PATH"
-          echo "Workspace path (Unix): `$WORKSPACE_PATH"
-          
-          # Change to workspace directory and verify
-          cd "`$WORKSPACE_PATH" || {
-            echo "ERROR: Failed to change to workspace directory"
-            exit 1
-          }
-          echo "Current working directory: `$(pwd)"
-          
-          # Create placeholder files to ensure they exist
-          echo "Creating placeholder profile files..."
-          touch merged.profdata en-US.log
-          
-          # Run Mozilla bootstrap to ensure build tools are available
-          ./mach --no-interactive bootstrap --application-choice browser || echo "Bootstrap warning, continuing..."
+          export PATH=/c/mozilla-build/msys2/usr/bin:`$PATH
 
-          # Generate the profile data
-          echo "Starting profile generation..."
-          export LLVM_PROFDATA="`$LLVM_PROFDATA_PATH"
-          export MOZ_HEADLESS=1
-          export JARLOG_FILE="`$WORKSPACE_PATH/en-US.log"
-          export MOZ_FETCHES_DIR="/tmp"
-          
-          # Verify LLVM_PROFDATA is accessible
-          echo "Verifying LLVM_PROFDATA tool..."
-          if [[ ! -x "`$LLVM_PROFDATA" ]]; then
-            echo "ERROR: LLVM_PROFDATA is not executable: `$LLVM_PROFDATA"
-            ls -la "`$LLVM_PROFDATA" || echo "File does not exist"
-            exit 1
-          fi
-          "`$LLVM_PROFDATA" --version || {
-            echo "ERROR: Failed to execute llvm-profdata"
-            exit 1
-          }
-          
-          # Store the current directory for reference
-          PROFILE_OUTPUT_DIR="`$(pwd)"
-          echo "Profile output directory: `$PROFILE_OUTPUT_DIR"
-          echo "LLVM_PROFDATA set to: `$LLVM_PROFDATA"
-          echo "JARLOG_FILE set to: `$JARLOG_FILE"
-          
-          # Clean up any existing profraw files
-          rm -f *.profraw *.profdata 2>/dev/null || true
-          
-          # Run profileserver with timeout and proper error handling
-          python3 build/pgo/profileserver.py --binary "`$BROWSER_PATH" || {
-            PROFILE_EXIT_CODE=`$?
-            echo "ERROR: Profile generation script failed with exit code `$PROFILE_EXIT_CODE"
-            echo "Checking current directory contents..."
-            pwd
-            ls -la
-            echo "Searching for any generated profile files..."
-            find "`$WORKSPACE_PATH" -name "*.profdata" -o -name "*.profraw" -o -name "en-US.log" 2>/dev/null || echo "No profile files found"
-            exit `$PROFILE_EXIT_CODE
-          }
+          ./mach --no-interactive bootstrap --application-choice browser
 
-          # Verify and locate the output files
-          echo "=== Profile generation completed, checking output files ==="
-          echo "Current directory: `$(pwd)"
-          echo "Listing all files in current directory:"
-          ls -la
-          
-          echo "Searching for profraw and profdata files..."
-          find . -maxdepth 1 -type f \( -name "*.profraw" -o -name "*.profdata" \) -exec ls -lh {} \;
-          
-          # Check if files exist in current directory
-          MERGED_PROF_PATH="`$WORKSPACE_PATH/merged.profdata"
-          JARLOG_PATH="`$WORKSPACE_PATH/en-US.log"
-          
-          if [[ ! -f "`$MERGED_PROF_PATH" ]] || [[ ! -s "`$MERGED_PROF_PATH" ]]; then
-            echo "ERROR: merged.profdata not found or empty at `$MERGED_PROF_PATH"
-            
-            # Check if profraw files exist (which means profdata merging failed)
-            PROFRAW_COUNT=`$(find "`$WORKSPACE_PATH" -name "*.profraw" -type f 2>/dev/null | wc -l)`
-            if [[ `$PROFRAW_COUNT -gt 0 ]]; then
-              echo "Found `$PROFRAW_COUNT .profraw files - attempting manual merge..."
-              PROFRAW_FILES=(`$(find "`$WORKSPACE_PATH" -name "*.profraw" -type f 2>/dev/null)`)
-              echo "Using llvm-profdata: `$LLVM_PROFDATA"
-              "`$LLVM_PROFDATA" merge -o "`$MERGED_PROF_PATH" "`${PROFRAW_FILES[@]}" || {
-                echo "ERROR: Manual merge of profraw files failed"
-                exit 1
-              }
-              
-              if [[ -f "`$MERGED_PROF_PATH" ]] && [[ -s "`$MERGED_PROF_PATH" ]]; then
-                echo "SUCCESS: Manually merged profdata file"
-                ls -lh "`$MERGED_PROF_PATH"
-              else
-                echo "ERROR: Manual merge produced empty or missing file"
-                exit 1
-              fi
-            else
-              echo "ERROR: No .profraw files found - profile generation may have failed"
-              echo "Searching entire workspace..."
-              find "`$WORKSPACE_PATH" -name "*.prof*" -type f 2>/dev/null || echo "No profile files found"
-              exit 1
-            fi
-          else
-            echo "✓ merged.profdata found at expected location"
-            ls -lh "`$MERGED_PROF_PATH"
-          fi
-          
-          if [[ ! -f "`$JARLOG_PATH" ]] || [[ ! -s "`$JARLOG_PATH" ]]; then
-            echo "WARNING: en-US.log not found or empty at `$JARLOG_PATH"
-            echo "Searching for en-US.log in workspace..."
-            FOUND_LOG=`$(find "`$WORKSPACE_PATH" -name "en-US.log" -type f -size +0 2>/dev/null | head -1)`
-            if [[ -n "`$FOUND_LOG" ]]; then
-              echo "Found en-US.log at: `$FOUND_LOG"
-              cp -v "`$FOUND_LOG" "`$JARLOG_PATH"
-            else
-              echo "ERROR: en-US.log not found anywhere in workspace"
-              exit 1
-            fi
-          fi
-
-          echo "=== Profile files verified successfully ==="
-          ls -lh "`$MERGED_PROF_PATH" "`$JARLOG_PATH"
-          
-          # Verify files exist at expected Windows paths
-          MERGED_PROFDATA_WIN=`$(cygpath -w "`$MERGED_PROF_PATH")`
-          JARLOG_WIN=`$(cygpath -w "`$JARLOG_PATH")`
-          echo "Windows paths for verification:"
-          echo "  merged.profdata: `$MERGED_PROFDATA_WIN"
-          echo "  en-US.log: `$JARLOG_WIN"
+          LLVM_PROFDATA="$llvm_profdata_path" JARLOG_FILE=en-US.log ./mach python build/pgo/profileserver.py --binary "$browser_path"
           "@
 
-          # --- 4. Save Script ---
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "pgo-generate.sh"
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "mozilla-build-run.sh"
           $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8 -NoNewline
-          
-          # --- 5. Execute Script ---
-          Write-Host "Executing profile generation script via Mozilla Build shell..."
-          $exitCode = 0
-          & "C:\mozilla-build\start-shell.bat" "$scriptPath"
-          $exitCode = $LASTEXITCODE
 
-          Write-Host "Shell script exited with code: $exitCode"
-          
-          if ($exitCode -ne 0) {
-            Write-Error "Profile generation script failed with exit code $exitCode"
-            exit $exitCode
-          }
-
-          # --- 6. Verify Final Output ---
-          Write-Host "Verifying final output files in workspace..."
-          Write-Host "Current PowerShell directory: $(Get-Location)"
-          Write-Host "Workspace directory: $env:GITHUB_WORKSPACE"
-          
-          # Check workspace directory contents
-          Write-Host "`nWorkspace contents (profile-related files):"
-          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Include "*.profdata","*.log","*.profraw" -ErrorAction SilentlyContinue | 
-            Select-Object Name, Length, LastWriteTime | Format-Table
-          
-          $mergedProf = Join-Path $env:GITHUB_WORKSPACE "merged.profdata"
-          $jarLog = Join-Path $env:GITHUB_WORKSPACE "en-US.log"
-          
-          Write-Host "`nLooking for:"
-          Write-Host "  merged.profdata at: $mergedProf"
-          Write-Host "  en-US.log at: $jarLog"
-          
-          # Check merged.profdata
-          if (-not (Test-Path $mergedProf)) {
-            Write-Warning "merged.profdata not found at expected location"
-            Write-Host "Searching entire workspace for merged.profdata..."
-            $foundProf = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "merged.profdata" -ErrorAction SilentlyContinue | 
-              Where-Object { $_.Length -gt 0 } | Select-Object -First 1
-            if ($foundProf) {
-              Write-Host "Found at: $($foundProf.FullName) (Size: $($foundProf.Length) bytes)"
-              Copy-Item -Path $foundProf.FullName -Destination $mergedProf -Force
-              Write-Host "✓ Copied to workspace root"
-            } else {
-              Write-Host "Searching for .profraw files as fallback..."
-              $profrawFiles = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.profraw" -ErrorAction SilentlyContinue
-              if ($profrawFiles) {
-                Write-Host "Found $($profrawFiles.Count) .profraw files, but merged.profdata is missing"
-                $profrawFiles | Select-Object FullName, Length | Format-Table
-              }
-              Write-Error "merged.profdata not found anywhere in workspace"
-              exit 1
-            }
-          } else {
-            $profSize = (Get-Item $mergedProf).Length
-            if ($profSize -eq 0) {
-              Write-Error "merged.profdata exists but is empty (0 bytes)"
-              exit 1
-            }
-            Write-Host "✓ merged.profdata found (Size: $profSize bytes)"
-          }
-
-          # Check en-US.log
-          if (-not (Test-Path $jarLog)) {
-            Write-Warning "en-US.log not found at expected location"
-            Write-Host "Searching entire workspace for en-US.log..."
-            $foundLog = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "en-US.log" -ErrorAction SilentlyContinue | 
-              Where-Object { $_.Length -gt 0 } | Select-Object -First 1
-            if ($foundLog) {
-              Write-Host "Found at: $($foundLog.FullName) (Size: $($foundLog.Length) bytes)"
-              Copy-Item -Path $foundLog.FullName -Destination $jarLog -Force
-              Write-Host "✓ Copied to workspace root"
-            } else {
-              Write-Error "en-US.log not found anywhere in workspace"
-              exit 1
-            }
-          } else {
-            $logSize = (Get-Item $jarLog).Length
-            if ($logSize -eq 0) {
-              Write-Error "en-US.log exists but is empty (0 bytes)"
-              exit 1
-            }
-            Write-Host "✓ en-US.log found (Size: $logSize bytes)"
-          }
-          
-          Write-Host "`n========================================="
-          Write-Host "✓ Profile generation completed successfully!"
-          Write-Host "========================================="
-          Write-Host "Files ready for upload:"
-          Write-Host "  • merged.profdata: $((Get-Item $mergedProf).Length) bytes"
-          Write-Host "  • en-US.log: $((Get-Item $jarLog).Length) bytes"
-          Write-Host "========================================="
+          C:\mozilla-build\start-shell.bat $scriptPath
 
       - name: Upload profile data
         uses: actions/upload-artifact@v4
