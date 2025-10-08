@@ -151,9 +151,26 @@ jobs:
           export JARLOG_FILE="`$WORKSPACE_PATH/en-US.log"
           export MOZ_FETCHES_DIR="/tmp"
           
+          # Verify LLVM_PROFDATA is accessible
+          echo "Verifying LLVM_PROFDATA tool..."
+          if [[ ! -x "`$LLVM_PROFDATA" ]]; then
+            echo "ERROR: LLVM_PROFDATA is not executable: `$LLVM_PROFDATA"
+            ls -la "`$LLVM_PROFDATA" || echo "File does not exist"
+            exit 1
+          fi
+          "`$LLVM_PROFDATA" --version || {
+            echo "ERROR: Failed to execute llvm-profdata"
+            exit 1
+          }
+          
           # Store the current directory for reference
           PROFILE_OUTPUT_DIR="`$(pwd)"
           echo "Profile output directory: `$PROFILE_OUTPUT_DIR"
+          echo "LLVM_PROFDATA set to: `$LLVM_PROFDATA"
+          echo "JARLOG_FILE set to: `$JARLOG_FILE"
+          
+          # Clean up any existing profraw files
+          rm -f *.profraw *.profdata 2>/dev/null || true
           
           # Run profileserver with timeout and proper error handling
           python3 build/pgo/profileserver.py --binary "`$BROWSER_PATH" || {
@@ -170,23 +187,46 @@ jobs:
           # Verify and locate the output files
           echo "=== Profile generation completed, checking output files ==="
           echo "Current directory: `$(pwd)"
+          echo "Listing all files in current directory:"
           ls -la
+          
+          echo "Searching for profraw and profdata files..."
+          find . -maxdepth 1 -type f \( -name "*.profraw" -o -name "*.profdata" \) -exec ls -lh {} \;
           
           # Check if files exist in current directory
           MERGED_PROF_PATH="`$WORKSPACE_PATH/merged.profdata"
           JARLOG_PATH="`$WORKSPACE_PATH/en-US.log"
           
           if [[ ! -f "`$MERGED_PROF_PATH" ]] || [[ ! -s "`$MERGED_PROF_PATH" ]]; then
-            echo "WARNING: merged.profdata not found or empty at `$MERGED_PROF_PATH"
-            echo "Searching for merged.profdata in workspace..."
-            FOUND_PROF=`$(find "`$WORKSPACE_PATH" -name "merged.profdata" -type f -size +0 2>/dev/null | head -1)`
-            if [[ -n "`$FOUND_PROF" ]]; then
-              echo "Found merged.profdata at: `$FOUND_PROF"
-              cp -v "`$FOUND_PROF" "`$MERGED_PROF_PATH"
+            echo "ERROR: merged.profdata not found or empty at `$MERGED_PROF_PATH"
+            
+            # Check if profraw files exist (which means profdata merging failed)
+            PROFRAW_COUNT=`$(find "`$WORKSPACE_PATH" -name "*.profraw" -type f 2>/dev/null | wc -l)`
+            if [[ `$PROFRAW_COUNT -gt 0 ]]; then
+              echo "Found `$PROFRAW_COUNT .profraw files - attempting manual merge..."
+              PROFRAW_FILES=(`$(find "`$WORKSPACE_PATH" -name "*.profraw" -type f 2>/dev/null)`)
+              echo "Using llvm-profdata: `$LLVM_PROFDATA"
+              "`$LLVM_PROFDATA" merge -o "`$MERGED_PROF_PATH" "`${PROFRAW_FILES[@]}" || {
+                echo "ERROR: Manual merge of profraw files failed"
+                exit 1
+              }
+              
+              if [[ -f "`$MERGED_PROF_PATH" ]] && [[ -s "`$MERGED_PROF_PATH" ]]; then
+                echo "SUCCESS: Manually merged profdata file"
+                ls -lh "`$MERGED_PROF_PATH"
+              else
+                echo "ERROR: Manual merge produced empty or missing file"
+                exit 1
+              fi
             else
-              echo "ERROR: merged.profdata not found anywhere in workspace"
+              echo "ERROR: No .profraw files found - profile generation may have failed"
+              echo "Searching entire workspace..."
+              find "`$WORKSPACE_PATH" -name "*.prof*" -type f 2>/dev/null || echo "No profile files found"
               exit 1
             fi
+          else
+            echo "✓ merged.profdata found at expected location"
+            ls -lh "`$MERGED_PROF_PATH"
           fi
           
           if [[ ! -f "`$JARLOG_PATH" ]] || [[ ! -s "`$JARLOG_PATH" ]]; then
@@ -236,8 +276,8 @@ jobs:
           Write-Host "Workspace directory: $env:GITHUB_WORKSPACE"
           
           # Check workspace directory contents
-          Write-Host "`nWorkspace contents:"
-          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Filter "*.profdata","*.log" -ErrorAction SilentlyContinue | 
+          Write-Host "`nWorkspace contents (profile-related files):"
+          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Include "*.profdata","*.log","*.profraw" -ErrorAction SilentlyContinue | 
             Select-Object Name, Length, LastWriteTime | Format-Table
           
           $mergedProf = Join-Path $env:GITHUB_WORKSPACE "merged.profdata"
