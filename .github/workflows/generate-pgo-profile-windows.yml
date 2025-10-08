@@ -130,9 +130,16 @@ jobs:
           echo "llvm-profdata path (Unix): `$LLVM_PROFDATA_PATH"
           echo "Workspace path (Unix): `$WORKSPACE_PATH"
           
-          # Change to workspace directory
-          cd "`$WORKSPACE_PATH"
-          pwd
+          # Change to workspace directory and verify
+          cd "`$WORKSPACE_PATH" || {
+            echo "ERROR: Failed to change to workspace directory"
+            exit 1
+          }
+          echo "Current working directory: `$(pwd)"
+          
+          # Create placeholder files to ensure they exist
+          echo "Creating placeholder profile files..."
+          touch merged.profdata en-US.log
           
           # Run Mozilla bootstrap to ensure build tools are available
           ./mach --no-interactive bootstrap --application-choice browser || echo "Bootstrap warning, continuing..."
@@ -141,42 +148,66 @@ jobs:
           echo "Starting profile generation..."
           export LLVM_PROFDATA="`$LLVM_PROFDATA_PATH"
           export MOZ_HEADLESS=1
-          export JARLOG_FILE="en-US.log"
+          export JARLOG_FILE="`$WORKSPACE_PATH/en-US.log"
           export MOZ_FETCHES_DIR="/tmp"
+          
+          # Store the current directory for reference
+          PROFILE_OUTPUT_DIR="`$(pwd)"
+          echo "Profile output directory: `$PROFILE_OUTPUT_DIR"
           
           # Run profileserver with timeout and proper error handling
           python3 build/pgo/profileserver.py --binary "`$BROWSER_PATH" || {
-            echo "ERROR: Profile generation script failed with exit code `$?"
-            echo "Checking for partial output files..."
-            ls -la merged.profdata en-US.log 2>/dev/null || echo "No output files found"
-            exit 1
+            PROFILE_EXIT_CODE=`$?
+            echo "ERROR: Profile generation script failed with exit code `$PROFILE_EXIT_CODE"
+            echo "Checking current directory contents..."
+            pwd
+            ls -la
+            echo "Searching for any generated profile files..."
+            find "`$WORKSPACE_PATH" -name "*.profdata" -o -name "*.profraw" -o -name "en-US.log" 2>/dev/null || echo "No profile files found"
+            exit `$PROFILE_EXIT_CODE
           }
 
-          # Verify the output files were created
-          echo "Checking output files in current directory..."
-          pwd
+          # Verify and locate the output files
+          echo "=== Profile generation completed, checking output files ==="
+          echo "Current directory: `$(pwd)"
           ls -la
           
-          if [[ ! -f "merged.profdata" ]]; then
-            echo "ERROR: merged.profdata not found in current directory"
+          # Check if files exist in current directory
+          MERGED_PROF_PATH="`$WORKSPACE_PATH/merged.profdata"
+          JARLOG_PATH="`$WORKSPACE_PATH/en-US.log"
+          
+          if [[ ! -f "`$MERGED_PROF_PATH" ]] || [[ ! -s "`$MERGED_PROF_PATH" ]]; then
+            echo "WARNING: merged.profdata not found or empty at `$MERGED_PROF_PATH"
             echo "Searching for merged.profdata in workspace..."
-            find "`$WORKSPACE_PATH" -name "merged.profdata" -type f || echo "Not found anywhere"
-            exit 1
+            FOUND_PROF=`$(find "`$WORKSPACE_PATH" -name "merged.profdata" -type f -size +0 2>/dev/null | head -1)`
+            if [[ -n "`$FOUND_PROF" ]]; then
+              echo "Found merged.profdata at: `$FOUND_PROF"
+              cp -v "`$FOUND_PROF" "`$MERGED_PROF_PATH"
+            else
+              echo "ERROR: merged.profdata not found anywhere in workspace"
+              exit 1
+            fi
           fi
           
-          if [[ ! -f "en-US.log" ]]; then
-            echo "ERROR: en-US.log not found in current directory"
+          if [[ ! -f "`$JARLOG_PATH" ]] || [[ ! -s "`$JARLOG_PATH" ]]; then
+            echo "WARNING: en-US.log not found or empty at `$JARLOG_PATH"
             echo "Searching for en-US.log in workspace..."
-            find "`$WORKSPACE_PATH" -name "en-US.log" -type f || echo "Not found anywhere"
-            exit 1
+            FOUND_LOG=`$(find "`$WORKSPACE_PATH" -name "en-US.log" -type f -size +0 2>/dev/null | head -1)`
+            if [[ -n "`$FOUND_LOG" ]]; then
+              echo "Found en-US.log at: `$FOUND_LOG"
+              cp -v "`$FOUND_LOG" "`$JARLOG_PATH"
+            else
+              echo "ERROR: en-US.log not found anywhere in workspace"
+              exit 1
+            fi
           fi
 
-          echo "Profile files generated successfully in workspace:"
-          ls -lh merged.profdata en-US.log
+          echo "=== Profile files verified successfully ==="
+          ls -lh "`$MERGED_PROF_PATH" "`$JARLOG_PATH"
           
           # Verify files exist at expected Windows paths
-          MERGED_PROFDATA_WIN=`$(cygpath -w "`$WORKSPACE_PATH/merged.profdata")`
-          JARLOG_WIN=`$(cygpath -w "`$WORKSPACE_PATH/en-US.log")`
+          MERGED_PROFDATA_WIN=`$(cygpath -w "`$MERGED_PROF_PATH")`
+          JARLOG_WIN=`$(cygpath -w "`$JARLOG_PATH")`
           echo "Windows paths for verification:"
           echo "  merged.profdata: `$MERGED_PROFDATA_WIN"
           echo "  en-US.log: `$JARLOG_WIN"
@@ -206,7 +237,8 @@ jobs:
           
           # Check workspace directory contents
           Write-Host "`nWorkspace contents:"
-          Get-ChildItem -Path $env:GITHUB_WORKSPACE | Select-Object Name, Length, LastWriteTime | Format-Table
+          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Filter "*.profdata","*.log" -ErrorAction SilentlyContinue | 
+            Select-Object Name, Length, LastWriteTime | Format-Table
           
           $mergedProf = Join-Path $env:GITHUB_WORKSPACE "merged.profdata"
           $jarLog = Join-Path $env:GITHUB_WORKSPACE "en-US.log"
@@ -215,37 +247,65 @@ jobs:
           Write-Host "  merged.profdata at: $mergedProf"
           Write-Host "  en-US.log at: $jarLog"
           
+          # Check merged.profdata
           if (-not (Test-Path $mergedProf)) {
-            Write-Host "ERROR: merged.profdata not found at expected location"
+            Write-Warning "merged.profdata not found at expected location"
             Write-Host "Searching entire workspace for merged.profdata..."
-            $foundProf = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "merged.profdata" -ErrorAction SilentlyContinue
+            $foundProf = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "merged.profdata" -ErrorAction SilentlyContinue | 
+              Where-Object { $_.Length -gt 0 } | Select-Object -First 1
             if ($foundProf) {
-              Write-Host "Found at: $($foundProf.FullName)"
+              Write-Host "Found at: $($foundProf.FullName) (Size: $($foundProf.Length) bytes)"
               Copy-Item -Path $foundProf.FullName -Destination $mergedProf -Force
-              Write-Host "Copied to workspace root"
+              Write-Host "✓ Copied to workspace root"
             } else {
+              Write-Host "Searching for .profraw files as fallback..."
+              $profrawFiles = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.profraw" -ErrorAction SilentlyContinue
+              if ($profrawFiles) {
+                Write-Host "Found $($profrawFiles.Count) .profraw files, but merged.profdata is missing"
+                $profrawFiles | Select-Object FullName, Length | Format-Table
+              }
               Write-Error "merged.profdata not found anywhere in workspace"
               exit 1
             }
+          } else {
+            $profSize = (Get-Item $mergedProf).Length
+            if ($profSize -eq 0) {
+              Write-Error "merged.profdata exists but is empty (0 bytes)"
+              exit 1
+            }
+            Write-Host "✓ merged.profdata found (Size: $profSize bytes)"
           }
 
+          # Check en-US.log
           if (-not (Test-Path $jarLog)) {
-            Write-Host "ERROR: en-US.log not found at expected location"
+            Write-Warning "en-US.log not found at expected location"
             Write-Host "Searching entire workspace for en-US.log..."
-            $foundLog = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "en-US.log" -ErrorAction SilentlyContinue
+            $foundLog = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "en-US.log" -ErrorAction SilentlyContinue | 
+              Where-Object { $_.Length -gt 0 } | Select-Object -First 1
             if ($foundLog) {
-              Write-Host "Found at: $($foundLog.FullName)"
+              Write-Host "Found at: $($foundLog.FullName) (Size: $($foundLog.Length) bytes)"
               Copy-Item -Path $foundLog.FullName -Destination $jarLog -Force
-              Write-Host "Copied to workspace root"
+              Write-Host "✓ Copied to workspace root"
             } else {
               Write-Error "en-US.log not found anywhere in workspace"
               exit 1
             }
+          } else {
+            $logSize = (Get-Item $jarLog).Length
+            if ($logSize -eq 0) {
+              Write-Error "en-US.log exists but is empty (0 bytes)"
+              exit 1
+            }
+            Write-Host "✓ en-US.log found (Size: $logSize bytes)"
           }
           
-          Write-Host "`n✓ Profile generation completed successfully!"
-          Write-Host "merged.profdata size: $((Get-Item $mergedProf).Length) bytes"
-          Write-Host "en-US.log size: $((Get-Item $jarLog).Length) bytes"
+          Write-Host "`n========================================="
+          Write-Host "✓ Profile generation completed successfully!"
+          Write-Host "========================================="
+          Write-Host "Files ready for upload:"
+          Write-Host "  • merged.profdata: $((Get-Item $mergedProf).Length) bytes"
+          Write-Host "  • en-US.log: $((Get-Item $jarLog).Length) bytes"
+          Write-Host "========================================="
 
       - name: Upload profile data
         uses: actions/upload-artifact@v4
