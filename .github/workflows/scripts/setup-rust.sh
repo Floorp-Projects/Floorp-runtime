@@ -14,12 +14,7 @@ PGO_ARTIFACT_NAME="$3"
 echo "Setting up Rust for platform=$PLATFORM, arch=$ARCH, pgo_artifact=$PGO_ARTIFACT_NAME"
 
 if [[ "$PLATFORM" == "windows" ]]; then
-  if [[ -n "$PGO_ARTIFACT_NAME" ]]; then
-    # for llvm 19
-    # https://github.com/rust-lang/rust/commits/master/src/llvm-project
-    # check here to match rust version with llvm
-    rustup default 1.86.0
-  fi
+  rustup default 1.86.0
   rustup target add x86_64-pc-windows-msvc
 elif [[ "$PLATFORM" == "linux" ]]; then
   if [[ "$ARCH" == "aarch64" ]]; then
@@ -40,18 +35,18 @@ elif [[ "$PLATFORM" == "mac" ]]; then
 
   # Install and configure Rust toolchain for PGO builds
   if [[ -n "$PGO_ARTIFACT_NAME" ]]; then
-    echo "PGO build detected - installing Rust 1.81.0"
-    rustup toolchain install 1.81.0
-    rustup default 1.81.0
+    echo "PGO build detected - installing Rust 1.86.0"
+    rustup toolchain install 1.86.0
+    rustup default 1.86.0
     # Add target to the specific toolchain
-    rustup target add "$TARGET" --toolchain 1.81.0
+    rustup target add "$TARGET" --toolchain 1.86.0
 
-    # Verify target is installed for 1.81.0 toolchain
-    echo "Verifying Rust target installation for 1.81.0:"
-    rustup target list --toolchain 1.81.0 --installed | grep "$TARGET" || {
-      echo "ERROR: Target $TARGET not found in 1.81.0 toolchain"
+    # Verify target is installed for 1.86.0 toolchain
+    echo "Verifying Rust target installation for 1.86.0:"
+    rustup target list --toolchain 1.86.0 --installed | grep "$TARGET" || {
+      echo "ERROR: Target $TARGET not found in 1.86.0 toolchain"
       echo "Attempting to add target again..."
-      rustup target add "$TARGET" --toolchain 1.81.0
+      rustup target add "$TARGET" --toolchain 1.86.0
     }
   else
     echo "Non-PGO build - using stable toolchain"
