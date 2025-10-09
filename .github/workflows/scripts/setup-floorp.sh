@@ -98,9 +98,6 @@ sudo apt install msitools -y
 # Debug
 if [[ "$DEBUG" == "true" ]]; then
   echo "ac_add_options --enable-debug" >> mozconfig
-  # Allow HTTP loads from SystemPrincipal in debug builds
-  # This relaxes the restrictions introduced in Bug 1973227
-  echo "mk_add_options 'export MOZ_ALLOW_PRIVILEGED_REMOTE_LOADS=1'" >> mozconfig
 
   # On Mac, disable the content sandbox for opening Flat Omni.ja in debug builds
   if [[ "$PLATFORM" == "mac" ]]; then

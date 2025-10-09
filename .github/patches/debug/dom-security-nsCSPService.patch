@@ -1,27 +1,17 @@
 diff --git a/dom/security/nsCSPService.cpp b/dom/security/nsCSPService.cpp
-index 7852d4af59..0300bd18b4 100644
+index 7852d4af59..fdd3cfef02 100644
 --- a/dom/security/nsCSPService.cpp
 +++ b/dom/security/nsCSPService.cpp
-@@ -6,6 +6,7 @@
- 
- #include "nsCSPService.h"
- 
-+#include "mozilla/CmdLineAndEnvUtils.h"
- #include "mozilla/Logging.h"
- #include "mozilla/Preferences.h"
- #include "mozilla/StaticPrefs_security.h"
-@@ -147,6 +148,16 @@ static bool SubjectToCSP(nsILoadInfo* aLoadInfo, nsIURI* aURI,
+@@ -147,6 +147,14 @@ static bool SubjectToCSP(nsILoadInfo* aLoadInfo, nsIURI* aURI,
    // default decision, CSP can revise it if there's a policy to enforce
    *aDecision = nsIContentPolicy::ACCEPT;
  
-+  // Allow HTTP(S) loads in debug builds with MOZ_ALLOW_PRIVILEGED_REMOTE_LOADS
-+  // This bypasses CSP checks for development purposes
-+  if (mozilla::EnvHasValue("MOZ_ALLOW_PRIVILEGED_REMOTE_LOADS")) {
-+    nsAutoCString scheme;
-+    aContentLocation->GetScheme(scheme);
-+    if (scheme.EqualsLiteral("http") || scheme.EqualsLiteral("https")) {
-+      return NS_OK;
-+    }
++  // DEBUG BUILD ONLY: Skip CSP checks for HTTP(S) loads
++  // This patch is only applied in debug builds for development purposes
++  nsAutoCString scheme;
++  aContentLocation->GetScheme(scheme);
++  if (scheme.EqualsLiteral("http") || scheme.EqualsLiteral("https")) {
++    return NS_OK;
 +  }
 +
    // No need to continue processing the CSP if the load should *not* be subject
