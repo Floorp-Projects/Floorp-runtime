@@ -54,7 +54,7 @@ elif [[ "$PLATFORM" == "mac" ]]; then
   else
     cp ./.github/workflows/mozconfigs/macosx64-aarch64.mozconfig mozconfig
   fi
-  
+
   # Add macOS SDK path for cross-compilation
   echo "ac_add_options --with-macos-sdk=$(echo ~)/macos-sdk" >> mozconfig
 fi
@@ -101,6 +101,11 @@ if [[ "$DEBUG" == "true" ]]; then
   # Allow HTTP loads from SystemPrincipal in debug builds
   # This relaxes the restrictions introduced in Bug 1973227
   echo "mk_add_options 'export MOZ_ALLOW_PRIVILEGED_REMOTE_LOADS=1'" >> mozconfig
+
+  # On Mac, disable the content sandbox for opening Flat Omni.ja in debug builds
+  if [[ "$PLATFORM" == "mac" ]]; then
+    echo "mk_add_options 'export MOZ_DISABLE_CONTENT_SANDBOX=1'" >> mozconfig
+  fi
 fi
 
 # PGO
