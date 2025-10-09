@@ -5007,6 +5007,38 @@ bookmarks_management:
     metadata:
       tags:
         - Bookmarks
+  delete_snackbar_shown:
+    type: event
+    description: |
+      A delete snackbar was shown after a single bookmark deletion.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1991998
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D267098
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Bookmarks
+  delete_snackbar_undo_clicked:
+    type: event
+    description: |
+      The user clicked the undo button in a bookmarks delete snackbar.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1991998
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D267098
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Bookmarks
 
 activation:
   identifier:
@@ -5840,6 +5872,32 @@ history:
       - https://github.com/mozilla-mobile/fenix/pull/23695
       - https://github.com/mozilla-mobile/fenix/pull/28709#issuecomment-1410276888
       - https://github.com/mozilla-mobile/firefox-android/pull/2597
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  delete_snackbar_shown:
+    type: event
+    description: |
+      A delete snackbar was shown after one or more history items were deleted.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1991998
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D267124
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  delete_snackbar_undo_clicked:
+    type: event
+    description: |
+      The user clicked the undo button in a history delete snackbar.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1991998
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D267124
     data_sensitivity:
       - interaction
     notification_emails:
@@ -14316,6 +14374,30 @@ downloads:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1968735
     data_reviews:
       - https://phabricator.services.mozilla.com/D251698
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  delete_snackbar_shown:
+    type: event
+    description: A delete snackbar was shown after one or more downloads were deleted.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1991998
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D267081
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  delete_snackbar_undo_clicked:
+    type: event
+    description: The user clicked the undo button in a downloads delete snackbar.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1991998
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D267081
     data_sensitivity:
       - interaction
     notification_emails:
