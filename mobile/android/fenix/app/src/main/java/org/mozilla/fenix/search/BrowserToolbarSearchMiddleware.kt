@@ -14,7 +14,6 @@ import androidx.lifecycle.Lifecycle.State.RESUMED
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
-import androidx.navigation.NavOptions
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -507,21 +506,9 @@ class BrowserToolbarSearchMiddleware(
                             searchTermOrURL = it.qrScannerState.lastScanData,
                             newTab = appStore.state.searchState.sourceTabId == null,
                             flags = EngineSession.LoadUrlFlags.external(),
-                            private = false,
+                            private = environment?.browsingModeManager?.mode == Private,
                         )
-                        environment?.navController?.navigate(
-                            resId = R.id.browserFragment,
-                            args = null,
-                            navOptions = when (environment?.navController?.currentDestination?.id) {
-                                R.id.historyFragment,
-                                R.id.bookmarkFragment,
-                                    -> NavOptions.Builder()
-                                        .setPopUpTo(R.id.browserFragment, true)
-                                        .build()
-
-                                else -> null
-                            },
-                        )
+                        environment?.navController?.navigate(R.id.action_global_browser)
                     }
                 }
         }
