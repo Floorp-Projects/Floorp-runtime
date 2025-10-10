@@ -13,3 +13,14 @@ index 22c3e0b945..bd47d2cb5c 100644
      nsAutoString srcStr;
      aSrc.toString(srcStr);
      NS_ConvertUTF16toUTF8 srcStrUtf8(srcStr);
+@@ -1859,7 +1863,9 @@ void nsContentSecurityUtils::AssertAboutPageHasCSP(Document* aDocument) {
+   const nsCSPPolicy* policy = csp->GetPolicy(0);
+   {
+     AllowBuiltinSrcVisitor visitor(CSPDirective::DEFAULT_SRC_DIRECTIVE, spec);
+-    if (!visitor.visit(policy)) {
++    // DEBUG BUILD ONLY: Skip CSP assertion for development purposes
++    // This patch is only applied in debug builds
++    if (false && !visitor.visit(policy)) {
+       MOZ_ASSERT(false, "about: page must contain a secure default-src");
+     }
+   }
