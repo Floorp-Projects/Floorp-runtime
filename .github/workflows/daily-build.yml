@@ -58,3 +58,25 @@ jobs:
       debug: ${{ github.event.inputs.debug == 'true' || github.event_name == 'schedule' }}
       pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
 
+  publish-release:
+    name: Publish Release Assets
+    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac]
+    if: ${{ github.event.inputs.debug != 'true' && github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: daily-${{ github.run_number }}
+          name: Daily Build ${{ github.run_number }}
+          draft: false
+          prerelease: true
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

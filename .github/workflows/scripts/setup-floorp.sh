@@ -62,17 +62,22 @@ fi
 # Copy branding assets
 if [[ -d ".github/assets/branding" ]]; then
   cp -r ./.github/assets/branding/* ./browser/branding/
-  
-  if [[ "$PLATFORM" == "mac" ]]; then
-    # Set Branding for Mac
-    echo "ac_add_options --with-branding=browser/branding/floorp-official" >> mozconfig
-    # Set Flat Chrome (skip for profile generation)
-    if [[ "$PGO_MODE" != "generate" ]]; then
-      echo "ac_add_options --enable-chrome-format=flat" >> mozconfig
-    fi
+
+  # Select branding based on debug mode
+  if [[ "$DEBUG" == "true" ]]; then
+    # Debug mode: use unofficial branding
+    BRANDING="browser/branding/floorp-daylight"
+    echo "Using debug branding: floorp-daylight"
   else
-    # Set Branding for Linux/Windows
-    echo "ac_add_options --with-branding=browser/branding/floorp-daylight" >> mozconfig
+    # Release mode: use official branding
+    BRANDING="browser/branding/floorp-official"
+    echo "Using official branding: floorp-official"
+  fi
+
+  echo "ac_add_options --with-branding=$BRANDING" >> mozconfig
+
+  # Set Flat Chrome (skip for profile generation)
+  if [[ "$PGO_MODE" != "generate" ]]; then
     echo "ac_add_options --enable-chrome-format=flat" >> mozconfig
   fi
 else
