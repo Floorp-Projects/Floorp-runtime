@@ -91,13 +91,22 @@ fi
 
 sudo apt install msitools -y
 
-# SCCACHE
-{
-  echo "mk_add_options 'export RUSTC_WRAPPER=/opt/hostedtoolcache/sccache/0.10.0/x64/sccache'"
-  echo "mk_add_options 'export CCACHE_CPP2=yes'"
-  echo "ac_add_options --with-ccache=/opt/hostedtoolcache/sccache/0.10.0/x64/sccache"
-  echo "mk_add_options 'export SCCACHE_GHA_ENABLED=on'"
-} >> mozconfig
+SCCACHE_BIN="${SCCACHE_PATH:-}"
+if [[ -z "$SCCACHE_BIN" ]]; then
+  SCCACHE_BIN="$(command -v sccache || true)"
+fi
+
+if [[ -n "$SCCACHE_BIN" ]]; then
+  # Honor the installed sccache path instead of assuming a fixed toolcache location.
+  {
+    echo "mk_add_options 'export RUSTC_WRAPPER=${SCCACHE_BIN}'"
+    echo "mk_add_options 'export CCACHE_CPP2=yes'"
+    echo "ac_add_options --with-ccache=${SCCACHE_BIN}"
+    echo "mk_add_options 'export SCCACHE_GHA_ENABLED=on'"
+  } >> mozconfig
+else
+  echo "Warning: sccache was not found on PATH; proceeding without compiler cache configuration."
+fi
 
 
 # Debug
