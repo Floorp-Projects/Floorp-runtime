@@ -88,19 +88,111 @@ jobs:
           name: floorp-mac-universal-moz-artifact
           path: artifacts/mac
 
+      - name: Download Windows dist-host artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-x86_64-dist-host
+          path: artifacts/windows/dist-host
+
+      - name: Download Windows application.ini artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-x86_64-application-ini
+          path: artifacts/windows/application-ini
+
+      - name: Download Linux x86_64 dist-host artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64-dist-host
+          path: artifacts/linux-x86_64/dist-host
+
+      - name: Download Linux x86_64 application.ini artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-x86_64-application-ini
+          path: artifacts/linux-x86_64/application-ini
+
+      - name: Download Linux aarch64 dist-host artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-aarch64-dist-host
+          path: artifacts/linux-aarch64/dist-host
+
+      - name: Download Linux aarch64 application.ini artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-aarch64-application-ini
+          path: artifacts/linux-aarch64/application-ini
+
+      - name: Download macOS universal dist-host artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-universal-dist-host
+          path: artifacts/mac/dist-host
+
+      - name: Download macOS universal application.ini artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-universal-application-ini
+          path: artifacts/mac/application-ini
+
+      - name: Prepare MAR helper release assets
+        run: |
+          set -euo pipefail
+
+          mkdir -p release-assets
+
+          create_zip() {
+            local source_dir="$1"
+            local output_name="$2"
+
+            if [ ! -d "$source_dir" ]; then
+              echo "Skipping $output_name: directory $source_dir not found"
+              return
+            fi
+
+            if [ -z "$(ls -A "$source_dir")" ]; then
+              echo "Skipping $output_name: directory $source_dir is empty"
+              return
+            fi
+
+            (cd "$source_dir" && zip -r -q "$GITHUB_WORKSPACE/release-assets/$output_name" .)
+          }
+
+          create_zip artifacts/windows/dist-host windows-x86_64-dist-host.zip
+          create_zip artifacts/windows/application-ini windows-x86_64-application-ini.zip
+
+          create_zip artifacts/linux-x86_64/dist-host linux-x86_64-dist-host.zip
+          create_zip artifacts/linux-x86_64/application-ini linux-x86_64-application-ini.zip
+
+          create_zip artifacts/linux-aarch64/dist-host linux-aarch64-dist-host.zip
+          create_zip artifacts/linux-aarch64/application-ini linux-aarch64-application-ini.zip
+
+          create_zip artifacts/mac/dist-host macOS-universal-dist-host.zip
+          create_zip artifacts/mac/application-ini macOS-universal-application-ini.zip
+
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: daily-${{ github.run_number }}
           name: Daily Build ${{ github.run_number }}
           draft: false
-          prerelease: true
+          prerelease: false
+          make_latest: true
           files: |
             artifacts/windows/floorp-windows-x86_64-moz-artifact.zip
             artifacts/linux-x86_64/floorp-linux-x86_64-moz-artifact.tar.xz
             artifacts/linux-aarch64/floorp-linux-aarch64-moz-artifact.tar.xz
             artifacts/mac/floorp-macOS-universal-moz-artifact.dmg
             artifacts/mac/floorp-macOS.update_framework_artifacts.zip
+            release-assets/windows-x86_64-dist-host.zip
+            release-assets/windows-x86_64-application-ini.zip
+            release-assets/linux-x86_64-dist-host.zip
+            release-assets/linux-x86_64-application-ini.zip
+            release-assets/linux-aarch64-dist-host.zip
+            release-assets/linux-aarch64-application-ini.zip
+            release-assets/macOS-universal-dist-host.zip
+            release-assets/macOS-universal-application-ini.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
