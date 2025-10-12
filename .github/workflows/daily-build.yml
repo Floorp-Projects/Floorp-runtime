@@ -64,10 +64,29 @@ jobs:
     if: ${{ github.event.inputs.debug != 'true' && github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
+      - name: Download Windows x86_64 artifact
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: floorp-windows-x86_64-moz-artifact
+          path: artifacts/windows
+
+      - name: Download Linux x86_64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-linux-x86_64-moz-artifact
+          path: artifacts/linux-x86_64
+
+      - name: Download Linux aarch64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-linux-aarch64-moz-artifact
+          path: artifacts/linux-aarch64
+
+      - name: Download Mac Universal artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-mac-universal-moz-artifact
+          path: artifacts/mac
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -76,7 +95,12 @@ jobs:
           name: Daily Build ${{ github.run_number }}
           draft: false
           prerelease: true
-          files: artifacts/**/*
+          files: |
+            artifacts/windows/floorp-windows-x86_64-moz-artifact.zip
+            artifacts/linux-x86_64/floorp-linux-x86_64-moz-artifact.tar.xz
+            artifacts/linux-aarch64/floorp-linux-aarch64-moz-artifact.tar.xz
+            artifacts/mac/floorp-macOS-universal-moz-artifact.dmg
+            artifacts/mac/floorp-macOS.update_framework_artifacts.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
