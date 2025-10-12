@@ -132,15 +132,6 @@ jobs:
 
           ls ./obj-x86_64-apple-darwin/dist/
 
-          # Determine the correct app name based on inputs
-          if [[ "$GHA_DEBUG" == "true" ]]; then
-            APP_FILE="${APP_NAME}Debug.app"
-          else
-            APP_FILE="${APP_NAME}.app"
-          fi
-
-          echo "Looking for app: $APP_FILE"
-
           # Mount x86_64 DMG
           x86_64_dmg=$(ls ./obj-x86_64-apple-darwin/dist/floorp*.mac.dmg | head -n 1)
           hdiutil attach "$x86_64_dmg"
@@ -149,7 +140,33 @@ jobs:
           VOLUME_NAME=$(ls /Volumes/ | grep -i floorp | head -n 1)
           echo "Found volume: $VOLUME_NAME"
 
-          cp -r "/Volumes/${VOLUME_NAME}/${APP_FILE}" ./obj-x86_64-apple-darwin/dist/floorp/
+          # Resolve the .app directory within the mounted volume
+          declare -a CANDIDATE_APPS
+          if [[ "$GHA_DEBUG" == "true" ]]; then
+            CANDIDATE_APPS=("${APP_NAME} Debug.app" "${APP_NAME}Debug.app" "Floorp Daylight Debug.app" "Floorp DaylightDebug.app" "Floorp Debug.app" "FloorpDebug.app")
+          else
+            CANDIDATE_APPS=("${APP_NAME}.app" "Floorp Daylight.app" "Floorp.app")
+          fi
+
+          APP_SOURCE=""
+          for candidate in "${CANDIDATE_APPS[@]}"; do
+            if [[ -d "/Volumes/${VOLUME_NAME}/${candidate}" ]]; then
+              APP_SOURCE="/Volumes/${VOLUME_NAME}/${candidate}"
+              echo "Matched app candidate: ${candidate}"
+              break
+            fi
+          done
+
+          if [[ -z "$APP_SOURCE" ]]; then
+            APP_SOURCE=$(find "/Volumes/${VOLUME_NAME}" -maxdepth 1 -type d -name "*.app" | head -n 1)
+          fi
+
+          if [[ -z "$APP_SOURCE" || ! -d "$APP_SOURCE" ]]; then
+            echo "Unable to locate the .app bundle in /Volumes/${VOLUME_NAME}" >&2
+            exit 1
+          fi
+
+          cp -r "$APP_SOURCE" ./obj-x86_64-apple-darwin/dist/floorp/
           hdiutil detach "/Volumes/${VOLUME_NAME}/"
 
           # Mount aarch64 DMG
@@ -160,7 +177,25 @@ jobs:
           VOLUME_NAME=$(ls /Volumes/ | grep -i floorp | head -n 1)
           echo "Found volume: $VOLUME_NAME"
 
-          cp -r "/Volumes/${VOLUME_NAME}/${APP_FILE}" ./obj-aarch64-apple-darwin/dist/floorp/
+          APP_SOURCE=""
+          for candidate in "${CANDIDATE_APPS[@]}"; do
+            if [[ -d "/Volumes/${VOLUME_NAME}/${candidate}" ]]; then
+              APP_SOURCE="/Volumes/${VOLUME_NAME}/${candidate}"
+              echo "Matched app candidate: ${candidate}"
+              break
+            fi
+          done
+
+          if [[ -z "$APP_SOURCE" ]]; then
+            APP_SOURCE=$(find "/Volumes/${VOLUME_NAME}" -maxdepth 1 -type d -name "*.app" | head -n 1)
+          fi
+
+          if [[ -z "$APP_SOURCE" || ! -d "$APP_SOURCE" ]]; then
+            echo "Unable to locate the .app bundle in /Volumes/${VOLUME_NAME}" >&2
+            exit 1
+          fi
+
+          cp -r "$APP_SOURCE" ./obj-aarch64-apple-darwin/dist/floorp/
           hdiutil detach "/Volumes/${VOLUME_NAME}/"
         env:
           GHA_DEBUG: ${{ inputs.debug }}
