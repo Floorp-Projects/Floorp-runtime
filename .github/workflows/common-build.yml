@@ -217,8 +217,8 @@ jobs:
           name: ${{ inputs.platform }}-${{ inputs.arch }}-dist-host
           path: >-
             ${{ inputs.platform == 'windows' &&
-            'obj-x86_64-pc-windows-msvc/dist/host/' ||
-            format('obj-{0}-*-linux-gnu/dist/host/', inputs.arch) }}
+            'obj-x86_64-pc-windows-msvc/dist/host/*' ||
+            format('obj-{0}-*-linux-gnu/dist/host/*', inputs.arch) }}
           overwrite: true
 
       - name: Upload application.ini for MAR
