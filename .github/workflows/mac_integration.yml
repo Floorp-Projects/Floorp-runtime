@@ -230,7 +230,7 @@ jobs:
 
           # Find the correct .app directory (handles both Floorp.app and FloorpDebug.app)
           APP_DIR=$(find ./obj-x86_64-apple-darwin/dist/floorp -maxdepth 1 -name "*.app" -type d | head -n 1)
-          cp "${APP_DIR}/Contents/Resources/application.ini" ./nora-application.ini
+          cp "${APP_DIR}/Contents/Resources/application.ini" ./floorp-application.ini
 
       # Publish Start
       - name: Remove old uploaded artifacts
@@ -256,11 +256,11 @@ jobs:
           path: obj-x86_64-apple-darwin/dist/host/
           overwrite: true
 
-      - name: Publish nora-application.ini for MAR
+      - name: Publish floorp-application.ini for MAR
         uses: actions/upload-artifact@v4
         with:
           name: macOS-universal-application-ini
-          path: ./nora-application.ini
+          path: ./floorp-application.ini
           overwrite: true
       # Publish End
 

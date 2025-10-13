@@ -172,7 +172,7 @@ echo "✅ Package copied successfully (size: $OUTPUT_SIZE bytes)"
 
 # Copy application.ini for MAR (Mozilla Archive) updates
 APP_INI_SRC="$OBJDIR/dist/bin/application.ini"
-APP_INI_DEST="./nora-application.ini"
+APP_INI_DEST="./floorp-application.ini"
 
 if [[ -f "$APP_INI_SRC" ]]; then
     echo "📝 Copying application.ini for MAR updates"
