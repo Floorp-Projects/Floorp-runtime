@@ -74,3 +74,28 @@ elif [[ "$PLATFORM" == "mac" ]]; then
     mv floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
   fi
 fi
+
+# Stage dist-host directory with a stable root for downstream workflows.
+DIST_HOST_DEST="$HOME/output/${PLATFORM}-${ARCH}-dist-host"
+rm -rf "$DIST_HOST_DEST"
+mkdir -p "$DIST_HOST_DEST"
+
+if [[ "$PLATFORM" == "windows" ]]; then
+  DIST_HOST_SRC="obj-x86_64-pc-windows-msvc/dist/host"
+elif [[ "$PLATFORM" == "linux" ]]; then
+  if [[ "$ARCH" == "aarch64" ]]; then
+    DIST_HOST_SRC="obj-aarch64-unknown-linux-gnu/dist/host"
+  else
+    DIST_HOST_SRC="obj-x86_64-pc-linux-gnu/dist/host"
+  fi
+elif [[ "$PLATFORM" == "mac" ]]; then
+  DIST_HOST_SRC="obj-${ARCH}-apple-darwin/dist/host"
+else
+  DIST_HOST_SRC=""
+fi
+
+if [[ -n "$DIST_HOST_SRC" && -d "$DIST_HOST_SRC" ]]; then
+  cp -a "$DIST_HOST_SRC"/. "$DIST_HOST_DEST"/
+else
+  echo "Warning: dist/host directory not found for ${PLATFORM}-${ARCH} (expected ${DIST_HOST_SRC})" >&2
+fi

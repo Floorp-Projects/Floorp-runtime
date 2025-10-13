@@ -215,10 +215,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.platform }}-${{ inputs.arch }}-dist-host
-          path: >-
-            ${{ inputs.platform == 'windows' &&
-            'obj-x86_64-pc-windows-msvc/dist/host/' ||
-            format('obj-{0}-*-linux-gnu/dist/host/', inputs.arch) }}
+          path: ${{ format('~/output/{0}-{1}-dist-host', inputs.platform, inputs.arch) }}
           overwrite: true
 
       - name: Upload application.ini for MAR
