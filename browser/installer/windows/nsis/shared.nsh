@@ -880,8 +880,6 @@ FunctionEnd
     ${WriteRegDWORD2} $RegHive "$0" "ESR" 1 0
   ${EndIf}
 
-  ${WriteRegStr2} $RegHive "$0" "Publisher" "Ablaze & Floorp Community" 0
-
   StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}$3"
   ${WriteRegStr2} $RegHive "$0" "" "${GREVersion}" 0
   ${WriteRegStr2} $RegHive "$0" "CurrentVersion" "${AppVersion}$3 (${ARCH} ${AB_CD})" 0
