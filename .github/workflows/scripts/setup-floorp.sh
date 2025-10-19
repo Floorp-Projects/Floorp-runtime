@@ -134,14 +134,11 @@ if [[ "$PGO" == "true" ]]; then
 fi
 
 # Update Channel
-if [[ "$PLATFORM" == "mac" ]]; then
-  echo "ac_add_options --enable-update-channel=release" >> mozconfig
-  echo "ac_add_options --with-version-file-path=floorp/gecko/config" >> mozconfig
-  sed -i 's|https://@MOZ_APPUPDATE_HOST@/update/6/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%SYSTEM_CAPABILITIES%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml|https://%NORA_UPDATE_HOST%update.xml|g' ./build/application.ini.in
-else
-  echo "ac_add_options --enable-update-channel=alpha" >> mozconfig
-  sed -i 's|https://@MOZ_APPUPDATE_HOST@/update/6/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%SYSTEM_CAPABILITIES%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml|https://github.com/f3liz-dev/Floorp-runtime/releases/download/%CHANNEL%/%BUILD_TARGET%.update.xml|g' ./build/application.ini.in
-fi
+
+# Replace long MOZ_APPUPDATE URL with NORA update host | Floorp
+OLD='https://@MOZ_APPUPDATE_HOST@/update/6/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%SYSTEM_CAPABILITIES%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml'
+NEW='https://%NORA_UPDATE_HOST%update.xml'
+sed -i "s|${OLD}|${NEW}|g" ./build/application.ini.in
 
 # Note: Rust toolchain and targets are configured in setup-rust.sh
 # Ensure targets are available after any toolchain changes
