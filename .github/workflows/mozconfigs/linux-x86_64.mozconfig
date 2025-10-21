@@ -24,8 +24,6 @@ mk_add_options AUTOCLOBBER=1
 #https://searchfox.org/mozilla-central/rev/893f350260faac2ee6bf2b14c627d55eb2babfb0/toolkit/components/telemetry/docs/internals/preferences.rst
 # Disable telemetry
 ac_add_options MOZ_TELEMETRY_REPORTING=
-# Set branding
-ac_add_options --with-branding=browser/branding/noraneko-unofficial
 # Package js shell.
 export MOZ_PACKAGE_JSSHELL=1
 
