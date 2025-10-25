@@ -139,15 +139,9 @@ def _create_fluent_localizations(
                     localized_desktop_entry_filename,
                 )
 
-            _apply_floorp_brand_overrides(localized_desktop_entry_filename)
-
             shutil.copyfile(
                 en_US_brand_fluent_filename,
                 os.path.join(locale_dir, brand_fluent_filename),
-            )
-
-            _apply_floorp_brand_overrides(
-                os.path.join(locale_dir, brand_fluent_filename)
             )
 
             fallbacks = [locale]
@@ -330,42 +324,6 @@ def _generate_browser_desktop_entry(build_variables, localizations):
         )
 
     return desktop_entry
-
-def _apply_floorp_brand_overrides(ftl_path):
-    from pathlib import Path
-
-    replacements = _get_floorp_brand_replacements()
-    path = Path(ftl_path)
-    if not path.is_file():
-        return
-
-    original_text = path.read_text(encoding="utf-8")
-    updated_text = original_text
-    for source, target in replacements:
-        if source is None or target is None:
-            continue
-        updated_text = updated_text.replace(source, target)
-
-    if updated_text != original_text:
-        path.write_text(updated_text, encoding="utf-8")
-
-
-def _get_floorp_brand_replacements():
-    brand_name = os.environ.get("FLOORP_BRAND_NAME", "Floorp")
-    brand_name_lower = os.environ.get(
-        "FLOORP_BRAND_NAME_LOWER", brand_name.lower()
-    )
-    brand_name_upper = os.environ.get(
-        "FLOORP_BRAND_NAME_UPPER", brand_name.upper()
-    )
-
-    return [
-        ("MOZILLA FIREFOX", brand_name_upper),
-        ("Mozilla Firefox", brand_name),
-        ("Firefox", brand_name),
-        ("FIREFOX", brand_name_upper),
-        ("firefox", brand_name_lower),
-    ]
 
 
 def _desktop_entry_list(iterable):
