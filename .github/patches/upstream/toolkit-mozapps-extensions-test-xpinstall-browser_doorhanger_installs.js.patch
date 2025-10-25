@@ -1,0 +1,17 @@
+diff --git a/toolkit/mozapps/extensions/test/xpinstall/browser_doorhanger_installs.js b/toolkit/mozapps/extensions/test/xpinstall/browser_doorhanger_installs.js
+index 5494400146..634a8ce7c8 100644
+--- a/toolkit/mozapps/extensions/test/xpinstall/browser_doorhanger_installs.js
++++ b/toolkit/mozapps/extensions/test/xpinstall/browser_doorhanger_installs.js
+@@ -655,12 +655,6 @@ describe("Add-on installation doorhangers", function () {
+         ["extensions.postDownloadThirdPartyPrompt", true],
+         // recommended.xpi is signed with AMO staging signature.
+         ["xpinstall.signatures.dev-root", true],
+-        // Disable the blocklist because recommended.xpi is signed
+-        // only with the staging signature and it may end up hitting
+-        // a false positive on the Blocklist bloomfilter computed
+-        // from all add-ons known by AMO as signed with the
+-        // production key (e.g. see Bug 1996059).
+-        ["extensions.blocklist.enabled", false],
+       ],
+     });
+ 

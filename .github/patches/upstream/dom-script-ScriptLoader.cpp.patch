@@ -1,0 +1,25 @@
+diff --git a/dom/script/ScriptLoader.cpp b/dom/script/ScriptLoader.cpp
+index 4412bb9901..5019d54b4a 100644
+--- a/dom/script/ScriptLoader.cpp
++++ b/dom/script/ScriptLoader.cpp
+@@ -4130,10 +4130,6 @@ void ScriptLoader::ReportErrorToConsole(ScriptLoadRequest* aRequest,
+     return;
+   }
+ 
+-  if (!mDocument) {
+-    return;
+-  }
+-
+   bool isScript = !aRequest->IsModuleRequest();
+   const char* message;
+   if (aResult == NS_ERROR_MALFORMED_URI) {
+@@ -4173,9 +4169,6 @@ void ScriptLoader::ReportErrorToConsole(ScriptLoadRequest* aRequest,
+ void ScriptLoader::ReportWarningToConsole(
+     ScriptLoadRequest* aRequest, const char* aMessageName,
+     const nsTArray<nsString>& aParams) const {
+-  if (!mDocument) {
+-    return;
+-  }
+   uint32_t lineNo = aRequest->GetScriptLoadContext()->GetScriptLineNumber();
+   JS::ColumnNumberOneOrigin columnNo =
+       aRequest->GetScriptLoadContext()->GetScriptColumnNumber();

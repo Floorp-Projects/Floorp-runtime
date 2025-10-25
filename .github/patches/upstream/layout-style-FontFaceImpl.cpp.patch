@@ -1,0 +1,39 @@
+diff --git a/layout/style/FontFaceImpl.cpp b/layout/style/FontFaceImpl.cpp
+index 31def99ff3..3d28040159 100644
+--- a/layout/style/FontFaceImpl.cpp
++++ b/layout/style/FontFaceImpl.cpp
+@@ -442,29 +442,17 @@ bool FontFaceImpl::SetDescriptor(nsCSSFontDesc aFontDesc,
+ 
+   // FIXME(heycam): Should not allow modification of FontFaces that are
+   // CSS-connected and whose rule is read only.
+-  bool changed = false;
+-  const bool valid = [&] {
+-    if (Servo_FontFaceRule_SetDescriptor(GetData(), aFontDesc, &aValue, url,
+-                                         &changed)) {
+-      return true;
+-    }
+-    if (aFontDesc == eCSSFontDesc_Family) {
+-      // TODO: Warn to the console?
+-      nsAutoCString quoted;
+-      nsStyleUtil::AppendEscapedCSSString(aValue, quoted, '"');
+-      if (Servo_FontFaceRule_SetDescriptor(GetData(), aFontDesc, &quoted, url,
+-                                           &changed)) {
+-        return true;
+-      }
+-    }
++  bool changed;
++  if (!Servo_FontFaceRule_SetDescriptor(GetData(), aFontDesc, &aValue, url,
++                                        &changed)) {
+     aRv.ThrowSyntaxError(
+         nsPrintfCString("Invalid font descriptor %s: %s",
+                         nsCSSProps::GetStringValue(aFontDesc).get(),
+                         PromiseFlatCString(aValue).get()));
+     return false;
+-  }();
++  }
+ 
+-  if (!valid || !changed) {
++  if (!changed) {
+     return false;
+   }
+ 

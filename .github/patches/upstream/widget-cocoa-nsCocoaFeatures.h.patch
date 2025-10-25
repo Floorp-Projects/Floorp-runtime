@@ -1,0 +1,23 @@
+diff --git a/widget/cocoa/nsCocoaFeatures.h b/widget/cocoa/nsCocoaFeatures.h
+index deb0497ca6..dfad59dfe6 100644
+--- a/widget/cocoa/nsCocoaFeatures.h
++++ b/widget/cocoa/nsCocoaFeatures.h
+@@ -22,7 +22,6 @@ class nsCocoaFeatures {
+   static bool OnMontereyOrLater();
+   static bool OnVenturaOrLater();
+   static bool OnSonomaOrLater();
+-  static bool OnTahoeOrLater();
+ 
+   static bool IsAtLeastVersion(int32_t aMajor, int32_t aMinor,
+                                int32_t aBugFix = 0);
+@@ -42,7 +41,9 @@ class nsCocoaFeatures {
+ 
+  private:
+   nsCocoaFeatures() = delete;  // Prevent instantiation.
+-  static int32_t ComputeVersion();
++  static void InitializeVersionNumbers();
++
++  static int32_t mOSVersion;
+ };
+ 
+ #endif  // nsCocoaFeatures_h_

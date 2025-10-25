@@ -1,0 +1,18 @@
+diff --git a/mobile/android/focus-android/app/build.gradle b/mobile/android/focus-android/app/build.gradle
+index ad0880da6c..6db765654e 100644
+--- a/mobile/android/focus-android/app/build.gradle
++++ b/mobile/android/focus-android/app/build.gradle
+@@ -62,13 +62,6 @@ android {
+         }
+     }
+ 
+-    // Exclude native libraries for unsupported architectures from third-party dependencies
+-    packagingOptions {
+-        jniLibs {
+-            excludes += ["**/armeabi/*.so", "**/mips/*.so", "**/mips64/*.so", "**/x86/*.so"]
+-        }
+-    }
+-
+     lint {
+         lintConfig = file("lint.xml")
+         baseline = file("lint-baseline.xml")

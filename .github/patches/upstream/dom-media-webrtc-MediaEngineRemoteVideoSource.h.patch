@@ -1,0 +1,14 @@
+diff --git a/dom/media/webrtc/MediaEngineRemoteVideoSource.h b/dom/media/webrtc/MediaEngineRemoteVideoSource.h
+index b8502113d8..0f795f0a52 100644
+--- a/dom/media/webrtc/MediaEngineRemoteVideoSource.h
++++ b/dom/media/webrtc/MediaEngineRemoteVideoSource.h
+@@ -68,8 +68,7 @@ class MediaEngineRemoteVideoSource : public MediaEngineSource,
+   bool ChooseCapability(const NormalizedConstraints& aConstraints,
+                         const MediaEnginePrefs& aPrefs,
+                         webrtc::CaptureCapability& aCapability,
+-                        const DistanceCalculation aCalculate,
+-                        const char** aOutBadConstraint);
++                        const DistanceCalculation aCalculate);
+ 
+   uint32_t GetDistance(const webrtc::CaptureCapability& aCandidate,
+                        const NormalizedConstraintSet& aConstraints,

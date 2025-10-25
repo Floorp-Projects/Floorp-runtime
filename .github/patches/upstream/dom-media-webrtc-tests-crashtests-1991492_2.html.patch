@@ -1,0 +1,27 @@
+diff --git a/dom/media/webrtc/tests/crashtests/1991492_2.html b/dom/media/webrtc/tests/crashtests/1991492_2.html
+deleted file mode 100644
+index 88d83c6901..0000000000
+--- a/dom/media/webrtc/tests/crashtests/1991492_2.html
++++ /dev/null
+@@ -1,21 +0,0 @@
+-<html class="reftest-wait">
+-<head>
+-<script>
+-    document.addEventListener("DOMContentLoaded", async () => {
+-      SpecialPowers.wrap(document).notifyUserGestureActivation();
+-      const stream = await navigator.mediaDevices.getDisplayMedia({ "video": true });
+-      const [track] = stream.getTracks();
+-      try {
+-      await track.applyConstraints({
+-          frameRate: {
+-            min: 100,
+-            max: -1,
+-          },
+-        });
+-      } finally {
+-        document.documentElement.removeAttribute("class");
+-      }
+-    })
+-  </script>
+-</head>
+-</html>

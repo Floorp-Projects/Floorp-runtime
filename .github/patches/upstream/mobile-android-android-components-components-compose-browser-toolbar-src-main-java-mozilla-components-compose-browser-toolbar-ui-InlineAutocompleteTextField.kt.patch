@@ -1,0 +1,27 @@
+diff --git a/mobile/android/android-components/components/compose/browser-toolbar/src/main/java/mozilla/components/compose/browser/toolbar/ui/InlineAutocompleteTextField.kt b/mobile/android/android-components/components/compose/browser-toolbar/src/main/java/mozilla/components/compose/browser/toolbar/ui/InlineAutocompleteTextField.kt
+index b2edc1978a..9cccffe3e8 100644
+--- a/mobile/android/android-components/components/compose/browser-toolbar/src/main/java/mozilla/components/compose/browser/toolbar/ui/InlineAutocompleteTextField.kt
++++ b/mobile/android/android-components/components/compose/browser-toolbar/src/main/java/mozilla/components/compose/browser/toolbar/ui/InlineAutocompleteTextField.kt
+@@ -189,15 +189,13 @@ internal fun InlineAutocompleteTextField(
+         },
+         modifier = modifier,
+         update = {
+-            it.post {
+-                if (query != it.originalText) {
+-                    it.updateText(query)
+-                    it.refreshAutocompleteSuggestions()
+-                }
+-                if (it.hint != hint) {
+-                    it.hint = hint
+-                    it.setHintTextColor(hintColor.toArgb())
+-                }
++            if (query != it.originalText) {
++                it.updateText(query)
++                it.refreshAutocompleteSuggestions()
++            }
++            if (it.hint != hint) {
++                it.hint = hint
++                it.setHintTextColor(hintColor.toArgb())
+             }
+         },
+     )

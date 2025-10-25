@@ -1,0 +1,18 @@
+diff --git a/mobile/android/fenix/app/build.gradle b/mobile/android/fenix/app/build.gradle
+index 4f56be19b0..1f26227889 100644
+--- a/mobile/android/fenix/app/build.gradle
++++ b/mobile/android/fenix/app/build.gradle
+@@ -271,13 +271,6 @@ android {
+         }
+     }
+ 
+-    // Exclude native libraries for unsupported architectures from third-party dependencies
+-    packagingOptions {
+-        jniLibs {
+-            excludes += ["**/armeabi/*.so", "**/mips/*.so", "**/mips64/*.so", "**/x86/*.so"]
+-        }
+-    }
+-
+     lint {
+         lintConfig = file("lint.xml")
+         baseline = file("lint-baseline.xml")

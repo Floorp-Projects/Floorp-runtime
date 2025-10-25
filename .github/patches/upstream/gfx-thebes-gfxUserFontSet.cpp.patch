@@ -1,0 +1,14 @@
+diff --git a/gfx/thebes/gfxUserFontSet.cpp b/gfx/thebes/gfxUserFontSet.cpp
+index 3ccf3495f3..7cb6801826 100644
+--- a/gfx/thebes/gfxUserFontSet.cpp
++++ b/gfx/thebes/gfxUserFontSet.cpp
+@@ -1230,6 +1230,9 @@ bool gfxUserFontSet::UserFontCache::Entry::KeyEquals(
+ }
+ 
+ void gfxUserFontSet::UserFontCache::CacheFont(gfxFontEntry* aFontEntry) {
++  NS_ASSERTION(aFontEntry->mFamilyName.Length() != 0,
++               "caching a font associated with no family yet");
++
+   // if caching is disabled, simply return
+   if (StaticPrefs::gfx_downloadable_fonts_disable_cache()) {
+     return;

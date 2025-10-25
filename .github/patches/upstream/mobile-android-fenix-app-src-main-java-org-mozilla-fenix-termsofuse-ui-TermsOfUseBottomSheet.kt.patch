@@ -1,0 +1,12 @@
+diff --git a/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/termsofuse/ui/TermsOfUseBottomSheet.kt b/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/termsofuse/ui/TermsOfUseBottomSheet.kt
+index fd59f2be55..2cb13ab509 100644
+--- a/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/termsofuse/ui/TermsOfUseBottomSheet.kt
++++ b/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/termsofuse/ui/TermsOfUseBottomSheet.kt
+@@ -90,7 +90,6 @@ private fun BottomSheet(
+     ModalBottomSheet(
+         onDismissRequest = { onDismissRequest() },
+         sheetState = sheetState,
+-        containerColor = FirefoxTheme.colors.layer2,
+     ) {
+         BottomSheetContent(
+             sheetState = sheetState,

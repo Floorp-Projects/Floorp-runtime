@@ -1,0 +1,28 @@
+diff --git a/browser/components/urlbar/SearchModeSwitcher.sys.mjs b/browser/components/urlbar/SearchModeSwitcher.sys.mjs
+index ac09207fe4..72a21b2274 100644
+--- a/browser/components/urlbar/SearchModeSwitcher.sys.mjs
++++ b/browser/components/urlbar/SearchModeSwitcher.sys.mjs
+@@ -64,7 +64,13 @@ export class SearchModeSwitcher {
+ 
+   async #onPopupShowing() {
+     await this.#buildSearchModeList();
++
+     this.#input.view.close({ showFocusBorder: false });
++
++    // This moves the focus to the urlbar when the popup is closed.
++    this.#input.document.commandDispatcher.focusedElement =
++      this.#input.inputField;
++
+     Glean.urlbarUnifiedsearchbutton.opened.add(1);
+   }
+ 
+@@ -138,9 +144,6 @@ export class SearchModeSwitcher {
+       return;
+     }
+     if (event.type == "popuphiding") {
+-      // This moves the focus to the urlbar when the popup is closed.
+-      this.#input.document.commandDispatcher.focusedElement =
+-        this.#input.inputField;
+       this.#toolbarbutton.setAttribute("aria-expanded", "false");
+       return;
+     }

@@ -1,0 +1,13 @@
+diff --git a/xpcom/ds/nsTArray.h b/xpcom/ds/nsTArray.h
+index b3eb20afc5..be6523301b 100644
+--- a/xpcom/ds/nsTArray.h
++++ b/xpcom/ds/nsTArray.h
+@@ -2972,7 +2972,7 @@ class MOZ_NON_MEMMOVABLE MOZ_GSL_OWNER AutoTArray : public nsTArray<E> {
+       char mStorage[sizeof(value_type) * N];
+     };
+     AutoBuffer() : mHdr{.mLength = 0, .mCapacity = N, .mIsAutoArray = true} {}
+-    ~AutoBuffer() = default;
++    ~AutoBuffer() {}
+   } mAutoBuf;
+   static_assert(offsetof(AutoBuffer, mStorage) == sizeof(nsTArrayHeader),
+                 "Shouldn't have padding");

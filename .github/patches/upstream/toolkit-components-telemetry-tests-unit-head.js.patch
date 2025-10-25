@@ -1,0 +1,22 @@
+diff --git a/toolkit/components/telemetry/tests/unit/head.js b/toolkit/components/telemetry/tests/unit/head.js
+index 0c2b8f60d0..c063a97423 100644
+--- a/toolkit/components/telemetry/tests/unit/head.js
++++ b/toolkit/components/telemetry/tests/unit/head.js
+@@ -594,17 +594,6 @@ if (runningInParent) {
+     );
+   }
+ 
+-  // Disable TOU pre-onboarding in xpcshell so Telemetry isn't gated on Browser
+-  // UI.
+-  const TOS_ENABLED_PREF = "browser.preonboarding.enabled";
+-  const previous = Services.prefs.getBoolPref(TOS_ENABLED_PREF, false);
+-
+-  Services.prefs.setBoolPref(TOS_ENABLED_PREF, false);
+-
+-  registerCleanupFunction(() => {
+-    Services.prefs.setBoolPref(TOS_ENABLED_PREF, previous);
+-  });
+-
+   fakePingSendTimer(
+     callback => {
+       Services.tm.dispatchToMainThread(() => callback());

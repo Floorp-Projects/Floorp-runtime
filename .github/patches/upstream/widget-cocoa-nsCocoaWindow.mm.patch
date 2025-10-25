@@ -1,0 +1,13 @@
+diff --git a/widget/cocoa/nsCocoaWindow.mm b/widget/cocoa/nsCocoaWindow.mm
+index 65f4390364..6c80f33454 100644
+--- a/widget/cocoa/nsCocoaWindow.mm
++++ b/widget/cocoa/nsCocoaWindow.mm
+@@ -3855,7 +3855,7 @@ static NSURL* GetPasteLocation(NSPasteboard* aPasteboard, bool aUseFallback) {
+     return [(NSURL*)urlRef autorelease];
+   }
+ 
+-  if (!aUseFallback) {
++  if (aUseFallback) {
+     return nil;
+   }
+ 

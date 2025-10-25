@@ -1,0 +1,40 @@
+diff --git a/dom/media/tests/crashtests/1490700.html b/dom/media/tests/crashtests/1490700.html
+index 3e47b4efc3..ea881c3096 100644
+--- a/dom/media/tests/crashtests/1490700.html
++++ b/dom/media/tests/crashtests/1490700.html
+@@ -7,22 +7,19 @@
+ <script type="application/javascript">
+ async function test() {
+   SpecialPowers.wrap(document).notifyUserGestureActivation();
+-  try {
+-    await window.navigator.mediaDevices.getUserMedia({
+-      video: {
+-        mediaSource: 'screen',
+-        height: {max: 0},
+-      },
+-    });
+-    await window.navigator.mediaDevices.getUserMedia({
+-      video: {
+-        mediaSource: 'screen',
+-        advanced: [{height: 0}],
+-      },
+-    });
+-  } finally {
+-    document.documentElement.removeAttribute("class");
+-  }
++  await window.navigator.mediaDevices.getUserMedia({
++    video: {
++      mediaSource: 'screen',
++      height: {max: 0},
++    },
++  });
++  await window.navigator.mediaDevices.getUserMedia({
++    video: {
++      mediaSource: 'screen',
++      advanced: [{height: 0}],
++    },
++  });
++  document.documentElement.removeAttribute("class");
+ }
+ 
+ test();

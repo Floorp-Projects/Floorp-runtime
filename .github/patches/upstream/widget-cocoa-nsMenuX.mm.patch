@@ -1,0 +1,69 @@
+diff --git a/widget/cocoa/nsMenuX.mm b/widget/cocoa/nsMenuX.mm
+index 5c8216c3e8..2cf6fd0543 100644
+--- a/widget/cocoa/nsMenuX.mm
++++ b/widget/cocoa/nsMenuX.mm
+@@ -46,11 +46,6 @@ using namespace mozilla::dom;
+ static bool gConstructingMenu = false;
+ static bool gMenuMethodsSwizzled = false;
+ 
+-// Protect against really deep menu nestings, for example from recursive
+-// bookmark folders. This avoids hangs when the system enumerates the entire
+-// menu tree.
+-static const size_t kMaxMenuNestingDepth = 20;
+-
+ int32_t nsMenuX::sIndexingMenuLevel = 0;
+ 
+ // TODO: It is unclear whether this is still needed.
+@@ -91,10 +86,7 @@ static void SwizzleDynamicIndexingMethods() {
+ 
+ nsMenuX::nsMenuX(nsMenuParentX* aParent, nsMenuGroupOwnerX* aMenuGroupOwner,
+                  nsIContent* aContent)
+-    : mContent(aContent),
+-      mParent(aParent),
+-      mMenuGroupOwner(aMenuGroupOwner),
+-      mNestingDepth(aParent ? aParent->NestingDepth() + 1 : 0) {
++    : mContent(aContent), mParent(aParent), mMenuGroupOwner(aMenuGroupOwner) {
+   NS_OBJC_BEGIN_TRY_ABORT_BLOCK;
+ 
+   MOZ_COUNT_CTOR(nsMenuX);
+@@ -129,12 +121,6 @@ nsMenuX::nsMenuX(nsMenuParentX* aParent, nsMenuGroupOwnerX* aMenuGroupOwner,
+                                              keyEquivalent:@""];
+   mNativeMenuItem.submenu = mNativeMenu;
+ 
+-  if (mNestingDepth > kMaxMenuNestingDepth) {
+-    // If we're nested too deep, turn this item into a regular item without a
+-    // submenu.
+-    mNativeMenuItem.submenu = nil;
+-  }
+-
+   SetEnabled(!mContent->IsElement() ||
+              !mContent->AsElement()->AttrValueIs(
+                  kNameSpaceID_None, nsGkAtoms::disabled, nsGkAtoms::_true,
+@@ -155,7 +141,7 @@ nsMenuX::nsMenuX(nsMenuParentX* aParent, nsMenuGroupOwnerX* aMenuGroupOwner,
+   mIcon = MakeUnique<nsMenuItemIconX>(this);
+ 
+   if (mVisible) {
+-    if (!isXULWindowMenu && !IsXULEditMenu(mContent)) {
++    if (!isXULWindowMenu) {
+       SetRebuild(true);
+     }
+     SetupIcon();
+@@ -1026,18 +1012,6 @@ bool nsMenuX::IsXULWindowMenu(nsIContent* aMenuContent) {
+   return retval;
+ }
+ 
+-bool nsMenuX::IsXULEditMenu(nsIContent* aMenuContent) {
+-  bool retval = false;
+-  if (aMenuContent && aMenuContent->IsElement()) {
+-    nsAutoString id;
+-    aMenuContent->AsElement()->GetAttr(nsGkAtoms::id, id);
+-    if (id.Equals(u"edit-menu"_ns)) {
+-      retval = true;
+-    }
+-  }
+-  return retval;
+-}
+-
+ //
+ // nsChangeObserver
+ //

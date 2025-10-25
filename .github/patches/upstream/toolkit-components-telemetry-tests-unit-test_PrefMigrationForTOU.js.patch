@@ -1,0 +1,18 @@
+diff --git a/toolkit/components/telemetry/tests/unit/test_PrefMigrationForTOU.js b/toolkit/components/telemetry/tests/unit/test_PrefMigrationForTOU.js
+index d77a2c02e9..e3d3d4e07f 100644
+--- a/toolkit/components/telemetry/tests/unit/test_PrefMigrationForTOU.js
++++ b/toolkit/components/telemetry/tests/unit/test_PrefMigrationForTOU.js
+@@ -38,13 +38,6 @@ const skipIfNotBrowser = () => ({
+   skip_if: () => AppConstants.MOZ_BUILD_APP != "browser",
+ });
+ 
+-add_setup(() => {
+-  // In head.js, we force TOU pre-onboarding off in xpcshell so Telemetry isn't
+-  // gated on Browser UI. Revert for these tests.
+-  const TOS_ENABLED_PREF = "browser.preonboarding.enabled";
+-  Services.prefs.clearUserPref(TOS_ENABLED_PREF);
+-});
+-
+ function setupLegacyAndRolloutPrefs({
+   acceptedVersion,
+   notifiedTime,

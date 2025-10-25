@@ -1,0 +1,14 @@
+diff --git a/toolkit/components/extensions/schemas/manifest.json b/toolkit/components/extensions/schemas/manifest.json
+index c2187c7d59..fe93026410 100644
+--- a/toolkit/components/extensions/schemas/manifest.json
++++ b/toolkit/components/extensions/schemas/manifest.json
+@@ -664,8 +664,7 @@
+                 "optional": true,
+                 "default": false
+               }
+-            },
+-            "additionalProperties": { "$ref": "UnrecognizedProperty" }
++            }
+           }
+         },
+         "additionalProperties": { "$ref": "UnrecognizedProperty" }

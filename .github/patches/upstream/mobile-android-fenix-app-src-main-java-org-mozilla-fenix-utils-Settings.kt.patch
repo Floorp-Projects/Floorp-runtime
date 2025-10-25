@@ -1,0 +1,16 @@
+diff --git a/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/utils/Settings.kt b/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/utils/Settings.kt
+index 8e89ba9018..312b5b3de3 100644
+--- a/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/utils/Settings.kt
++++ b/mobile/android/fenix/app/src/main/java/org/mozilla/fenix/utils/Settings.kt
+@@ -605,10 +605,8 @@ class Settings(private val appContext: Context) : PreferencesHolder {
+ 
+     /**
+      * The maximum number of times the Terms of Use prompt should be displayed.
+-     *
+-     * Use a function to ensure the most up-to-date Nimbus value is retrieved.
+      */
+-    fun getTermsOfUseMaxDisplayCount() = FxNimbus.features.termsOfUsePrompt.value().maxDisplayCount
++    var termsOfUseMaxDisplayCount = FxNimbus.features.termsOfUsePrompt.value().maxDisplayCount
+ 
+     /**
+      * The total number of times the Terms of Use prompt has been displayed.

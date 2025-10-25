@@ -1,0 +1,19 @@
+diff --git a/layout/style/nsStyleUtil.h b/layout/style/nsStyleUtil.h
+index eb19f81e37..95b033d020 100644
+--- a/layout/style/nsStyleUtil.h
++++ b/layout/style/nsStyleUtil.h
+@@ -44,10 +44,10 @@ class nsStyleUtil {
+                             const nsStringComparator& aComparator);
+ 
+   // Append a quoted (with 'quoteChar') and escaped version of aString
+-  // to aResult.  'aQuoteChar' must be ' or ".
+-  static void AppendEscapedCSSString(const nsACString& aString,
+-                                     nsACString& aResult,
+-                                     char aQuoteChar = '"');
++  // to aResult.  'quoteChar' must be ' or ".
++  static void AppendEscapedCSSString(const nsAString& aString,
++                                     nsAString& aResult,
++                                     char16_t quoteChar = '"');
+ 
+   // Append the identifier given by |aIdent| to |aResult|, with
+   // appropriate escaping so that it can be reparsed to the same
