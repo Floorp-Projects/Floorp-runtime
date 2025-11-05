@@ -37,12 +37,12 @@ jobs:
           echo "bid=${bdat}" >> $GITHUB_OUTPUT
 
   download-macos-sdk:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Get macOS SDK path
         id: get-sdk
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.4.app
+          sudo xcode-select -s /Applications/Xcode_26.0.1.app
 
           SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
           echo "SDK_PATH=$SDK_PATH" >> $GITHUB_ENV
