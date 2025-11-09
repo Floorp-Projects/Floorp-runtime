@@ -8,3 +8,28 @@
 XPCOM_MANIFESTS += [
     "pwa/components.conf",
 ]
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
+    XPIDL_SOURCES += [
+        "pwa/mac/nsIMacSSBSupport.idl",
+    ]
+
+    XPIDL_MODULE = "widget_cocoa"
+
+    SOURCES += [
+        "pwa/mac/nsMacSSBSupport.mm",
+    ]
+
+    FINAL_LIBRARY = "xul"
+
+    LOCAL_INCLUDES += [
+        "/widget/cocoa",
+    ]
+
+    include("/ipc/chromium/chromium-config.mozbuild")
+
+    OS_LIBS += [
+        "-framework Cocoa",
+        "-framework CoreServices",
+        "-framework ImageIO",
+    ]

@@ -28,10 +28,6 @@ EXPORTS.mozilla.widget += [
     "CompositorWidgetParent.h",
 ]
 
-XPIDL_SOURCES += [
-    "nsIMacSSBSupport.idl",
-]
-
 XPIDL_MODULE = "widget_cocoa"
 
 UNIFIED_SOURCES += [
@@ -58,7 +54,6 @@ UNIFIED_SOURCES += [
     "nsMacDockSupport.mm",
     "nsMacFinderProgress.mm",
     "nsMacSharingService.mm",
-    "nsMacSSBSupport.mm",
     "nsMacUserActivityUpdater.mm",
     "nsMacWebAppUtils.mm",
     "nsMenuBarX.mm",
