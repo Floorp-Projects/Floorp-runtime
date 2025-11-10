@@ -294,7 +294,7 @@ nsresult nsMacSSBSupport::GetAppShimTemplate(nsIFile** aFile) {
     if (*envPath) {
       nsCOMPtr<nsIFile> fromEnv;
       if (NS_SUCCEEDED(
-              NS_NewLocalFile(NS_ConvertUTF8toUTF16(envPath), true,
+              NS_NewLocalFile(NS_ConvertUTF8toUTF16(envPath),
                               getter_AddRefs(fromEnv)))) {
         bool exists = false;
         bool isExecutable = false;
