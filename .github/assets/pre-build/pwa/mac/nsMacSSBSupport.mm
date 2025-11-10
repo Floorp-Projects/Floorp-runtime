@@ -24,6 +24,8 @@
 #include "nsObjCExceptions.h"
 #include "nsServiceManagerUtils.h"
 
+#include <unistd.h>
+
 using namespace mozilla;
 
 namespace {
@@ -244,16 +246,37 @@ nsresult nsMacSSBSupport::WriteExecutable(nsIFile* aMacOSDir,
   nsAutoString binaryPath;
   MOZ_TRY(binaryFile->GetPath(binaryPath));
 
+  nsCOMPtr<nsIFile> linkFile;
+  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(linkFile)));
+  MOZ_TRY(linkFile->Append(u"floorp-bin"_ns));
+
+  bool linkExists = false;
+  if (NS_SUCCEEDED(linkFile->Exists(&linkExists)) && linkExists) {
+    MOZ_TRY(linkFile->Remove(false));
+  }
+
+  nsAutoString linkPath;
+  MOZ_TRY(linkFile->GetPath(linkPath));
+
   nsAutoCString binaryUTF8 = NS_ConvertUTF16toUTF8(binaryPath);
   nsAutoCString profileUTF8 = NS_ConvertUTF16toUTF8(profilePath);
   nsAutoCString idUTF8 = NS_ConvertUTF16toUTF8(aId);
 
-  binaryUTF8.ReplaceSubstring("\"", "\\\"");
   profileUTF8.ReplaceSubstring("\"", "\\\"");
   idUTF8.ReplaceSubstring("\"", "\\\"");
 
+  nsAutoCString linkUTF8 = NS_ConvertUTF16toUTF8(linkPath);
+  if (::symlink(binaryUTF8.get(), linkUTF8.get()) != 0) {
+    return NS_ERROR_FAILURE;
+  }
+
+  // Ensure the script uses a relative path to the bundled binary so Launch
+  // Services associates the process with the SSB bundle.
+  binaryUTF8.AssignLiteral("$DIR/floorp-bin");
+
   nsCString script;
   script.AppendLiteral("#!/bin/sh\n");
+  script.AppendLiteral("DIR=\"$(dirname \"$0\")\"\n");
   script.AppendLiteral("exec \"");
   script.Append(binaryUTF8);
   script.AppendLiteral("\" -profile \"");
