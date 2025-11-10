@@ -129,7 +129,9 @@ nsMacSSBSupport::ApplyDockIntegration(const nsAString& aId,
                                    leaf)) && bundleRoot) {
       nsAutoString bundlePath;
       if (NS_SUCCEEDED(bundleRoot->GetPath(bundlePath))) {
-        dock->EnsureAppIsPinnedToDock(bundlePath);
+        bool isPinned = false;
+        dock->EnsureAppIsPinnedToDock(bundlePath, EmptyString(), &isPinned);
+        (void)isPinned;
       }
     }
 
@@ -334,7 +336,8 @@ nsresult nsMacSSBSupport::WriteIcon(nsIFile* aResourcesDir,
     NSString* iconNSString = nsCocoaUtils::ToNSString(iconPath);
     NSURL* iconURL = [NSURL fileURLWithPath:iconNSString];
 
-    size_t representationCount = mozilla::ArrayLength(kIconSizes);
+    const size_t representationCount =
+        sizeof(kIconSizes) / sizeof(kIconSizes[0]);
     CGImageDestinationRef destination = CGImageDestinationCreateWithURL(
         (__bridge CFURLRef)iconURL, kUTTypeAppleICNS, representationCount,
         nullptr);
@@ -435,7 +438,8 @@ void nsMacSSBSupport::BuildBundleIdentifier(const nsAString& aId,
                                             nsACString& aResult) {
   aResult.AssignLiteral("one.ablaze.floorp.ssb.");
   nsAutoCString utf8Id = NS_ConvertUTF16toUTF8(aId);
-  for (const auto ch : utf8Id) {
+  for (uint32_t i = 0; i < utf8Id.Length(); ++i) {
+    const char ch = utf8Id[i];
     if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') ||
         (ch >= 'a' && ch <= 'z') || ch == '-' || ch == '.') {
       aResult.Append(ch);
@@ -458,7 +462,8 @@ void nsMacSSBSupport::SanitizeLeafName(const nsAString& aId,
   base.Append(aId);
 
   aResult.Truncate();
-  for (const auto ch : base) {
+  for (uint32_t i = 0; i < base.Length(); ++i) {
+    const char16_t ch = base[i];
     if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') ||
         (ch >= 'a' && ch <= 'z') || ch == u'-' || ch == u'_' || ch == u'.') {
       aResult.Append(ch);
