@@ -29,7 +29,8 @@ class nsMacSSBSupport final : public nsIMacSSBSupport {
   nsresult EnsureDirectory(nsIFile* aDir);
   nsresult EnsureAncillaryDirectories(nsIFile* aBundleRoot, nsIFile** aContents,
                                       nsIFile** aMacOS, nsIFile** aResources);
-  nsresult WriteExecutable(nsIFile* aMacOSDir, const nsAString& aId);
+  nsresult WriteExecutable(nsIFile* aMacOSDir, const nsAString& aId,
+                           const nsAString& aName);
   nsresult WriteInfoPlist(nsIFile* aContentsDir, const nsAString& aId,
                           const nsAString& aName, bool aHasIcon);
   nsresult WriteIcon(nsIFile* aResourcesDir, imgIContainer* aIcon);
@@ -42,6 +43,17 @@ class nsMacSSBSupport final : public nsIMacSSBSupport {
   void SanitizeLeafName(const nsAString& aId, const nsAString& aName,
                         nsAString& aResult);
   void EscapeForPlist(const nsACString& aInput, nsACString& aOutput);
+  void EscapeForJSON(const nsACString& aInput, nsACString& aOutput);
+  nsresult EnsureFloorpBinarySymlink(nsIFile* aMacOSDir, nsIFile* aExecutable);
+  nsresult WriteLegacyLauncherScript(nsIFile* aMacOSDir,
+                                     const nsACString& aProfilePath,
+                                     const nsACString& aId);
+  nsresult GetAppShimTemplate(nsIFile** aFile);
+  nsresult CopyAppShimExecutable(nsIFile* aMacOSDir, bool* aDidCopy);
+  nsresult WriteAppShimConfiguration(nsIFile* aMacOSDir, const nsAString& aId,
+                                     const nsAString& aName,
+                                     const nsACString& aProfilePath,
+                                     const nsACString& aBinaryPath);
 };
 
 #endif  // nsMacSSBSupport_h_

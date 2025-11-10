@@ -11,6 +11,7 @@
 
 #include "imgIContainer.h"
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Sprintf.h"
 #include "mozilla/ResultExtensions.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsCocoaUtils.h"
@@ -20,9 +21,12 @@
 #include "nsIFile.h"
 #include "nsIMacDockSupport.h"
 #include "nsISimpleEnumerator.h"
+#include "nsDebug.h"
 #include "nsNetUtil.h"
 #include "nsObjCExceptions.h"
 #include "nsServiceManagerUtils.h"
+
+#include "prenv.h"
 
 #include <unistd.h>
 
@@ -96,7 +100,7 @@ nsMacSSBSupport::Install(const nsAString& aId, const nsAString& aName,
                                      getter_AddRefs(macOSDir),
                                      getter_AddRefs(resourcesDir)));
 
-  MOZ_TRY(WriteExecutable(macOSDir, aId));
+  MOZ_TRY(WriteExecutable(macOSDir, aId, aName));
   MOZ_TRY(WriteIcon(resourcesDir, aIcon));
   MOZ_TRY(WriteInfoPlist(contentsDir, aId, aName, aIcon != nullptr));
   MOZ_TRY(RegisterBundle(bundleRoot));
@@ -230,12 +234,258 @@ nsresult nsMacSSBSupport::EnsureAncillaryDirectories(nsIFile* aBundleRoot,
   return NS_OK;
 }
 
-nsresult nsMacSSBSupport::WriteExecutable(nsIFile* aMacOSDir,
-                                          const nsAString& aId) {
-  nsCOMPtr<nsIFile> executable;
-  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(executable)));
-  MOZ_TRY(executable->Append(kExecutableLeaf));
+nsresult nsMacSSBSupport::EnsureFloorpBinarySymlink(nsIFile* aMacOSDir,
+                                                    nsIFile* aExecutable) {
+  nsCOMPtr<nsIFile> linkFile;
+  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(linkFile)));
+  MOZ_TRY(linkFile->Append(u"floorp-bin"_ns));
 
+  bool exists = false;
+  if (NS_SUCCEEDED(linkFile->Exists(&exists)) && exists) {
+    MOZ_TRY(linkFile->Remove(false));
+  }
+
+  nsAutoString targetPath;
+  MOZ_TRY(aExecutable->GetPath(targetPath));
+  nsAutoString linkPath;
+  MOZ_TRY(linkFile->GetPath(linkPath));
+
+  nsAutoCString targetUTF8 = NS_ConvertUTF16toUTF8(targetPath);
+  nsAutoCString linkUTF8 = NS_ConvertUTF16toUTF8(linkPath);
+  if (::symlink(targetUTF8.get(), linkUTF8.get()) != 0) {
+    return NS_ERROR_FAILURE;
+  }
+  return NS_OK;
+}
+
+nsresult nsMacSSBSupport::WriteLegacyLauncherScript(
+    nsIFile* aMacOSDir, const nsACString& aProfilePath,
+    const nsACString& aId) {
+  nsCOMPtr<nsIFile> scriptFile;
+  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(scriptFile)));
+  MOZ_TRY(scriptFile->Append(kExecutableLeaf));
+
+  bool exists = false;
+  if (NS_SUCCEEDED(scriptFile->Exists(&exists)) && exists) {
+    MOZ_TRY(scriptFile->Remove(false));
+  }
+
+  nsCString script;
+  script.AppendLiteral("#!/bin/sh\n");
+  script.AppendLiteral("DIR=\"$(dirname \"$0\")\"\n");
+  script.AppendLiteral("exec \"$DIR/floorp-bin\" -profile \"");
+  script.Append(aProfilePath);
+  script.AppendLiteral("\" -start-ssb \"");
+  script.Append(aId);
+  script.AppendLiteral("\" \"$@\"\n");
+
+  MOZ_TRY(WriteUTF8File(scriptFile, script, 0755));
+  MOZ_TRY(scriptFile->SetPermissions(0755));
+  return NS_OK;
+}
+
+nsresult nsMacSSBSupport::GetAppShimTemplate(nsIFile** aFile) {
+  if (!aFile) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  *aFile = nullptr;
+
+  if (const char* envPath = PR_GetEnv("FLOORP_APPSHIM_TEMPLATE")) {
+    if (*envPath) {
+      nsCOMPtr<nsIFile> fromEnv;
+      if (NS_SUCCEEDED(
+              NS_NewLocalFile(NS_ConvertUTF8toUTF16(envPath), true,
+                              getter_AddRefs(fromEnv)))) {
+        bool exists = false;
+        bool isExecutable = false;
+        if (NS_SUCCEEDED(fromEnv->Exists(&exists)) && exists &&
+            NS_SUCCEEDED(fromEnv->IsExecutable(&isExecutable)) &&
+            isExecutable) {
+          fromEnv.forget(aFile);
+          return NS_OK;
+        }
+      }
+    }
+  }
+
+  nsCOMPtr<nsIProperties> directoryService =
+      do_GetService(NS_DIRECTORY_SERVICE_CONTRACTID);
+  NS_ENSURE_TRUE(directoryService, NS_ERROR_NOT_AVAILABLE);
+
+  nsCOMPtr<nsIFile> executable;
+  MOZ_TRY(directoryService->Get("XREExeF", NS_GET_IID(nsIFile),
+                                getter_AddRefs(executable)));
+
+  nsCOMPtr<nsIFile> macOSDir;
+  MOZ_TRY(executable->GetParent(getter_AddRefs(macOSDir)));
+
+  auto CandidateMatches = [](nsIFile* file) -> bool {
+    if (!file) {
+      return false;
+    }
+    bool exists = false;
+    if (NS_FAILED(file->Exists(&exists)) || !exists) {
+      return false;
+    }
+    bool isDirectory = false;
+    if (NS_SUCCEEDED(file->IsDirectory(&isDirectory)) && isDirectory) {
+      return false;
+    }
+    bool isExecutable = false;
+    if (NS_FAILED(file->IsExecutable(&isExecutable)) || !isExecutable) {
+      return false;
+    }
+    return true;
+  };
+
+  if (macOSDir) {
+    nsCOMPtr<nsIFile> candidate;
+    if (NS_SUCCEEDED(macOSDir->Clone(getter_AddRefs(candidate))) &&
+        NS_SUCCEEDED(candidate->Append(u"appshim"_ns)) &&
+        NS_SUCCEEDED(candidate->Append(kExecutableLeaf)) &&
+        CandidateMatches(candidate)) {
+      candidate.forget(aFile);
+      return NS_OK;
+    }
+  }
+
+  nsCOMPtr<nsIFile> contentsDir;
+  if (macOSDir) {
+    macOSDir->GetParent(getter_AddRefs(contentsDir));
+  }
+
+  if (contentsDir) {
+    nsCOMPtr<nsIFile> resources;
+    if (NS_SUCCEEDED(contentsDir->Clone(getter_AddRefs(resources))) &&
+        NS_SUCCEEDED(resources->Append(kResourcesLeaf))) {
+      nsCOMPtr<nsIFile> appShim;
+      if (NS_SUCCEEDED(resources->Clone(getter_AddRefs(appShim))) &&
+          NS_SUCCEEDED(appShim->Append(u"appshim"_ns)) &&
+          NS_SUCCEEDED(appShim->Append(kExecutableLeaf)) &&
+          CandidateMatches(appShim)) {
+        appShim.forget(aFile);
+        return NS_OK;
+      }
+
+      nsCOMPtr<nsIFile> pwaAppShim;
+      if (NS_SUCCEEDED(resources->Clone(getter_AddRefs(pwaAppShim))) &&
+          NS_SUCCEEDED(pwaAppShim->Append(u"pwa"_ns)) &&
+          NS_SUCCEEDED(pwaAppShim->Append(u"appshim"_ns)) &&
+          NS_SUCCEEDED(pwaAppShim->Append(kExecutableLeaf)) &&
+          CandidateMatches(pwaAppShim)) {
+        pwaAppShim.forget(aFile);
+        return NS_OK;
+      }
+    }
+  }
+
+  return NS_OK;
+}
+
+nsresult nsMacSSBSupport::CopyAppShimExecutable(nsIFile* aMacOSDir,
+                                                bool* aDidCopy) {
+  if (!aDidCopy) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  *aDidCopy = false;
+
+  nsCOMPtr<nsIFile> templateFile;
+  MOZ_TRY(GetAppShimTemplate(getter_AddRefs(templateFile)));
+  if (!templateFile) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIFile> destination;
+  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(destination)));
+  MOZ_TRY(destination->Append(kExecutableLeaf));
+
+  bool exists = false;
+  if (NS_SUCCEEDED(destination->Exists(&exists)) && exists) {
+    MOZ_TRY(destination->Remove(false));
+  }
+
+  MOZ_TRY(templateFile->CopyToFollowingLinks(aMacOSDir, kExecutableLeaf));
+
+  nsCOMPtr<nsIFile> copied;
+  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(copied)));
+  MOZ_TRY(copied->Append(kExecutableLeaf));
+  MOZ_TRY(copied->SetPermissions(0755));
+
+  *aDidCopy = true;
+  return NS_OK;
+}
+
+nsresult nsMacSSBSupport::WriteAppShimConfiguration(
+    nsIFile* aMacOSDir, const nsAString& aId, const nsAString& aName,
+    const nsACString& aProfilePath, const nsACString& aBinaryPath) {
+  nsCOMPtr<nsIFile> configFile;
+  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(configFile)));
+  MOZ_TRY(configFile->Append(u"appshim-config.json"_ns));
+
+  nsAutoCString escapedProfile;
+  EscapeForJSON(aProfilePath, escapedProfile);
+
+  nsAutoCString escapedBinary;
+  EscapeForJSON(aBinaryPath, escapedBinary);
+
+  nsAutoCString idUTF8 = NS_ConvertUTF16toUTF8(aId);
+  nsAutoCString escapedId;
+  EscapeForJSON(idUTF8, escapedId);
+
+  nsAutoCString nameUTF8 = NS_ConvertUTF16toUTF8(aName);
+  nsAutoCString escapedName;
+  EscapeForJSON(nameUTF8, escapedName);
+
+  nsCString json;
+  json.AppendLiteral("{\n");
+  json.AppendLiteral("  \"schemaVersion\": 1,\n");
+  json.AppendLiteral("  \"floorpBinaryCandidates\": [\n");
+  json.AppendLiteral("    \"@executable_dir/floorp-bin\"");
+  if (!escapedBinary.IsEmpty()) {
+    json.AppendLiteral(",\n    \"");
+    json.Append(escapedBinary);
+    json.AppendLiteral("\"");
+  }
+  json.AppendLiteral("\n  ],\n");
+  json.AppendLiteral("  \"appendArguments\": [\n");
+  json.AppendLiteral("    \"-profile\",\n");
+  json.AppendLiteral("    \"");
+  json.Append(escapedProfile);
+  json.AppendLiteral("\",\n");
+  json.AppendLiteral("    \"-start-ssb\",\n");
+  json.AppendLiteral("    \"");
+  json.Append(escapedId);
+  json.AppendLiteral("\"\n");
+  json.AppendLiteral("  ],\n");
+  json.AppendLiteral("  \"environment\": {\n");
+  json.AppendLiteral("    \"FLOORP_SSB_ID\": \"");
+  json.Append(escapedId);
+  json.AppendLiteral("\"");
+  if (!escapedName.IsEmpty()) {
+    json.AppendLiteral(",\n    \"FLOORP_SSB_NAME\": \"");
+    json.Append(escapedName);
+    json.AppendLiteral("\"");
+  }
+  json.AppendLiteral("\n  },\n");
+  json.AppendLiteral("  \"metadata\": {\n");
+  json.AppendLiteral("    \"ssbId\": \"");
+  json.Append(escapedId);
+  json.AppendLiteral("\"");
+  if (!escapedName.IsEmpty()) {
+    json.AppendLiteral(",\n    \"ssbName\": \"");
+    json.Append(escapedName);
+    json.AppendLiteral("\"");
+  }
+  json.AppendLiteral("\n  }\n");
+  json.AppendLiteral("}\n");
+
+  MOZ_TRY(WriteUTF8File(configFile, json, 0644));
+  return NS_OK;
+}
+
+nsresult nsMacSSBSupport::WriteExecutable(nsIFile* aMacOSDir,
+                                          const nsAString& aId,
+                                          const nsAString& aName) {
   nsCOMPtr<nsIFile> profileDir;
   MOZ_TRY(GetProfileDirectory(getter_AddRefs(profileDir)));
   nsAutoString profilePath;
@@ -246,48 +496,35 @@ nsresult nsMacSSBSupport::WriteExecutable(nsIFile* aMacOSDir,
   nsAutoString binaryPath;
   MOZ_TRY(binaryFile->GetPath(binaryPath));
 
-  nsCOMPtr<nsIFile> linkFile;
-  MOZ_TRY(aMacOSDir->Clone(getter_AddRefs(linkFile)));
-  MOZ_TRY(linkFile->Append(u"floorp-bin"_ns));
+  MOZ_TRY(EnsureFloorpBinarySymlink(aMacOSDir, binaryFile));
 
-  bool linkExists = false;
-  if (NS_SUCCEEDED(linkFile->Exists(&linkExists)) && linkExists) {
-    MOZ_TRY(linkFile->Remove(false));
-  }
-
-  nsAutoString linkPath;
-  MOZ_TRY(linkFile->GetPath(linkPath));
-
-  nsAutoCString binaryUTF8 = NS_ConvertUTF16toUTF8(binaryPath);
   nsAutoCString profileUTF8 = NS_ConvertUTF16toUTF8(profilePath);
+  nsAutoCString binaryUTF8 = NS_ConvertUTF16toUTF8(binaryPath);
   nsAutoCString idUTF8 = NS_ConvertUTF16toUTF8(aId);
 
-  profileUTF8.ReplaceSubstring("\"", "\\\"");
-  idUTF8.ReplaceSubstring("\"", "\\\"");
+  MOZ_TRY(WriteAppShimConfiguration(aMacOSDir, aId, aName, profileUTF8,
+                                    binaryUTF8));
 
-  nsAutoCString linkUTF8 = NS_ConvertUTF16toUTF8(linkPath);
-  if (::symlink(binaryUTF8.get(), linkUTF8.get()) != 0) {
-    return NS_ERROR_FAILURE;
+  bool didCopy = false;
+  nsresult copyRv = CopyAppShimExecutable(aMacOSDir, &didCopy);
+  if (NS_SUCCEEDED(copyRv) && didCopy) {
+    return NS_OK;
   }
 
-  // Ensure the script uses a relative path to the bundled binary so Launch
-  // Services associates the process with the SSB bundle.
-  binaryUTF8.AssignLiteral("$DIR/floorp-bin");
+  if (NS_FAILED(copyRv)) {
+    NS_WARNING(
+        "nsMacSSBSupport::CopyAppShimExecutable failed; falling back to "
+        "legacy launcher script.");
+  }
 
-  nsCString script;
-  script.AppendLiteral("#!/bin/sh\n");
-  script.AppendLiteral("DIR=\"$(dirname \"$0\")\"\n");
-  script.AppendLiteral("exec \"");
-  script.Append(binaryUTF8);
-  script.AppendLiteral("\" -profile \"");
-  script.Append(profileUTF8);
-  script.AppendLiteral("\" -start-ssb \"");
-  script.Append(idUTF8);
-  script.AppendLiteral("\" \"$@\"\n");
+  // Fallback to legacy shell script launcher when AppShim template is not
+  // available.
+  nsAutoCString sanitizedProfile(profileUTF8);
+  nsAutoCString sanitizedId(idUTF8);
+  sanitizedProfile.ReplaceSubstring("\"", "\\\"");
+  sanitizedId.ReplaceSubstring("\"", "\\\"");
 
-  MOZ_TRY(WriteUTF8File(executable, script, 0755));
-  MOZ_TRY(executable->SetPermissions(0755));
-
+  MOZ_TRY(WriteLegacyLauncherScript(aMacOSDir, sanitizedProfile, sanitizedId));
   return NS_OK;
 }
 
@@ -505,4 +742,45 @@ void nsMacSSBSupport::EscapeForPlist(const nsACString& aInput,
   aOutput.ReplaceSubstring(">", "&gt;");
   aOutput.ReplaceSubstring("\"", "&quot;");
   aOutput.ReplaceSubstring("'", "&apos;");
+}
+
+void nsMacSSBSupport::EscapeForJSON(const nsACString& aInput,
+                                    nsACString& aOutput) {
+  aOutput.Truncate();
+  for (uint32_t i = 0; i < aInput.Length(); ++i) {
+    const char ch = aInput[i];
+    switch (ch) {
+      case '\\':
+        aOutput.AppendLiteral("\\\\");
+        break;
+      case '"':
+        aOutput.AppendLiteral("\\\"");
+        break;
+      case '\b':
+        aOutput.AppendLiteral("\\b");
+        break;
+      case '\f':
+        aOutput.AppendLiteral("\\f");
+        break;
+      case '\n':
+        aOutput.AppendLiteral("\\n");
+        break;
+      case '\r':
+        aOutput.AppendLiteral("\\r");
+        break;
+      case '\t':
+        aOutput.AppendLiteral("\\t");
+        break;
+      default:
+        if (static_cast<unsigned char>(ch) < 0x20) {
+          char buffer[7];
+          SprintfLiteral(buffer, "\\u%04X",
+                         static_cast<unsigned char>(ch));
+          aOutput.Append(buffer);
+        } else {
+          aOutput.Append(ch);
+        }
+        break;
+    }
+  }
 }
