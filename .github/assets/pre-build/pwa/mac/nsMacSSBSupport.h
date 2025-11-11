@@ -38,6 +38,8 @@ class nsMacSSBSupport final : public nsIMacSSBSupport {
   nsresult RemoveBundle(const nsAString& aId, const nsAString& aName);
   nsresult GetProfileDirectory(nsIFile** aFile);
   nsresult GetExecutable(nsIFile** aFile);
+  nsresult GetBundleInfoInternal(const nsAString& aId, const nsAString& aName,
+                                 nsIFile** aBundleRoot, nsACString& aBundleId);
 
   void BuildBundleIdentifier(const nsAString& aId, nsACString& aResult);
   void SanitizeLeafName(const nsAString& aId, const nsAString& aName,

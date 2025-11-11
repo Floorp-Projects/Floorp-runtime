@@ -171,6 +171,63 @@ nsMacSSBSupport::ApplyDockIntegration(const nsAString& aId,
   NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
 }
 
+nsresult nsMacSSBSupport::GetBundleInfoInternal(const nsAString& aId,
+                                                const nsAString& aName,
+                                                nsIFile** aBundleRoot,
+                                                nsACString& aBundleId) {
+  if (!aBundleRoot) {
+    return NS_ERROR_INVALID_ARG;
+  }
+  *aBundleRoot = nullptr;
+
+  nsCOMPtr<nsIFile> bundleRoot;
+  nsAutoString leaf;
+  MOZ_TRY(GetBundleRoot(aId, aName, getter_AddRefs(bundleRoot), leaf));
+
+  bool exists = false;
+  if (bundleRoot) {
+    MOZ_TRY(bundleRoot->Exists(&exists));
+  }
+
+  if (!exists) {
+    bundleRoot = nullptr;
+  }
+
+  BuildBundleIdentifier(aId, aBundleId);
+
+  if (bundleRoot) {
+    bundleRoot.forget(aBundleRoot);
+  }
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsMacSSBSupport::GetBundleInfo(const nsAString& aId, const nsAString& aName,
+                               nsAString& aBundlePath,
+                               nsAString& aBundleIdentifier) {
+  NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
+
+  nsCOMPtr<nsIFile> bundleRoot;
+  nsAutoCString bundleId;
+  MOZ_TRY(GetBundleInfoInternal(aId, aName, getter_AddRefs(bundleRoot),
+                                bundleId));
+
+  if (bundleRoot) {
+    nsAutoString path;
+    MOZ_TRY(bundleRoot->GetPath(path));
+    aBundlePath = path;
+  } else {
+    aBundlePath.Truncate();
+  }
+
+  aBundleIdentifier = NS_ConvertUTF8toUTF16(bundleId);
+
+  return NS_OK;
+
+  NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
+}
+
 nsresult nsMacSSBSupport::GetBundleRoot(const nsAString& aId,
                                         const nsAString& aName,
                                         nsIFile** aFile,
