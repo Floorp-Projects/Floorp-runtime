@@ -1,0 +1,49 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+interface imgIContainer;
+
+[scriptable, uuid(7f7b0db0-6dd9-4a7a-a3d5-2d0c8c2c6e07)]
+interface nsIMacSSBSupport : nsISupports
+{
+  /**
+   * Create or update the application bundle for a Site Specific Browser.
+   * @param aId Unique identifier for the SSB.
+   * @param aName Display name for the SSB.
+   * @param aIcon Optional icon to embed in the bundle. Passing null leaves the
+   *              previous icon unchanged or removes it if it existed.
+   */
+  void install(in AString aId, in AString aName, [optional] in imgIContainer aIcon);
+
+  /**
+   * Remove the bundle created for the Site Specific Browser.
+   * @param aId Unique identifier for the SSB.
+   * @param aName Display name used when the bundle was created.
+   */
+  void uninstall(in AString aId, in AString aName);
+
+  /**
+   * Apply Dock level integration for the given Site Specific Browser.
+   * @param aId Unique identifier for the SSB.
+   * @param aName Display name for the SSB.
+   * @param aIcon Optional icon to use for the Dock tile.
+   */
+  void applyDockIntegration(in AString aId, in AString aName,
+                            [optional] in imgIContainer aIcon);
+
+  /**
+   * Retrieve the bundle information for the Site Specific Browser if it has
+   * been created on disk.
+   * @param aId Unique identifier for the SSB.
+   * @param aName Display name for the SSB.
+   * @param aBundlePath Absolute path to the .app bundle on disk. Empty if the
+   *        bundle does not exist.
+   * @param aBundleIdentifier The CFBundleIdentifier that would be used for the
+   *        SSB.
+   */
+  void getBundleInfo(in AString aId, in AString aName,
+                     out AString aBundlePath, out AString aBundleIdentifier);
+};

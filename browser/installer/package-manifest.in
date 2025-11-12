@@ -405,6 +405,11 @@ bin/libfreebl_64int_3.so
 @BINPATH@/nmhproxy@BIN_SUFFIX@
 #endif
 
+; [ PWA App Shim ]
+#ifdef XP_MACOSX
+@BINPATH@/appshim/**
+#endif
+
 ; [ Notification COM Server ]
 ;
 #if defined(MOZ_NOTIFICATION_SERVER)

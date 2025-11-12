@@ -76,6 +76,7 @@ DIRS += [
 ]
 
 DIRS += ["build"]
+DIRS += ["pwa"]
 
 if CONFIG["MOZ_SELECTABLE_PROFILES"]:
     DIRS += ["profiles"]

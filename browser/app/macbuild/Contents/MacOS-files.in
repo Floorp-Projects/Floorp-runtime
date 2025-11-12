@@ -17,6 +17,7 @@
 /crashhelper
 #endif
 /nmhproxy
+/appshim/***
 /pingsender
 /pk12util
 /ssltunnel
