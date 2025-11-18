@@ -1,0 +1,33 @@
+# -*- Mode: python; indent-tabs-mode: nil; tab-width: 40 -*-
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
+    EXPORTS.mozilla += [
+        "FloorpLinuxTaskbar.h",
+    ]
+
+    UNIFIED_SOURCES += [
+        "FloorpLinuxTaskbar.cpp",
+    ]
+
+    XPIDL_SOURCES += [
+        "nsIFloorpLinuxTaskbar.idl",
+    ]
+
+    XPIDL_MODULE = "floorpLinuxTaskbar"
+
+    LOCAL_INCLUDES += [
+        "!/ipc/ipdl/_ipdlheaders",
+        "/dom/base",
+        "/ipc/chromium/src",
+        "/widget",
+        "/widget/gtk",
+    ]
+
+    CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
+
+    FINAL_LIBRARY = "xul"
+
