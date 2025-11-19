@@ -17,6 +17,7 @@
 #  include <gdk-pixbuf/gdk-pixbuf.h>
 #  ifdef MOZ_WAYLAND
 #    include <gdk/gdkwayland.h>
+#    include <dlfcn.h>
 #  endif
 #endif
 
@@ -121,10 +122,19 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
   GdkDisplay* display = gtk_widget_get_display(gtkWidget);
   if (GDK_IS_WAYLAND_DISPLAY(display)) {
     GdkWindow* window = gtk_widget_get_window(gtkWidget);
+    if (!window) {
+      gtk_widget_realize(gtkWidget);
+      window = gtk_widget_get_window(gtkWidget);
+    }
+
     if (window) {
-      gdk_wayland_window_set_application_id(window, asciiClass.get());
-    } else {
-      return NS_ERROR_FAILURE;
+      static auto sGdkWaylandWindowSetApplicationId =
+          (void (*)(GdkWindow*, const char*))dlsym(
+              RTLD_DEFAULT, "gdk_wayland_window_set_application_id");
+
+      if (sGdkWaylandWindowSetApplicationId) {
+        sGdkWaylandWindowSetApplicationId(window, asciiClass.get());
+      }
     }
   }
 #endif
