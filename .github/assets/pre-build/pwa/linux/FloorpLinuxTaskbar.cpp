@@ -15,6 +15,9 @@
 
 #  include <gtk/gtk.h>
 #  include <gdk-pixbuf/gdk-pixbuf.h>
+#  ifdef MOZ_WAYLAND
+#    include <gdk/gdkwayland.h>
+#  endif
 #endif
 
 namespace mozilla {
@@ -110,6 +113,16 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
     NS_ConvertUTF16toUTF8 asciiClass(className);
     gtk_window_set_wmclass(GTK_WINDOW(gtkWidget), asciiClass.get(),
                            asciiClass.get());
+
+#ifdef MOZ_WAYLAND
+    GdkDisplay* display = gtk_widget_get_display(gtkWidget);
+    if (GDK_IS_WAYLAND_DISPLAY(display)) {
+      GdkWindow* window = gtk_widget_get_window(gtkWidget);
+      if (window) {
+        gdk_wayland_window_set_application_id(window, asciiClass.get());
+      }
+    }
+#endif
   }
 
   return NS_OK;
