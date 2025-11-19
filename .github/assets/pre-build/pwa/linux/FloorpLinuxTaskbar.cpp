@@ -104,6 +104,14 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
   }
 
   widget->SetWindowClass(className, className, windowTitle);
+
+  GtkWidget* gtkWidget = GetGtkWidgetForWindow(aWindow);
+  if (gtkWidget) {
+    NS_ConvertUTF16toUTF8 asciiClass(className);
+    gtk_window_set_wmclass(GTK_WINDOW(gtkWidget), asciiClass.get(),
+                           asciiClass.get());
+  }
+
   return NS_OK;
 #endif
 }
@@ -123,7 +131,7 @@ FloorpLinuxTaskbar::SetWindowIconFromPath(mozIDOMWindowProxy* aWindow,
     return NS_ERROR_FAILURE;
   }
 
-  NS_LossyConvertUTF16toASCII iconPath(aIconPath);
+  NS_ConvertUTF16toUTF8 iconPath(aIconPath);
 
   GError* error = nullptr;
   GdkPixbuf* icon = gdk_pixbuf_new_from_file(iconPath.get(), &error);
