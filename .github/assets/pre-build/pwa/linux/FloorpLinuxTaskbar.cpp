@@ -109,22 +109,25 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
   widget->SetWindowClass(className, className, windowTitle);
 
   GtkWidget* gtkWidget = GetGtkWidgetForWindow(aWindow);
-  if (gtkWidget) {
-    NS_ConvertUTF16toUTF8 asciiClass(className);
-    gtk_window_set_wmclass(GTK_WINDOW(gtkWidget), asciiClass.get(),
-                           asciiClass.get());
-
-#ifdef MOZ_WAYLAND
-    GdkDisplay* display = gtk_widget_get_display(gtkWidget);
-    if (GDK_IS_WAYLAND_DISPLAY(display)) {
-      GdkWindow* window = gtk_widget_get_window(gtkWidget);
-      if (window) {
-        gdk_wayland_window_set_application_id(window, asciiClass.get());
-      }
-    }
-#endif
+  if (!gtkWidget) {
+    return NS_ERROR_FAILURE;
   }
 
+  NS_ConvertUTF16toUTF8 asciiClass(className);
+  gtk_window_set_wmclass(GTK_WINDOW(gtkWidget), asciiClass.get(),
+                         asciiClass.get());
+
+#ifdef MOZ_WAYLAND
+  GdkDisplay* display = gtk_widget_get_display(gtkWidget);
+  if (GDK_IS_WAYLAND_DISPLAY(display)) {
+    GdkWindow* window = gtk_widget_get_window(gtkWidget);
+    if (window) {
+      gdk_wayland_window_set_application_id(window, asciiClass.get());
+    } else {
+      return NS_ERROR_FAILURE;
+    }
+  }
+#endif
   return NS_OK;
 #endif
 }
