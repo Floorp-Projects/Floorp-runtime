@@ -96,18 +96,7 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
     return NS_OK;
   }
 
-  nsCOMPtr<nsIWidget> widget = GetWidgetForWindow(aWindow);
-  if (!widget) {
-    return NS_ERROR_FAILURE;
-  }
-
   nsAutoString className(aWindowClass);
-  nsAutoString windowTitle(aWindowTitle);
-  if (windowTitle.IsEmpty()) {
-    windowTitle = className;
-  }
-
-  widget->SetWindowClass(className, className, windowTitle);
 
   GtkWidget* gtkWidget = GetGtkWidgetForWindow(aWindow);
   if (!gtkWidget) {
@@ -117,6 +106,7 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
   NS_ConvertUTF16toUTF8 asciiClass(className);
   gtk_window_set_wmclass(GTK_WINDOW(gtkWidget), asciiClass.get(),
                          asciiClass.get());
+  gtk_window_set_role(GTK_WINDOW(gtkWidget), asciiClass.get());
 
 #ifdef MOZ_WAYLAND
   GdkDisplay* display = gtk_widget_get_display(gtkWidget);
