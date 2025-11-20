@@ -111,6 +111,15 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
   // Set class, name, and role to the window class string to match original behavior
   widget->SetWindowClass(role, aWindowClass, aWindowClass);
 
+  // Workaround for GNOME Shell and other DEs:
+  // If the window is already mapped (visible), the DE might have already cached
+  // the WM_CLASS/AppID and won't update the taskbar grouping even if we change it via XSetClassHint.
+  // Hiding and showing the window forces a re-map, making the DE re-evaluate the window properties.
+  if (widget->IsVisible()) {
+    widget->Show(false);
+    widget->Show(true);
+  }
+
   return NS_OK;
 #endif
 }
