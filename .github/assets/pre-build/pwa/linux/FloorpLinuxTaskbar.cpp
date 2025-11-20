@@ -96,38 +96,21 @@ FloorpLinuxTaskbar::SetWindowClass(mozIDOMWindowProxy* aWindow,
     return NS_OK;
   }
 
-  nsAutoString className(aWindowClass);
-
-  GtkWidget* gtkWidget = GetGtkWidgetForWindow(aWindow);
-  if (!gtkWidget) {
+  nsCOMPtr<nsIWidget> widget = GetWidgetForWindow(aWindow);
+  if (NS_WARN_IF(!widget)) {
     return NS_ERROR_FAILURE;
   }
 
-  NS_ConvertUTF16toUTF8 asciiClass(className);
-  gtk_window_set_wmclass(GTK_WINDOW(gtkWidget), asciiClass.get(),
-                         asciiClass.get());
-  gtk_window_set_role(GTK_WINDOW(gtkWidget), asciiClass.get());
+  // Use nsIWidget::SetWindowClass which handles realized windows correctly
+  // (e.g. by using XSetClassHint directly on X11).
+  // We set the role via the type parameter (parsing looks for ":role").
+  nsAutoString role;
+  role.Append(u":");
+  role.Append(aWindowClass);
 
-#ifdef MOZ_WAYLAND
-  GdkDisplay* display = gtk_widget_get_display(gtkWidget);
-  if (GDK_IS_WAYLAND_DISPLAY(display)) {
-    GdkWindow* window = gtk_widget_get_window(gtkWidget);
-    if (!window) {
-      gtk_widget_realize(gtkWidget);
-      window = gtk_widget_get_window(gtkWidget);
-    }
+  // Set class, name, and role to the window class string to match original behavior
+  widget->SetWindowClass(role, aWindowClass, aWindowClass);
 
-    if (window) {
-      static auto sGdkWaylandWindowSetApplicationId =
-          (void (*)(GdkWindow*, const char*))dlsym(
-              RTLD_DEFAULT, "gdk_wayland_window_set_application_id");
-
-      if (sGdkWaylandWindowSetApplicationId) {
-        sGdkWaylandWindowSetApplicationId(window, asciiClass.get());
-      }
-    }
-  }
-#endif
   return NS_OK;
 #endif
 }
