@@ -147,7 +147,10 @@ nsCString QuoteForShell(const nsAString& aInput) {
   nsCString result("\"");
 
   NS_ConvertUTF16toUTF8 utf8(aInput);
-  for (const auto ch : utf8) {
+  const char* cur = utf8.BeginReading();
+  const char* end = utf8.EndReading();
+  for (; cur < end; ++cur) {
+    char ch = *cur;
     if (ch == '"' || ch == '\\' || ch == '$' || ch == '`') {
       result.Append('\\');
     }
@@ -159,7 +162,10 @@ nsCString QuoteForShell(const nsAString& aInput) {
 }
 
 void AppendEscapedXML(const nsACString& aValue, nsCString& aOut) {
-  for (char c : aValue) {
+  const char* cur = aValue.BeginReading();
+  const char* end = aValue.EndReading();
+  for (; cur < end; ++cur) {
+    char c = *cur;
     switch (c) {
       case '&':
         aOut.AppendLiteral("&amp;");
@@ -258,7 +264,13 @@ bool ConvertIconToIcns(NSString* aSourcePath, NSString* aDestinationPath) {
     return false;
   }
 
-  NSDictionary<NSBitmapImageRepPropertyKey, id>* properties = @{};
+  // NSBitmapImageFileTypeIcon is not available in recent SDKs or standard headers.
+  // We need to use a different method (e.g. iconutil) to generate ICNS files.
+  // For now, fail the conversion.
+  MOZ_LOG(gMacPwaLog, LogLevel::Warning,
+          ("[FloorpMacPwa] ICNS generation via NSBitmapImageRep is not supported."));
+  return false;
+  /*
   NSData* icnsData = [bitmap representationUsingType:NSBitmapImageFileTypeIcon
                                            properties:properties];
   if (!icnsData) {
@@ -268,6 +280,7 @@ bool ConvertIconToIcns(NSString* aSourcePath, NSString* aDestinationPath) {
   }
 
   return WriteDataToFile(aDestinationPath, icnsData);
+  */
 }
 
 void RegisterBundleWithLaunchServices(NSString* aBundlePath) {
@@ -431,8 +444,7 @@ FloorpMacPwa::CreateOrUpdateApp(const nsAString& aBundlePath,
       return NS_ERROR_FAILURE;
     }
 
-    const nsString& version =
-        aVersionString.IsEmpty() ? u"1.0"_ns : aVersionString;
+    const nsString version(aVersionString.IsEmpty() ? u"1.0"_ns : aVersionString);
     nsCString plist =
         BuildInfoPlist(aAppName, aBundleIdentifier, aAppId, aStartUrl,
                        aProfileDir, aProfileName, version);
