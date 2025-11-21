@@ -7,6 +7,7 @@
 #define mozilla_FloorpMacPwa_h
 
 #include "nsIFloorpMacPwa.h"
+#include "nsISupportsImpl.h"
 
 namespace mozilla {
 

@@ -10,6 +10,11 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
         "pwa/linux",
     ]
 
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
+    DIRS += [
+        "pwa/mac",
+    ]
+
 XPCOM_MANIFESTS += [
     "pwa/components.conf",
 ]
