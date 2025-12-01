@@ -60,13 +60,16 @@ jobs:
         run: |
           mkdir -p ~/macos-sdk
           gtar -xzf ~/macos-sdk-artifact/macos_sdk.tar.gz -C ~/macos-sdk --warning=no-unknown-keyword || tar -xzf ~/macos-sdk-artifact/macos_sdk.tar.gz -C ~/macos-sdk
+          rm -rf ~/macos-sdk-artifact
 
       - name: Extract 📦
         run: |
           brew install gnu-tar
           export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
           tar -xf ./floorp-mac-x86_64-moz-artifact.tar.gz
+          rm ./floorp-mac-x86_64-moz-artifact.tar.gz
           tar -xf ./floorp-mac-aarch64-moz-artifact.tar.gz
+          rm ./floorp-mac-aarch64-moz-artifact.tar.gz
 
       - name: Check Branding Type
         shell: bash
@@ -168,6 +171,7 @@ jobs:
 
           cp -r "$APP_SOURCE" ./obj-x86_64-apple-darwin/dist/floorp/
           hdiutil detach "/Volumes/${VOLUME_NAME}/"
+          rm "$x86_64_dmg"
 
           # Mount aarch64 DMG
           aarch64_dmg=$(ls ./obj-aarch64-apple-darwin/dist/floorp*.mac.dmg | head -n 1)
@@ -197,6 +201,7 @@ jobs:
 
           cp -r "$APP_SOURCE" ./obj-aarch64-apple-darwin/dist/floorp/
           hdiutil detach "/Volumes/${VOLUME_NAME}/"
+          rm "$aarch64_dmg"
         env:
           GHA_DEBUG: ${{ inputs.debug }}
 
