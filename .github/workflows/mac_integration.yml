@@ -33,6 +33,27 @@ jobs:
           export RUNNER_USERDIR=`echo ~`
           echo "RUNNER_USERDIR=$RUNNER_USERDIR" >> $GITHUB_ENV
 
+      - name: Free up disk space 🧹
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+
+          # Remove unnecessary large directories to free up disk space
+          # These are pre-installed tools that are not needed for this job
+          sudo rm -rf /Applications/Xcode_14*.app || true
+          sudo rm -rf /Applications/Xcode_15.0*.app || true
+          sudo rm -rf /Applications/Xcode_15.1*.app || true
+          sudo rm -rf /Applications/Xcode_15.2*.app || true
+          sudo rm -rf /Applications/Xcode_15.3*.app || true
+          sudo rm -rf /Users/runner/Library/Android || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo rm -rf /Library/Developer/CoreSimulator || true
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Clone 📥
         uses: actions/checkout@v4
         with:
