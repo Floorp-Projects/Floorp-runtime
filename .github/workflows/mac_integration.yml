@@ -33,6 +33,35 @@ jobs:
           export RUNNER_USERDIR=`echo ~`
           echo "RUNNER_USERDIR=$RUNNER_USERDIR" >> $GITHUB_ENV
 
+      - name: Free up disk space 🧹
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+
+          # Remove unnecessary large directories to free up disk space
+          # These are pre-installed tools that are not needed for the Integration job
+
+          # Remove old Xcode versions (~10-15 GB each, keeping only latest)
+          for xcode in /Applications/Xcode_14*.app /Applications/Xcode_15.{0,1,2,3}*.app; do
+            [ -e "$xcode" ] && sudo rm -rf "$xcode"
+          done
+
+          # Remove Android SDK (~10-15 GB)
+          sudo rm -rf /Users/runner/Library/Android || true
+          sudo rm -rf /usr/local/lib/android || true
+
+          # Remove PowerShell (~1 GB)
+          sudo rm -rf /usr/local/share/powershell || true
+
+          # Remove GHCup/Haskell toolchain (~5 GB)
+          sudo rm -rf /usr/local/.ghcup || true
+
+          # Remove iOS Simulator files (~10-20 GB)
+          sudo rm -rf /Library/Developer/CoreSimulator || true
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Clone 📥
         uses: actions/checkout@v4
         with:
