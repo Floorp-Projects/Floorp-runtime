@@ -106,7 +106,7 @@ jobs:
           port: 21
           protocol: ftps
           local-dir: ftp-upload/
-          server-dir: /home/floorp/domains/dev-assets.floorp.app/daily-${{ github.run_id }}/
+          server-dir: /public_html/runtime-builds/
 
   publish-release:
     name: Publish Release Assets
