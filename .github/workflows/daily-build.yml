@@ -58,10 +58,60 @@ jobs:
       debug: ${{ github.event.inputs.debug == 'true' || github.event_name == 'schedule' }}
       pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
 
+  publish-debug-to-core-ftp:
+    name: Publish Debug Assets to Core FTP
+    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac]
+    if: ${{ github.event.inputs.debug == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows x86_64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-windows-x86_64-moz-artifact
+          path: artifacts/windows
+
+      - name: Download Linux x86_64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-linux-x86_64-moz-artifact
+          path: artifacts/linux-x86_64
+
+      - name: Download Linux aarch64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-linux-aarch64-moz-artifact
+          path: artifacts/linux-aarch64
+
+      - name: Download Mac Universal artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-mac-universal-moz-artifact
+          path: artifacts/mac
+
+      - name: Zip all artifacts for FTP upload
+        run: |
+          set -euo pipefail
+          mkdir -p ftp-upload
+          zip -r ftp-upload/windows-x86_64-artifacts.zip artifacts/windows
+          zip -r ftp-upload/linux-x86_64-artifacts.zip artifacts/linux-x86_64
+          zip -r ftp-upload/linux-aarch64-artifacts.zip artifacts/linux-aarch64
+          zip -r ftp-upload/mac-universal-artifacts.zip artifacts/mac
+
+      - name: Upload via FTP to Core Server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_DEV_ASSETS_HOST }}
+          username: ${{ secrets.FTP_DEV_ASSETS_USER }}
+          password: ${{ secrets.FTP_DEV_ASSETS_PASSWORD }}
+          port: 21
+          protocol: ftps
+          local-dir: ftp-upload/
+          server-dir: /home/floorp/domains/dev-assets.floorp.app/daily-${{ github.run_id }}/
+
   publish-release:
     name: Publish Release Assets
     needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac]
-    if: ${{ github.event.inputs.debug != 'true' && github.event_name != 'schedule' }}
+    if: ${{ github.event.inputs.debug != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x86_64 artifact
