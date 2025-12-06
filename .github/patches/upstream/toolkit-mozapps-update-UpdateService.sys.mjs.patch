@@ -1,5 +1,5 @@
 diff --git a/toolkit/mozapps/update/UpdateService.sys.mjs b/toolkit/mozapps/update/UpdateService.sys.mjs
-index 5d5a3f2c46..0f556ff065 100644
+index 61a7a589cf..daa6e02a6b 100644
 --- a/toolkit/mozapps/update/UpdateService.sys.mjs
 +++ b/toolkit/mozapps/update/UpdateService.sys.mjs
 @@ -16,6 +16,21 @@ import {
@@ -24,18 +24,7 @@ index 5d5a3f2c46..0f556ff065 100644
  const lazy = {};
  
  ChromeUtils.defineESModuleGetters(lazy, {
-@@ -306,6 +321,10 @@ let gOnlyDownloadUpdatesThisSession = false;
- // This will be the backing for `nsIApplicationUpdateService.currentState`
- var gUpdateState = Ci.nsIApplicationUpdateService.STATE_IDLE;
- 
-+
-+
-+// MARK: utilities
-+
- /**
-  * Simple container and constructor for a Promise and its resolve function.
-  */
-@@ -1819,15 +1838,150 @@ function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
+@@ -1935,15 +1950,150 @@ function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
    AUSTLMY.pingStateCode(suffix, stateCode);
  }
  
@@ -187,14 +176,7 @@ index 5d5a3f2c46..0f556ff065 100644
    return (
      versionComparison < 0 ||
      (versionComparison == 0 && update.buildID == buildID)
-@@ -1837,12 +1991,26 @@ function updateIsAtLeastAsOldAs(update, version, buildID) {
- /**
-  * This returns true if the passed update is the same version or older than
-  * currently installed Firefox version.
-+ * @param {nsIUpdate} update
-  */
- function updateIsAtLeastAsOldAsCurrentVersion(update) {
-   return updateIsAtLeastAsOldAs(
+@@ -1959,6 +2109,19 @@ function updateIsAtLeastAsOldAsCurrentVersion(update) {
      update,
      Services.appinfo.version,
      Services.appinfo.appBuildID
@@ -214,7 +196,7 @@ index 5d5a3f2c46..0f556ff065 100644
    );
  }
  
-@@ -1863,6 +2031,19 @@ function updateIsAtLeastAsOldAsReadyUpdate(update) {
+@@ -1979,6 +2142,19 @@ function updateIsAtLeastAsOldAsReadyUpdate(update) {
      update,
      lazy.UM.internal.readyUpdate.appVersion,
      lazy.UM.internal.readyUpdate.buildID
@@ -234,29 +216,7 @@ index 5d5a3f2c46..0f556ff065 100644
    );
  }
  
-@@ -1969,6 +2150,10 @@ function pollForStagingEnd() {
-   lazy.setTimeout(pollingFn, pollingIntervalMs);
- }
- 
-+
-+
-+// MARK: UpdatePatch
-+
- class UpdatePatch {
-   // nsIUpdatePatch attribute names used to prevent nsIWritablePropertyBag from
-   // over writing nsIUpdatePatch attributes.
-@@ -2169,6 +2354,10 @@ class UpdatePatch {
-   ]);
- }
- 
-+
-+
-+// MARK: Update
-+
- class Update {
-   // nsIUpdate attribute names used to prevent nsIWritablePropertyBag from over
-   // writing nsIUpdate attributes.
-@@ -2191,6 +2380,19 @@ class Update {
+@@ -2307,6 +2483,19 @@ class Update {
      "type",
      "unsupported",
      "platformVersion",
@@ -276,7 +236,7 @@ index 5d5a3f2c46..0f556ff065 100644
    ];
  
    /**
-@@ -2288,6 +2490,19 @@ class Update {
+@@ -2404,6 +2593,19 @@ class Update {
            case "statusText":
            case "type":
            case "platformVersion":
@@ -296,7 +256,7 @@ index 5d5a3f2c46..0f556ff065 100644
              this[attr.name] = attr.value;
              break;
            default:
-@@ -2432,6 +2647,23 @@ class Update {
+@@ -2548,6 +2750,23 @@ class Update {
      if (this.elevationFailure) {
        update.setAttribute("elevationFailure", this.elevationFailure);
      }
@@ -320,51 +280,7 @@ index 5d5a3f2c46..0f556ff065 100644
  
      for (let [name, value] of Object.entries(this._properties)) {
        if (value.present && !this._attrNames.includes(name)) {
-@@ -2541,6 +2773,10 @@ class Update {
-   ]);
- }
- 
-+
-+
-+// MARK: UpdateService
-+
- export class UpdateService {
-   #initPromise;
- 
-@@ -3595,11 +3831,13 @@ export class UpdateService {
-     return true;
-   }
- 
-+
-+
-   /**
-    * Determine the update from the specified updates that should be offered.
-    * If both valid major and minor updates are available the minor update will
-    * be offered.
--   * @param   updates
-+   * @param {nsIUpdate[]} updates
-    *          An array of available nsIUpdate items
-    * @return  The nsIUpdate to offer.
-    */
-@@ -3620,6 +3858,8 @@ export class UpdateService {
-     var vc = Services.vc;
-     let lastCheckCode = AUSTLMY.CHK_NO_COMPAT_UPDATE_FOUND;
- 
-+
-+
-     for (const update of updates) {
-       // Ignore updates for older versions of the application and updates for
-       // the same version of the application with the same build ID.
-@@ -3652,6 +3892,8 @@ export class UpdateService {
-         continue;
-       }
- 
-+
-+
-       switch (update.type) {
-         case "major":
-           if (!majorUpdate || majorUpdate.unsupported) {
-@@ -3659,6 +3901,18 @@ export class UpdateService {
+@@ -3775,6 +3994,18 @@ export class UpdateService {
            } else if (
              !update.unsupported &&
              vc.compare(majorUpdate.appVersion, update.appVersion) <= 0
@@ -383,7 +299,7 @@ index 5d5a3f2c46..0f556ff065 100644
            ) {
              majorUpdate = update;
            }
-@@ -3669,6 +3923,18 @@ export class UpdateService {
+@@ -3785,6 +4016,18 @@ export class UpdateService {
            } else if (
              !update.unsupported &&
              vc.compare(minorUpdate.appVersion, update.appVersion) <= 0
@@ -402,47 +318,3 @@ index 5d5a3f2c46..0f556ff065 100644
            ) {
              minorUpdate = update;
            }
-@@ -4451,6 +4717,10 @@ export class UpdateService {
-   ]);
- }
- 
-+
-+
-+// MARK: UpdateManager
-+
- export class UpdateManager {
-   /**
-    * The nsIUpdate object for the update that has been downloaded.
-@@ -5169,6 +5439,10 @@ export class UpdateManager {
-   QueryInterface = ChromeUtils.generateQI([Ci.nsIUpdateManager]);
- }
- 
-+
-+
-+// MARK: CheckerService
-+
- /**
-  * CheckerService
-  * Provides an interface for checking for new updates. When more checks are
-@@ -5746,6 +6020,10 @@ export class CheckerService {
-   QueryInterface = ChromeUtils.generateQI([Ci.nsIUpdateChecker]);
- }
- 
-+
-+
-+// MARK: Downloader
-+
- class Downloader {
-   /**
-    * The nsIUpdatePatch that we are downloading
-@@ -7205,6 +7483,10 @@ class Downloader {
-   ]);
- }
- 
-+
-+
-+// MARK: RestartOnLastWindowClosed
-+
- // On macOS, all browser windows can be closed without Firefox exiting. If it
- // is left in this state for a while and an update is pending, we should restart
- // Firefox on our own to apply the update. This class will do that
