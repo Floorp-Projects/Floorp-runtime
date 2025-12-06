@@ -16,6 +16,21 @@ import {
 import { FileUtils } from "resource://gre/modules/FileUtils.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
+/**
+ * * NORANEKO PATCH - 0.1.0
+ * * [UPDATER]
+ * * (add version2 for updating source without rebuilding binary)
+ * * START
+ */
+import { NoranekoConstants } from "resource://noraneko/modules/NoranekoConstants.sys.mjs"
+/**
+ * * NORANEKO PATCH - 0.1.0
+ * * [UPDATER]
+ * * END
+ */
+
+// MARK: defines
+
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -1936,14 +1951,149 @@ function pingStateAndStatusCodes(aUpdate, aStartup, aStatus) {
 }
 
 /**
+ * * NORANEKO PATCH - 0.1.0
+ * * [UPDATER]
+ * * (add version2 for updating source without rebuilding binary)
+ * * START
+ */
+
+/**
+ * @typedef {[number, number, number]} NRVersion2
+ */
+
+/**
+ * check version2 for compare
+ * @param {string} A
+ * @returns {NRVersion2 | null}
+ */
+function parseVersion2(A) {
+  try {
+    let semverA = /^([0-9]+)\.([0-9]+)\.([0-9]+)$/.exec(A).slice(1).map((p)=>parseInt(p,10));
+    return semverA;
+  } catch {}
+  return null;
+}
+
+/**
+ * compare version2 that is added for noraneko
+ * - 0 A=B
+ * - 1 A<B
+ * - -1 A>B
+ * - null A.length !== 3 || B.length !== 3
+ * @param {NRVersion2} A
+ * @param {NRVersion2} B
+ * @param {"<" | "==" | ">" | "<=" | ">="} mode
+ */
+function compareVersion2(A, B, mode) {
+
+  /**
+   * @type {"A==B" | "no_value" | "A>B" | "A<B"}
+   */
+  let lastStatus = "A==B";
+  if (!A || !B) {
+    lastStatus = "no_value"
+  } else {
+    [...Array(3)].forEach((_,index)=>{
+      if (lastStatus == "A==B") {
+        if (A[index] == B[index]) {
+          lastStatus = "A==B";
+        } else if (A[index] > B[index]) {
+          lastStatus = "A>B";
+        } else if (A[index] < B[index]) {
+          lastStatus = "A<B";
+        }
+      }
+    });
+  }
+
+  console.debug("noraneko debug: lastStatus : "+lastStatus)
+
+  switch (mode) {
+    case "==":
+      return lastStatus === "A==B";
+    case "<":
+      return lastStatus === "A<B";
+    case "<=":
+      return lastStatus === "A==B" || lastStatus === "A<B";
+    case ">":
+      return lastStatus === "A>B";
+    case ">=":
+      return lastStatus === "A==B" || lastStatus === "A>B";
+  }
+}
+
+/**
+ * * NORANEKO PATCH - 0.1.0
+ * * [UPDATER]
+ * * END
+ */
+
+/**
  * This returns true if the passed update is the same version or older than the
  * version and build ID values passed. Otherwise it returns false.
+ *
+ * *#####*
+ * * NORANEKO PATCH - 0.1.0
+ * * [UPDATER]
+ * * (add version2 for updating source without rebuilding binary)
+ * * START
+ * *#####*
+ * @param {nsIUpdate} update
+ * @param {NRVersion2 | null} version2
+ * *#####*
+ * * NORANEKO PATCH - 0.1.0
+ * * [UPDATER]
+ * * END
+ * *#####*
  */
-function updateIsAtLeastAsOldAs(update, version, buildID) {
+function updateIsAtLeastAsOldAs(update, version, buildID
+  /**
+  * * NORANEKO PATCH - 0.1.0
+  * * [UPDATER]
+  * * (add version2 for updating source without rebuilding binary)
+  * * START
+  */
+  , version2 = null
+  , buildID2 = null
+  /**
+   * * NORANEKO PATCH - 0.1.0
+   * * [UPDATER]
+   * * END
+   */
+) {
   if (!update || !update.appVersion || !update.buildID) {
     return false;
   }
   let versionComparison = Services.vc.compare(update.appVersion, version);
+  /**
+   * * NORANEKO PATCH - 0.1.0
+   * * [UPDATER]
+   * * (add version2 for updating source without rebuilding binary)
+   * * START
+   */
+  let update_appVersion2 = parseVersion2(update.appVersion2)
+  let self_version2 = parseVersion2(version2);
+
+  if (update_appVersion2 && self_version2) {
+    if (versionComparison == 0) {
+      if (compareVersion2(update_appVersion2, self_version2, ">")) {
+        return false;
+      }
+      if (compareVersion2(update_appVersion2,self_version2,"<")) {
+        return true;
+      }
+      if (update.buildID == buildID) {
+        if (buildID2 != null && update.buildID2 != null && update.buildID2 != buildID2) {
+          return false
+        }
+      }
+    }
+  }
+  /**
+   * * NORANEKO PATCH - 0.1.0
+   * * [UPDATER]
+   * * END
+   */
   return (
     versionComparison < 0 ||
     (versionComparison == 0 && update.buildID == buildID)
@@ -1959,6 +2109,19 @@ function updateIsAtLeastAsOldAsCurrentVersion(update) {
     update,
     Services.appinfo.version,
     Services.appinfo.appBuildID
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * (add version2 for updating source without rebuilding binary)
+     * * START
+     */
+    , NoranekoConstants.version2
+    , NoranekoConstants.buildID2
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * END
+     */
   );
 }
 
@@ -1979,6 +2142,19 @@ function updateIsAtLeastAsOldAsReadyUpdate(update) {
     update,
     lazy.UM.internal.readyUpdate.appVersion,
     lazy.UM.internal.readyUpdate.buildID
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * (add version2 for updating source without rebuilding binary)
+     * * START
+     */
+    , lazy.UM.internal.readyUpdate.appVersion2
+    , lazy.UM.internal.readyUpdate.buildID2
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * END
+     */
   );
 }
 
@@ -2307,6 +2483,19 @@ class Update {
     "type",
     "unsupported",
     "platformVersion",
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * (add version2 for updating source without rebuilding binary)
+     * * START
+     */
+    "appVersion2",
+    "buildID2",
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * END
+     */
   ];
 
   /**
@@ -2404,6 +2593,19 @@ class Update {
           case "statusText":
           case "type":
           case "platformVersion":
+          /**
+           * * NORANEKO PATCH - 0.1.0
+           * * [UPDATER]
+           * * (add version2 for updating source without rebuilding binary)
+           * * START
+           */
+          case "appVersion2":
+          case "buildID2":
+          /**
+           * * NORANEKO PATCH - 0.1.0
+           * * [UPDATER]
+           * * END
+           */
             this[attr.name] = attr.value;
             break;
           default:
@@ -2548,6 +2750,23 @@ class Update {
     if (this.elevationFailure) {
       update.setAttribute("elevationFailure", this.elevationFailure);
     }
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * (add version2 for updating source without rebuilding binary)
+     * * START
+     */
+    if (this.appVersion2) {
+      update.setAttribute("appVersion2",this.appVersion2);
+    }
+    if (this.buildID2) {
+      update.setAttribute("buildID2",this.buildID2)
+    }
+    /**
+     * * NORANEKO PATCH - 0.1.0
+     * * [UPDATER]
+     * * END
+     */
 
     for (let [name, value] of Object.entries(this._properties)) {
       if (value.present && !this._attrNames.includes(name)) {
@@ -3775,6 +3994,18 @@ export class UpdateService {
           } else if (
             !update.unsupported &&
             vc.compare(majorUpdate.appVersion, update.appVersion) <= 0
+            /**
+             * * NORANEKO PATCH - 0.1.0
+             * * [UPDATER]
+             * * (add version2 for updating source without rebuilding binary)
+             * * START
+             */
+            && vc.compare(majorUpdate.appVersion, update.appVersion) == 0 ? compareVersion2(parseVersion2(majorUpdate.appVersion2),parseVersion2(update.appVersion2), "<=") : true
+            /**
+             * * NORANEKO PATCH - 0.1.0
+             * * [UPDATER]
+             * * END
+             */
           ) {
             majorUpdate = update;
           }
@@ -3785,6 +4016,18 @@ export class UpdateService {
           } else if (
             !update.unsupported &&
             vc.compare(minorUpdate.appVersion, update.appVersion) <= 0
+            /**
+             * * NORANEKO PATCH - 0.1.0
+             * * [UPDATER]
+             * * (add version2 for updating source without rebuilding binary)
+             * * START
+             */
+            && vc.compare(majorUpdate.appVersion, update.appVersion) == 0 ? compareVersion2(parseVersion2(majorUpdate.appVersion2),parseVersion2(update.appVersion2), "<=") : true
+            /**
+             * * NORANEKO PATCH - 0.1.0
+             * * [UPDATER]
+             * * END
+             */
           ) {
             minorUpdate = update;
           }
