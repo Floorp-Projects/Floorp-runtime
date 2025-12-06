@@ -111,7 +111,7 @@ jobs:
   publish-release:
     name: Publish Release Assets
     needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac]
-    if: ${{ github.event.inputs.debug != 'true' }}
+    if: ${{ github.event.inputs.debug != 'true' && github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x86_64 artifact
