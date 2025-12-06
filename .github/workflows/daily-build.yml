@@ -92,10 +92,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ftp-upload
-          zip -r ftp-upload/windows-x86_64-artifacts.zip artifacts/windows
-          zip -r ftp-upload/linux-x86_64-artifacts.zip artifacts/linux-x86_64
-          zip -r ftp-upload/linux-aarch64-artifacts.zip artifacts/linux-aarch64
-          zip -r ftp-upload/mac-universal-artifacts.zip artifacts/mac
+          (cd artifacts/windows && zip -r ../../ftp-upload/windows-x86_64-artifacts.zip .)
+          (cd artifacts/linux-x86_64 && zip -r ../../ftp-upload/linux-x86_64-artifacts.zip .)
+          (cd artifacts/linux-aarch64 && zip -r ../../ftp-upload/linux-aarch64-artifacts.zip .)
+          (cd artifacts/mac && zip -r ../../ftp-upload/mac-universal-artifacts.zip .)
 
       - name: Upload via FTP to Core Server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
