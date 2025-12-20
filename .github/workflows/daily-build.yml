@@ -240,7 +240,7 @@ jobs:
             release-assets/linux-x86_64-dist-host.zip
             release-assets/linux-x86_64-application-ini.zip
             release-assets/linux-aarch64-dist-host.zip
-            release-assets/linux-aarch64-appliction-ini.zip
+            release-assets/linux-aarch64-application-ini.zip
             release-assets/macOS-universal-dist-host.zip
             release-assets/macOS-universal-application-ini.zip
         env:
