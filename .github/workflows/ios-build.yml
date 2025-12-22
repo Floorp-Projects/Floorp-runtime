@@ -26,7 +26,7 @@ run-name: >-
 jobs:
   ios-simulator:
     name: Build iOS Simulator
-    runs-on: macos-15-arm64
+    runs-on: macos-latest
     timeout-minutes: 480
 
     steps:
