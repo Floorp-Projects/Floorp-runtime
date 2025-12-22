@@ -1,0 +1,117 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: iOS Build
+
+'on':
+  workflow_dispatch:
+    inputs:
+      MOZ_BUILD_DATE:
+        description: 'Build date override'
+        type: string
+        required: false
+        default: ""
+
+  workflow_call:
+    inputs:
+      MOZ_BUILD_DATE:
+        description: 'Build date override'
+        type: string
+        required: false
+        default: ""
+
+run-name: >-
+  iOS Simulator Build
+
+jobs:
+  build:
+    name: Build iOS Simulator
+    runs-on: macos-latest
+    timeout-minutes: 480
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "latest"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Select Xcode version
+        run: |
+          LATEST_XCODE=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$LATEST_XCODE" ]; then
+            echo "Error: No Xcode installation found"
+            exit 1
+          fi
+          echo "Using Xcode: $LATEST_XCODE"
+          sudo xcode-select -s "$LATEST_XCODE"
+          xcodebuild -version
+
+      - name: Apply upstream patches
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          if [ -d "$PATCH_DIR" ]; then
+            for patch in "$PATCH_DIR"/*.patch; do
+              [ -e "$patch" ] || continue
+              echo "Applying patch: $(basename "$patch")"
+              git apply --verbose --ignore-space-change --ignore-whitespace "$patch"
+            done
+          else
+            echo "No patches to apply"
+          fi
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Setup Rust toolchain for iOS
+        run: |
+          rustup target add aarch64-apple-ios-sim
+          rustup target add x86_64-apple-ios
+
+      - name: Allocate swap space
+        run: |
+          # macOS doesn't need manual swap allocation like Linux
+
+      - name: Setup mozconfig for iOS
+        run: |
+          cp ".github/workflows/mozconfigs/ios-simulator.mozconfig" mozconfig
+          echo "Using mozconfig for iOS Simulator"
+          cat mozconfig
+
+      - name: Bootstrap build environment
+        run: |
+          ./mach --no-interactive bootstrap --application-choice="GeckoView/Firefox for iOS"
+        env:
+          MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
+
+      - name: Build iOS
+        run: |
+          chmod +x ./.github/workflows/scripts/build-ios.sh
+          ./.github/workflows/scripts/build-ios.sh \
+            "${{ inputs.MOZ_BUILD_DATE }}"
+        env:
+          SCCACHE_GHA_ENABLED: 'on'
+          SCCACHE_MAX_FRAME_LENGTH: '1048576'
+          MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
+
+      - name: Clean existing iOS artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            floorp-ios-simulator-moz-artifact
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-ios-simulator-moz-artifact
+          path: ~/output/floorp-ios-simulator-moz-artifact.zip
+
+      - name: Upload GeckoTestBrowser app
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-ios-simulator-app
+          path: ~/output/floorp-ios-simulator-GeckoTestBrowser.zip

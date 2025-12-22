@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MPL-2.0
+
+ac_add_options --with-app-name=floorp
+ac_add_options --with-app-basename=Floorp
+
+# Android Configuration
+# Building GeckoView/Firefox for Android
+ac_add_options --enable-application=mobile/android
+
+# Target architecture: x86_64 for Android emulators
+ac_add_options --target=x86_64
+
+# Build GeckoView Example application for testing
+ac_add_options --enable-android-subproject=geckoview_example
+
+# Disable features not needed for Android
+ac_add_options --disable-crashreporter
+ac_add_options --enable-bootstrap
+
+# Telemetry
+ac_add_options MOZ_TELEMETRY_REPORTING=
+
+mk_add_options AUTOCLOBBER=1

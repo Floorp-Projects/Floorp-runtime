@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MPL-2.0
+
+ac_add_options --with-app-name=floorp
+ac_add_options --with-app-basename=Floorp
+
+# iOS Configuration
+# Building GeckoView for iOS
+ac_add_options --enable-application=mobile/ios
+
+# Disable features not needed for iOS
+ac_add_options --disable-crashreporter
+ac_add_options --enable-bootstrap
+
+# Telemetry
+ac_add_options MOZ_TELEMETRY_REPORTING=
+
+mk_add_options AUTOCLOBBER=1

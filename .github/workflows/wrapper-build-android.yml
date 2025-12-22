@@ -1,0 +1,136 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Android Build Wrapper
+
+'on':
+  workflow_dispatch:
+    inputs:
+      build_arm64:
+        description: 'Build arm64-v8a'
+        type: boolean
+        default: true
+        required: false
+      build_arm32:
+        description: 'Build armeabi-v7a'
+        type: boolean
+        default: true
+        required: false
+      build_x86_64:
+        description: 'Build x86_64'
+        type: boolean
+        default: true
+        required: false
+
+  workflow_call:
+    inputs:
+      build_arm64:
+        description: 'Build arm64-v8a'
+        type: boolean
+        default: true
+        required: false
+      build_arm32:
+        description: 'Build armeabi-v7a'
+        type: boolean
+        default: true
+        required: false
+      build_x86_64:
+        description: 'Build x86_64'
+        type: boolean
+        default: true
+        required: false
+
+run-name: Android Multi-Arch Build
+
+jobs:
+  build-arm64:
+    name: Android arm64-v8a
+    if: ${{ inputs.build_arm64 != false }}
+    uses: ./.github/workflows/android-build.yml
+    secrets: inherit
+    with:
+      arch: arm64-v8a
+
+  build-arm32:
+    name: Android armeabi-v7a
+    if: ${{ inputs.build_arm32 != false }}
+    uses: ./.github/workflows/android-build.yml
+    secrets: inherit
+    with:
+      arch: armeabi-v7a
+
+  build-x86_64:
+    name: Android x86_64
+    if: ${{ inputs.build_x86_64 != false }}
+    uses: ./.github/workflows/android-build.yml
+    secrets: inherit
+    with:
+      arch: x86_64
+
+  package-fat-aar:
+    name: Package Fat AAR
+    needs: [build-arm64, build-arm32, build-x86_64]
+    if: |
+      always() &&
+      (needs.build-arm64.result == 'success' || needs.build-arm64.result == 'skipped') &&
+      (needs.build-arm32.result == 'success' || needs.build-arm32.result == 'skipped') &&
+      (needs.build-x86_64.result == 'success' || needs.build-x86_64.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download arm64-v8a artifact
+        if: ${{ inputs.build_arm64 != false }}
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-android-arm64-v8a-moz-artifact
+          path: artifacts/arm64-v8a
+
+      - name: Download armeabi-v7a artifact
+        if: ${{ inputs.build_arm32 != false }}
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-android-armeabi-v7a-moz-artifact
+          path: artifacts/armeabi-v7a
+
+      - name: Download x86_64 artifact
+        if: ${{ inputs.build_x86_64 != false }}
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-android-x86_64-moz-artifact
+          path: artifacts/x86_64
+
+      - name: Download arm64-v8a APK
+        if: ${{ inputs.build_arm64 != false }}
+        uses: actions/download-artifact@v4
+        with:
+          name: floorp-android-arm64-v8a-example-apk
+          path: apks/arm64-v8a
+
+      - name: Package combined artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p combined-artifacts
+
+          # Copy all available artifacts
+          for arch in arm64-v8a armeabi-v7a x86_64; do
+            if [ -d "artifacts/$arch" ]; then
+              cp -r "artifacts/$arch"/* combined-artifacts/ 2>/dev/null || true
+            fi
+          done
+
+          # Copy APKs
+          if [ -d "apks" ]; then
+            cp -r apks/* combined-artifacts/ 2>/dev/null || true
+          fi
+
+          # Create combined archive
+          (cd combined-artifacts && zip -r ../floorp-android-all-artifacts.zip .)
+
+          echo "Combined artifacts:"
+          ls -la combined-artifacts/
+          ls -la *.zip
+
+      - name: Upload combined artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-android-all-moz-artifact
+          path: floorp-android-all-artifacts.zip

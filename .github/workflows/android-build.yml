@@ -1,0 +1,144 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Android Build
+
+'on':
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Target architecture'
+        type: choice
+        options:
+          - arm64-v8a
+          - armeabi-v7a
+          - x86_64
+        default: arm64-v8a
+        required: true
+      MOZ_BUILD_DATE:
+        description: 'Build date override'
+        type: string
+        required: false
+        default: ""
+
+  workflow_call:
+    inputs:
+      arch:
+        description: 'Target architecture'
+        type: string
+        default: arm64-v8a
+        required: true
+      MOZ_BUILD_DATE:
+        description: 'Build date override'
+        type: string
+        required: false
+        default: ""
+
+run-name: >-
+  Android ${{ inputs.arch }} Build
+
+jobs:
+  build:
+    name: Build Android ${{ inputs.arch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "latest"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;27.0.12077973" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/27.0.12077973" >> $GITHUB_ENV
+
+      - name: Apply upstream patches
+        run: |
+          PATCH_DIR=".github/patches/upstream"
+          if [ -d "$PATCH_DIR" ]; then
+            for patch in "$PATCH_DIR"/*.patch; do
+              [ -e "$patch" ] || continue
+              echo "Applying patch: $(basename "$patch")"
+              git apply --verbose --ignore-space-change --ignore-whitespace "$patch"
+            done
+          else
+            echo "No patches to apply"
+          fi
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Setup Rust toolchain for Android
+        run: |
+          rustup target add aarch64-linux-android
+          rustup target add armv7-linux-androideabi
+          rustup target add x86_64-linux-android
+
+      - name: Allocate swap space
+        run: |
+          ./.github/workflows/scripts/allocate-swap.sh "x86_64"
+
+      - name: Setup mozconfig for Android
+        run: |
+          ARCH="${{ inputs.arch }}"
+          cp ".github/workflows/mozconfigs/android-${ARCH}.mozconfig" mozconfig
+          echo "Using mozconfig for Android ${ARCH}"
+          cat mozconfig
+
+      - name: Bootstrap build environment
+        run: |
+          # Run mach bootstrap non-interactively for GeckoView/Firefox for Android
+          ./mach --no-interactive bootstrap --application-choice="GeckoView/Firefox for Android"
+        env:
+          MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
+
+      - name: Build Android
+        run: |
+          chmod +x ./.github/workflows/scripts/build-android.sh
+          ./.github/workflows/scripts/build-android.sh \
+            "${{ inputs.arch }}" \
+            "${{ inputs.MOZ_BUILD_DATE }}"
+        env:
+          SCCACHE_GHA_ENABLED: 'on'
+          SCCACHE_MAX_FRAME_LENGTH: '1048576'
+          MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
+
+      - name: Clean existing Android artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            floorp-android-${{ inputs.arch }}-moz-artifact
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-android-${{ inputs.arch }}-moz-artifact
+          path: ~/output/floorp-android-${{ inputs.arch }}-moz-artifact.zip
+
+      - name: Upload GeckoView AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-android-${{ inputs.arch }}-geckoview-aar
+          path: ~/output/floorp-geckoview-${{ inputs.arch }}.aar
+
+      - name: Upload GeckoView Example APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-android-${{ inputs.arch }}-example-apk
+          path: ~/output/floorp-geckoview-example-${{ inputs.arch }}.apk
