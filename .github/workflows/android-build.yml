@@ -67,6 +67,8 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          android-sdk-path: ${{ runner.temp }}/android-sdk
 
       - name: Install Android NDK
         run: |
