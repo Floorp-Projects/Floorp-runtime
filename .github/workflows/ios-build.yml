@@ -117,3 +117,15 @@ jobs:
         with:
           name: floorp-ios-simulator-app
           path: ~/output/floorp-ios-simulator-GeckoTestBrowser.zip
+
+      - name: Upload GeckoView XCFramework
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-ios-geckoview-xcframework
+          path: ~/output/GeckoView-xcframework.zip
+
+      - name: Upload GeckoView Swift wrapper sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-ios-geckoview-swift
+          path: ~/output/GeckoViewSwift/

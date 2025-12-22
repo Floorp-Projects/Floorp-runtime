@@ -66,5 +66,15 @@ fi
 ARTIFACT_NAME="floorp-ios-simulator-moz-artifact"
 (cd ~/output && zip -r "${ARTIFACT_NAME}.zip" . 2>/dev/null || true)
 
+# Create XCFramework for React Native / CocoaPods integration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/create-xcframework.sh" ]]; then
+  echo "Creating GeckoView XCFramework..."
+  chmod +x "$SCRIPT_DIR/create-xcframework.sh"
+  "$SCRIPT_DIR/create-xcframework.sh" "$OBJ_DIR" ~/output "aarch64-apple-ios-sim"
+else
+  echo "Warning: create-xcframework.sh not found, skipping XCFramework creation"
+fi
+
 echo "iOS build completed"
 ls -la ~/output/
