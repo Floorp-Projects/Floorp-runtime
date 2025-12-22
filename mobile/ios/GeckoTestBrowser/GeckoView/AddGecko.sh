@@ -8,7 +8,12 @@ set -e
 # FIXME: This isn't going to work long-term.
 if test "${ACTION}" != "clean"; then
     if [ -z "${GECKO_TOPOBJDIR}" ]; then
-        GECKO_TOPOBJDIR=`"${GECKO_TOPSRCDIR}/mach" environment --format=json | python3 -c 'import sys, json; print(json.load(sys.stdin)["topobjdir"])'`
+        if [ "${PLATFORM_NAME}" = "iphonesimulator" ] && [ -d "${GECKO_TOPSRCDIR}/obj-aarch64-apple-ios-sim" ]; then
+            GECKO_TOPOBJDIR="${GECKO_TOPSRCDIR}/obj-aarch64-apple-ios-sim"
+        else
+            GECKO_TOPOBJDIR=`"${GECKO_TOPSRCDIR}/mach" environment --format=json | python3 -c 'import sys, json; print(json.load(sys.stdin)["topobjdir"])'`
+        fi
+        
         if [ -z "${GECKO_TOPOBJDIR}" ]; then
             echo "Error: Could not determine GECKO_TOPOBJDIR"
         fi

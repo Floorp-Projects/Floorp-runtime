@@ -9,6 +9,7 @@ protocol BrowserToolbarDelegate: AnyObject {
     func forwardButtonClicked()
     func reloadButtonClicked()
     func stopButtonClicked()
+    func tabsButtonClicked()
 }
 
 class BrowserToolbar: UIToolbar {
@@ -16,6 +17,7 @@ class BrowserToolbar: UIToolbar {
     private var reloadStopButton: UIBarButtonItem!
     private var backButton: UIBarButtonItem!
     private var forwardButton: UIBarButtonItem!
+    private var tabsButton: UIBarButtonItem!
 
     // By default the state is set to reload. We save the state to avoid setting the toolbar
     // button multiple times when a page load is in progress
@@ -41,6 +43,11 @@ class BrowserToolbar: UIToolbar {
             style: .plain,
             target: self,
             action: #selector(reloadButtonClicked))
+        tabsButton = UIBarButtonItem(
+            image: UIImage(systemName: "square.on.square"),
+            style: .plain,
+            target: self,
+            action: #selector(tabsButtonClicked))
 
         var items = [UIBarButtonItem]()
         items.append(
@@ -52,6 +59,9 @@ class BrowserToolbar: UIToolbar {
         items.append(
             UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil))
         items.append(reloadStopButton)
+        items.append(
+            UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil))
+        items.append(tabsButton)
         items.append(
             UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil))
         setItems(items, animated: false)
@@ -97,5 +107,9 @@ class BrowserToolbar: UIToolbar {
 
     @objc func stopButtonClicked() {
         toolbarDelegate?.stopButtonClicked()
+    }
+    
+    @objc func tabsButtonClicked() {
+        toolbarDelegate?.tabsButtonClicked()
     }
 }

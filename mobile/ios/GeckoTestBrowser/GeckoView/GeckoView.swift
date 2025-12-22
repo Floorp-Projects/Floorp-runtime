@@ -7,7 +7,9 @@ import UIKit
 public class GeckoView: UIView {
     public var session: GeckoSession? {
         didSet {
-            // FIXME: Suspend old view, unsuspend new view, etc.
+            if let oldSession = oldValue {
+                oldSession.setActive(false)
+            }
 
             // Remove all subviews from this view, to clean up any previous state.
             for view in subviews {
@@ -16,6 +18,8 @@ public class GeckoView: UIView {
 
             // Add the new session's view under this GeckoView, and size it to fill this view.
             guard let sessionView = session?.window?.view() else { return }
+
+            session?.setActive(true)
 
             if sessionView.superview != nil {
                 fatalError("attempt to assign GeckoSession to multiple GeckoView instances")
