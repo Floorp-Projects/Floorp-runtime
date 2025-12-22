@@ -90,6 +90,19 @@ jobs:
 
       - name: Build iOS
         run: |
+          # Set up SDK paths for Xcode 26+ compatibility
+          IPHONE_SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+          SUBFRAMEWORKS_PATH="$IPHONE_SDK_PATH/System/Library/SubFrameworks"
+          UIUTILITIES_PATH="$SUBFRAMEWORKS_PATH/UIUtilities.framework/Headers"
+          
+          echo "Using iPhone SDK: $IPHONE_SDK_PATH"
+          echo "SubFrameworks path: $SUBFRAMEWORKS_PATH"
+          
+          # Export flags for the build
+          export CFLAGS="-iframework $SUBFRAMEWORKS_PATH -I$UIUTILITIES_PATH"
+          export CXXFLAGS="-iframework $SUBFRAMEWORKS_PATH -I$UIUTILITIES_PATH"
+          export OBJCFLAGS="-iframework $SUBFRAMEWORKS_PATH -I$UIUTILITIES_PATH"
+          
           chmod +x ./.github/workflows/scripts/build-ios.sh
           ./.github/workflows/scripts/build-ios.sh \
             "${{ inputs.MOZ_BUILD_DATE }}"
@@ -97,6 +110,7 @@ jobs:
           SCCACHE_GHA_ENABLED: 'on'
           SCCACHE_MAX_FRAME_LENGTH: '1048576'
           MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
+
 
       - name: Clean existing iOS artifacts
         uses: geekyeggo/delete-artifact@v5

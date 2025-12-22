@@ -24,11 +24,18 @@ MOZ_TELEMETRY_REPORTING=
 # Debug build for testing
 ac_add_options --enable-debug
 
-# Add SubFrameworks search path for Xcode 26 SDK compatibility
+# Add SubFrameworks search path for Xcode 26+ SDK compatibility
 # UIUtilities framework moved to SubFrameworks in iOS 26 SDK
-# Note: We override the entire CFLAGS/CXXFLAGS to avoid inheriting -fopenmp from environment
-SUBFRAMEWORKS_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/SubFrameworks"
-export CFLAGS="-iframework $SUBFRAMEWORKS_PATH"
-export CXXFLAGS="-iframework $SUBFRAMEWORKS_PATH"
-export OBJCFLAGS="-iframework $SUBFRAMEWORKS_PATH"
+# We need to detect the SDK path dynamically since Xcode version varies
+
+# The SDK path will be determined by the build system, but we need to ensure
+# the SubFrameworks path is included. Use xcrun to get the correct SDK path.
+IPHONE_SDK_PATH="$(xcrun --sdk iphonesimulator --show-sdk-path 2>/dev/null || echo '')"
+if [ -n "$IPHONE_SDK_PATH" ]; then
+    SUBFRAMEWORKS_PATH="$IPHONE_SDK_PATH/System/Library/SubFrameworks"
+    UIUTILITIES_PATH="$IPHONE_SDK_PATH/System/Library/SubFrameworks/UIUtilities.framework/Headers"
+    export CFLAGS="-iframework $SUBFRAMEWORKS_PATH -I$UIUTILITIES_PATH"
+    export CXXFLAGS="-iframework $SUBFRAMEWORKS_PATH -I$UIUTILITIES_PATH"
+    export OBJCFLAGS="-iframework $SUBFRAMEWORKS_PATH -I$UIUTILITIES_PATH"
+fi
 
