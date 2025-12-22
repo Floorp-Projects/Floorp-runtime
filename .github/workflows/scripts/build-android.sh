@@ -103,12 +103,16 @@ fi
 echo "Using object directory: $OBJ_DIR"
 
 # Copy GeckoView AAR
-GECKOVIEW_AAR=$(find "$OBJ_DIR/gradle/build/maven/org/mozilla/geckoview" -name "*.aar" 2>/dev/null | head -1)
+# AAR files are located in gradle/maven (not gradle/build/maven)
+GECKOVIEW_AAR=$(find "$OBJ_DIR/gradle/maven/org/mozilla/geckoview" -name "*.aar" 2>/dev/null | head -1)
 if [[ -f "$GECKOVIEW_AAR" ]]; then
   cp "$GECKOVIEW_AAR" ~/output/floorp-geckoview-${ARCH}.aar
   echo "Copied GeckoView AAR: $GECKOVIEW_AAR"
 else
-  echo "Warning: GeckoView AAR not found"
+  echo "ERROR: GeckoView AAR not found"
+  echo "Searching for AAR files in object directory:"
+  find "$OBJ_DIR" -name "*.aar" 2>/dev/null || true
+  exit 1
 fi
 
 # Copy GeckoView Example APK
