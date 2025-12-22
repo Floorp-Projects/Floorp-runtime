@@ -73,12 +73,6 @@ jobs:
           rustup target add x86_64-apple-ios
 
 
-      - name: Setup mozconfig for iOS
-        run: |
-          cp ".github/workflows/mozconfigs/ios-simulator.mozconfig" mozconfig
-          echo "Using mozconfig for iOS Simulator"
-          cat mozconfig
-
       - name: Bootstrap build environment
         run: |
           # iOS is not officially supported by mach bootstrap, but we use browser choice
@@ -86,6 +80,13 @@ jobs:
           ./mach --no-interactive bootstrap --application-choice="browser"
         env:
           MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
+
+      - name: Setup mozconfig for iOS
+        run: |
+          # Copy mozconfig AFTER bootstrap to prevent bootstrap from overwriting it
+          cp ".github/workflows/mozconfigs/ios-simulator.mozconfig" mozconfig
+          echo "Using mozconfig for iOS Simulator"
+          cat mozconfig
 
       - name: Build iOS
         run: |
