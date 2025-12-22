@@ -63,6 +63,20 @@ nice -n 10 ./mach build --jobs=$MOZ_NUM_JOBS
 # Clean up cargo cache
 rm -rf ~/.cargo
 
+# Clean up build artifacts to free disk space for packaging
+echo "Cleaning up build artifacts to free disk space..."
+df -h
+
+# Remove sccache cache
+rm -rf ~/.cache/sccache
+
+# Remove rustup toolchain caches
+rm -rf ~/.rustup/toolchains/*/lib/rustlib/*/analysis
+
+# Show disk space after cleanup
+echo "Disk space after cleanup:"
+df -h
+
 # Artifact packaging
 mkdir -p ~/output
 
