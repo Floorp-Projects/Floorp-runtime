@@ -1,17 +1,36 @@
 # SPDX-License-Identifier: MPL-2.0
 
+# iOS GeckoView Build Configuration
+
+# Enable the iOS application target
+ac_add_options --enable-application=mobile/ios
+
+# Target iOS Simulator (arm64 for Apple Silicon Mac)
+ac_add_options --target=aarch64-apple-ios-sim
+
+# App naming
 ac_add_options --with-app-name=floorp
 ac_add_options --with-app-basename=Floorp
 
-# iOS Configuration
-# Building GeckoView for iOS
-ac_add_options --enable-application=mobile/ios
-
-# Disable features not needed for iOS
+# Build options
+ac_add_options --disable-tests
 ac_add_options --disable-crashreporter
 ac_add_options --enable-bootstrap
+ac_add_options --enable-rust-simd
 
-# Telemetry
-ac_add_options MOZ_TELEMETRY_REPORTING=
+# Disable telemetry
+MOZ_TELEMETRY_REPORTING=
+
+# Release build for CI
+ac_add_options --enable-optimize
+ac_add_options --disable-debug
+
+# Add SubFrameworks search path for Xcode 26 SDK compatibility
+# UIUtilities framework moved to SubFrameworks in iOS 26 SDK
+# Note: We override the entire CFLAGS/CXXFLAGS to avoid inheriting -fopenmp from environment
+SUBFRAMEWORKS_PATH="/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/SubFrameworks"
+export CFLAGS="-iframework $SUBFRAMEWORKS_PATH"
+export CXXFLAGS="-iframework $SUBFRAMEWORKS_PATH"
+export OBJCFLAGS="-iframework $SUBFRAMEWORKS_PATH"
 
 mk_add_options AUTOCLOBBER=1
