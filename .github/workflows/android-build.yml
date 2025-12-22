@@ -65,10 +65,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Prepare Android SDK directory
+        run: |
+          sudo mkdir -p /usr/local/lib/android/sdk
+          sudo chown -R $USER:$USER /usr/local/lib/android
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          android-sdk-path: ${{ runner.temp }}/android-sdk
 
       - name: Install Android NDK
         run: |
