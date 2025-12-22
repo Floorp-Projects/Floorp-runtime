@@ -36,9 +36,9 @@ xcodebuild \
   -sdk iphonesimulator \
   -configuration Debug \
   -derivedDataPath build/ios \
-  CODE_SIGN_IDENTITY="" \
+  CODE_SIGN_IDENTITY="-" \
   CODE_SIGNING_REQUIRED=NO \
-  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_ALLOWED=YES \
   GECKO_TOPSRCDIR="$GECKO_TOPSRCDIR" \
   GECKO_TOPOBJDIR="$GECKO_TOPOBJDIR" \
   build
