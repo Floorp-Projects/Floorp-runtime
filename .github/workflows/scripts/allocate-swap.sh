@@ -51,6 +51,16 @@ remove_dir "/usr/share/java"
 remove_dir "/usr/share/miniconda"
 remove_dir "/usr/local/share/vcpkg"
 
+# Additional large directories
+remove_dir "/opt/hostedtoolcache/CodeQL"
+remove_dir "/usr/share/swift"
+remove_dir "/opt/hostedtoolcache/go"
+remove_dir "/opt/az"
+remove_dir "/opt/microsoft"
+
+# Remove Docker images to free up space
+sudo docker image prune --all --force 2>/dev/null || true
+
 # Cleanup
 rmdir /tmp/empty 2>/dev/null
 
