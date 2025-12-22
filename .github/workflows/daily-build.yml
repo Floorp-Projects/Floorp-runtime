@@ -69,7 +69,7 @@ jobs:
 
   ios:
     name: iOS build
-    uses: ./.github/workflows/ios-build.yml
+    uses: ./.github/workflows/wrapper-build-ios.yml
     secrets: inherit
 
   publish-debug-to-core-ftp:
