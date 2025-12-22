@@ -24,9 +24,9 @@ run-name: >-
   iOS Simulator Build
 
 jobs:
-  build:
+  ios-simulator:
     name: Build iOS Simulator
-    runs-on: macos-latest
+    runs-on: macos-15-arm64
     timeout-minutes: 480
 
     steps:
@@ -72,9 +72,6 @@ jobs:
           rustup target add aarch64-apple-ios-sim
           rustup target add x86_64-apple-ios
 
-      - name: Allocate swap space
-        run: |
-          # macOS doesn't need manual swap allocation like Linux
 
       - name: Setup mozconfig for iOS
         run: |
