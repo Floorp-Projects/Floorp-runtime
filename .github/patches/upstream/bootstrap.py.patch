@@ -30,8 +30,8 @@ index df3f39f548..c31455f9e1 100644
 -        ("SpiderMonkey JavaScript engine", "js"),
 +        ("Noraneko for Desktop Artifact Mode", "browser_artifact_mode"),
 +        ("Noraneko for Desktop", "browser"),
-+        ("GeckoView/Floorp for Android Artifact Mode", "mobile_android_artifact_mode"),
-+        ("GeckoView/Floorp for Android", "mobile_android"),
++        ("GeckoView/Noraneko for Android Artifact Mode", "mobile_android_artifact_mode"),
++        ("GeckoView/Noraneko for Android", "mobile_android"),
      ]
  )
  

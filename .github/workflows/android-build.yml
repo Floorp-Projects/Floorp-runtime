@@ -103,8 +103,8 @@ jobs:
 
       - name: Bootstrap build environment
         run: |
-          # Run mach bootstrap non-interactively for GeckoView/Firefox for Android
-          ./mach --no-interactive bootstrap --application-choice="GeckoView/Firefox for Android"
+          # Run mach bootstrap non-interactively for GeckoView/Noraneko for Android
+          ./mach --no-interactive bootstrap --application-choice="GeckoView/Noraneko for Android"
         env:
           MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
 

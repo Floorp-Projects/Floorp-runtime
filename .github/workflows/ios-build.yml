@@ -84,16 +84,8 @@ jobs:
 
       - name: Bootstrap build environment
         run: |
-          # iOS is not supported by mach bootstrap, so we manually set up the environment
-          # Install Python dependencies required for the build
-          python3 -m pip install --upgrade pip
-          python3 -m pip install pyyaml six
-
-          # Create mozbuild state directory
-          mkdir -p "$MOZBUILD_STATE_PATH"
-
-          # Run mach with browser choice to set up common dependencies
-          # This installs mach-required packages without configuring for a specific build
+          # iOS is not officially supported by mach bootstrap, but we use browser choice
+          # to set up common build dependencies (Python packages, Rust, etc.)
           ./mach --no-interactive bootstrap --application-choice="browser"
         env:
           MOZBUILD_STATE_PATH: ${{ github.workspace }}/.mozbuild
