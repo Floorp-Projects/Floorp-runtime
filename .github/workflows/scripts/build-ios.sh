@@ -36,6 +36,8 @@ xcodebuild \
   -sdk iphonesimulator \
   -configuration Debug \
   -derivedDataPath build/ios \
+  ARCHS=arm64 \
+  ONLY_ACTIVE_ARCH=YES \
   CODE_SIGN_IDENTITY="-" \
   CODE_SIGNING_REQUIRED=NO \
   CODE_SIGNING_ALLOWED=YES \
