@@ -17,6 +17,7 @@ fi
 
 export MOZ_NUM_JOBS=$(( $(nproc) * 3 / 4 ))
 if [[ "$PLATFORM" == "linux" ]]; then
+  sudo apt-get update -y
   sudo apt-get install -y xvfb mesa-utils
   export LIBGL_ALWAYS_SOFTWARE=1
   xvfb-run -a -s "-screen 0 1024x768x24" ./mach configure

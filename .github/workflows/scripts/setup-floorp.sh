@@ -89,6 +89,7 @@ if [[ "$PLATFORM" == "mac" ]]; then
   echo "ac_add_options --enable-linker=lld" >> mozconfig
 fi
 
+sudo apt update -y
 sudo apt install msitools -y
 
 SCCACHE_BIN="${SCCACHE_PATH:-}"

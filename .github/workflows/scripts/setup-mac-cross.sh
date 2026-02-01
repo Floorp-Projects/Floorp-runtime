@@ -23,6 +23,7 @@ echo "Installing LLVM 19 toolchain for cross-compilation..."
 wget https://apt.llvm.org/llvm.sh
 chmod +x llvm.sh
 sudo ./llvm.sh 19
+sudo apt-get update
 sudo apt-get install -y lld-19
 
 # Create symlinks for the tools

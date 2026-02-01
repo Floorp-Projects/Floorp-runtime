@@ -147,6 +147,7 @@ if ! command -v llvm-profdata &> /dev/null; then
     # If still not found, install from system packages
     if ! command -v llvm-profdata &> /dev/null; then
         echo "📦 Installing LLVM tools from system packages"
+        sudo apt-get update
         sudo apt-get install -y llvm
     fi
 fi
