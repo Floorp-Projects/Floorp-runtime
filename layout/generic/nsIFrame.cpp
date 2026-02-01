@@ -3384,12 +3384,12 @@ void nsIFrame::BuildDisplayListForStackingContext(
     // anyways).
     asrSetter.SetCurrentActiveScrolledRoot(nullptr);
   }
+  DisplayListClipState::AutoSaveRestore stickyItemClipState(aBuilder);
   if (useStickyPosition) {
     StickyScrollContainer* stickyScrollContainer =
         StickyScrollContainer::GetOrCreateForFrame(this);
-    if (stickyScrollContainer) {
-      if (aBuilder->IsPaintingToWindow() &&
-          !aBuilder->IsInViewTransitionCapture() &&
+    if (stickyScrollContainer && aBuilder->IsPaintingToWindow()) {
+      if (!aBuilder->IsInViewTransitionCapture() &&
           stickyScrollContainer->ScrollContainer()
               ->IsMaybeAsynchronouslyScrolled()) {
         shouldFlattenStickyItem = false;
@@ -3403,6 +3403,7 @@ void nsIFrame::BuildDisplayListForStackingContext(
       stickyASR = aBuilder->GetOrCreateActiveScrolledRootForSticky(
           aBuilder->CurrentActiveScrolledRoot(), this);
       asrSetter.SetCurrentActiveScrolledRoot(stickyASR);
+      stickyItemClipState.MaybeRemoveDisplayportClip();
     }
   }
 
@@ -3938,8 +3939,6 @@ void nsIFrame::BuildDisplayListForStackingContext(
     // that on the display item as the "container ASR" (i.e. the normal ASR of
     // the container item, excluding the special behaviour induced by fixed
     // descendants).
-    DisplayListClipState::AutoSaveRestore stickyItemClipState(aBuilder);
-    stickyItemClipState.MaybeRemoveDisplayportClip();
     const ActiveScrolledRoot* stickyItemASR = ActiveScrolledRoot::PickAncestor(
         containerItemASR, aBuilder->CurrentActiveScrolledRoot());
 
