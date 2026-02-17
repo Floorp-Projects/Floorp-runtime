@@ -1,5 +1,5 @@
 diff --git a/tools/signing/macos/mach_commands.py b/tools/signing/macos/mach_commands.py
-index 721790b0d0..e615461d11 100644
+index 4227363da7..4872c1d592 100644
 --- a/tools/signing/macos/mach_commands.py
 +++ b/tools/signing/macos/mach_commands.py
 @@ -10,6 +10,8 @@ import plistlib
@@ -11,7 +11,7 @@ index 721790b0d0..e615461d11 100644
  
  import yaml
  from mach.decorators import (
-@@ -154,6 +156,17 @@ def macos_sign(
+@@ -153,6 +155,17 @@ def macos_sign(
      """
      command_context._set_log_level(verbose_arg)
  
@@ -29,26 +29,29 @@ index 721790b0d0..e615461d11 100644
      # Check appdir and remove trailing slasshes
      if not os.path.isdir(app_arg):
          command_context.log(
-@@ -323,24 +336,30 @@ def macos_sign(
+@@ -321,27 +334,25 @@ def macos_sign(
          "by-hardened-signing-type"
      ][entitlements_key]
  
 -    command_context.log(
 -        logging.INFO, "macos-sign", {}, "Stripping existing xattrs and signatures"
 -    )
+-
+-    # Remove extended attributes. Per Apple "Technical Note TN2206",
+-    # code signing uses extended attributes to store signatures for
+-    # non-Mach-O executables such as script files. We want to avoid
+-    # any complications that might be caused by existing extended
+-    # attributes.
+-    # Bug 2005439: xattr -r is not valid on linux
+-    xattr_cmd = (
+-        ["xattr", "-c", app] if sys.platform == "linux" else ["xattr", "-cr", app]
+-    )
+-    run(command_context, xattr_cmd, capture_output=not verbose_arg)
 +    if current_platform == "Darwin" and use_rcodesign_arg is False:
 +        command_context.log(
 +            logging.INFO, "macos-sign", {}, "Stripping existing xattrs and signatures"
 +        )
  
-     # Remove extended attributes. Per Apple "Technical Note TN2206",
-     # code signing uses extended attributes to store signatures for
-     # non-Mach-O executables such as script files. We want to avoid
-     # any complications that might be caused by existing extended
-     # attributes.
--    xattr_cmd = ["xattr", "-cr", app]
--    run(command_context, xattr_cmd, capture_output=not verbose_arg)
--
 -    # Remove existing signatures. The codesign command only replaces
 -    # signatures if the --force option used. Remove all signatures so
 -    # subsequent signing commands with different options will result
@@ -72,7 +75,7 @@ index 721790b0d0..e615461d11 100644
  
      if use_rcodesign_arg is True:
          sign_with_rcodesign(
-@@ -366,7 +385,11 @@ def macos_sign(
+@@ -367,7 +378,11 @@ def macos_sign(
              app,
          )
  
@@ -85,7 +88,7 @@ index 721790b0d0..e615461d11 100644
  
  
  def entitlement_repo_path(entitlements_key, entitlement_file):
-@@ -717,3 +740,143 @@ def strip_restricted_entitlements(plist_file):
+@@ -723,3 +738,143 @@ def strip_restricted_entitlements(plist_file):
          temp_file_obj.close()
  
      return temp_file_path
