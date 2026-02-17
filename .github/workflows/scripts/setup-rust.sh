@@ -13,16 +13,18 @@ PGO_ARTIFACT_NAME="$3"
 
 echo "Setting up Rust for platform=$PLATFORM, arch=$ARCH, pgo_artifact=$PGO_ARTIFACT_NAME"
 
+# Install and use minimum required Rust version (1.87.0+ required by mach bootstrap)
+RUST_VERSION="1.87.0"
+rustup toolchain install "$RUST_VERSION"
+rustup default "$RUST_VERSION"
+
 if [[ "$PLATFORM" == "windows" ]]; then
-  rustup default 1.86.0
-  rustup target add x86_64-pc-windows-msvc
+  rustup target add x86_64-pc-windows-msvc --toolchain "$RUST_VERSION"
 elif [[ "$PLATFORM" == "linux" ]]; then
   if [[ "$ARCH" == "aarch64" ]]; then
-    rustup default 1.86.0
-    rustup target add aarch64-unknown-linux-gnu
+    rustup target add aarch64-unknown-linux-gnu --toolchain "$RUST_VERSION"
   else
-    rustup default 1.86.0
-    rustup target add x86_64-unknown-linux-gnu
+    rustup target add x86_64-unknown-linux-gnu --toolchain "$RUST_VERSION"
   fi
 elif [[ "$PLATFORM" == "mac" ]]; then
   if [[ "$ARCH" == "x86_64" ]]; then
@@ -33,36 +35,16 @@ elif [[ "$PLATFORM" == "mac" ]]; then
 
   echo "Mac target: $TARGET"
 
-  # Install and configure Rust toolchain for PGO builds
-  if [[ -n "$PGO_ARTIFACT_NAME" ]]; then
-    echo "PGO build detected - installing Rust 1.86.0"
-    rustup toolchain install 1.86.0
-    rustup default 1.86.0
-    # Add target to the specific toolchain
-    rustup target add "$TARGET" --toolchain 1.86.0
+  # Add target to the specific toolchain
+  rustup target add "$TARGET" --toolchain "$RUST_VERSION"
 
-    # Verify target is installed for 1.86.0 toolchain
-    echo "Verifying Rust target installation for 1.86.0:"
-    rustup target list --toolchain 1.86.0 --installed | grep "$TARGET" || {
-      echo "ERROR: Target $TARGET not found in 1.86.0 toolchain"
-      echo "Attempting to add target again..."
-      rustup target add "$TARGET" --toolchain 1.86.0
-    }
-  else
-    echo "Non-PGO build - using stable toolchain"
-    # Ensure we have stable toolchain
-    rustup default stable
-    # Add target to stable toolchain
-    rustup target add "$TARGET"
-
-    # Verify target is installed for stable toolchain
-    echo "Verifying Rust target installation for stable:"
-    rustup target list --installed | grep "$TARGET" || {
-      echo "ERROR: Target $TARGET not found in stable toolchain"
-      echo "Attempting to add target again..."
-      rustup target add "$TARGET"
-    }
-  fi
+  # Verify target is installed
+  echo "Verifying Rust target installation for $RUST_VERSION:"
+  rustup target list --toolchain "$RUST_VERSION" --installed | grep "$TARGET" || {
+    echo "ERROR: Target $TARGET not found in $RUST_VERSION toolchain"
+    echo "Attempting to add target again..."
+    rustup target add "$TARGET" --toolchain "$RUST_VERSION"
+  }
 fi
 
 echo "Rust configuration complete:"
