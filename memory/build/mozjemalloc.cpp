@@ -175,7 +175,7 @@ using namespace mozilla;
 // while another thread accesses it.  This means that clearing this value or
 // otherwise dropping a reference to it must not be done while holding an
 // arena's lock.
-MOZ_CONSTINIT static RefPtr<MallocProfilerCallbacks> sCallbacks;
+constinit static RefPtr<MallocProfilerCallbacks> sCallbacks;
 #endif
 
 // ***************************************************************************
@@ -203,7 +203,7 @@ static Atomic<bool, MemoryOrdering::Relaxed> malloc_initialized;
 #endif
 
 // This lock must be held while bootstrapping us.
-MOZ_CONSTINIT StaticMutex gInitLock MOZ_UNANNOTATED;
+constinit StaticMutex gInitLock MOZ_UNANNOTATED;
 
 // ***************************************************************************
 // Statistics data structures.
@@ -305,11 +305,19 @@ struct DirtyChunkListTrait {
   static DoublyLinkedListElement<arena_chunk_t>& Get(arena_chunk_t* aThis) {
     return aThis->mChunksDirtyElim;
   }
+  static const DoublyLinkedListElement<arena_chunk_t>& Get(
+      const arena_chunk_t* aThis) {
+    return aThis->mChunksDirtyElim;
+  }
 };
 
 #ifdef MALLOC_DOUBLE_PURGE
 struct MadvisedChunkListTrait {
   static DoublyLinkedListElement<arena_chunk_t>& Get(arena_chunk_t* aThis) {
+    return aThis->mChunksMavisedElim;
+  }
+  static const DoublyLinkedListElement<arena_chunk_t>& Get(
+      const arena_chunk_t* aThis) {
     return aThis->mChunksMavisedElim;
   }
 };
@@ -363,6 +371,10 @@ namespace mozilla {
 template <>
 struct GetDoublyLinkedListElement<arena_run_t> {
   static DoublyLinkedListElement<arena_run_t>& Get(arena_run_t* aThis) {
+    return aThis->mRunListElem;
+  }
+  static const DoublyLinkedListElement<arena_run_t>& Get(
+      const arena_run_t* aThis) {
     return aThis->mRunListElem;
   }
 };
@@ -884,6 +896,9 @@ struct GetDoublyLinkedListElement<arena_t> {
   static DoublyLinkedListElement<arena_t>& Get(arena_t* aThis) {
     return aThis->mPurgeListElem;
   }
+  static const DoublyLinkedListElement<arena_t>& Get(const arena_t* aThis) {
+    return aThis->mPurgeListElem;
+  }
 };
 
 }  // namespace mozilla
@@ -1219,7 +1234,7 @@ class ArenaCollection {
   Atomic<bool> mIsDeferredPurgeEnabled;
 };
 
-MOZ_CONSTINIT static ArenaCollection gArenas;
+constinit static ArenaCollection gArenas;
 
 // Protects huge allocation-related data structures.
 static Mutex huge_mtx;
