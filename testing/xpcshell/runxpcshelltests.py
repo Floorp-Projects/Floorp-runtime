@@ -26,7 +26,7 @@ from functools import partial
 from multiprocessing import cpu_count
 from subprocess import PIPE, STDOUT, Popen
 from tempfile import gettempdir, mkdtemp
-from threading import Event, Thread, Timer, current_thread
+from threading import Event, Lock, Thread, Timer, current_thread
 
 import mozdebug
 import six
@@ -254,6 +254,8 @@ class XPCShellTestThread(Thread):
         # event from main thread to signal work done
         self.event = kwargs.get("event")
         self.done = False  # explicitly set flag so we don't rely on thread.isAlive
+        self.timer = None  # Timer used to detect test timeouts
+        self.lock = Lock()  # lock used to serialize access to the timer
 
     def run(self):
         try:
@@ -423,6 +425,17 @@ class XPCShellTestThread(Thread):
             self.failCount = 1
 
     def testTimeout(self, proc):
+        # Ensure that we didn't race the test finishing execution between when
+        # the timeout timer fired and this code started executing.
+        self.lock.acquire()
+
+        # If `self.timer` has been set to None it means that the test actually
+        # finished execution before we managed to get the lock and the code in
+        # this timer shouldn't run, so return right away.
+        if self.timer is None:
+            self.lock.release()
+            return
+
         # Set these flags first to prevent test_end from being logged again
         # while we output the full log.
         self.done = True
@@ -468,6 +481,10 @@ class XPCShellTestThread(Thread):
         self.log.info("xpcshell return code: %s" % self.getReturnCode(proc))
         self.postCheck(proc)
         self.clean_temp_dirs(self.test_object["path"])
+
+        # Now that we've finished cleaning up after the timed out test we can
+        # relinquish the lock to allow run_test() to finish.
+        self.lock.release()
 
     def updateTestPrefsFile(self):
         # If the Manifest file has some additional prefs, merge the
@@ -963,10 +980,9 @@ class XPCShellTestThread(Thread):
 
         testTimeoutInterval = self.harness_timeout * self.timeout_factor
 
-        testTimer = None
         if not self.interactive and not self.debuggerInfo and not self.jsDebuggerInfo:
-            testTimer = Timer(testTimeoutInterval, lambda: self.testTimeout(proc))
-            testTimer.start()
+            self.timer = Timer(testTimeoutInterval, lambda: self.testTimeout(proc))
+            self.timer.start()
             self.env["MOZ_TEST_TIMEOUT_INTERVAL"] = str(testTimeoutInterval)
 
         proc = None
@@ -1005,8 +1021,16 @@ class XPCShellTestThread(Thread):
                 self.keep_going = True
                 return
 
-            if testTimer:
-                testTimer.cancel()
+            # Cancel the test timeout timer, note that this must happen under
+            # lock to prevent this code from racing with the code within the
+            # timer itself.
+            self.lock.acquire()
+
+            if self.timer:
+                self.timer.cancel()
+                self.timer = None
+
+            self.lock.release()
 
             if process_output:
                 # For the remote case, stdout is not yet depleted, so we parse
