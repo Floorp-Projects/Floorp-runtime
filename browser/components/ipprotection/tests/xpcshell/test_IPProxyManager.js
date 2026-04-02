@@ -661,6 +661,92 @@ add_task(
 );
 
 add_task(
+  async function test_IPPProxyManager_restart_after_pause_during_activation() {
+    await IPPProxyManager.reset();
+
+    let sandbox = sinon.createSandbox();
+    setupStubs(sandbox);
+
+    const readyEvent = waitForEvent(
+      IPProtectionService,
+      "IPProtectionService:StateChanged",
+      () => IPProtectionService.state === IPProtectionStates.READY
+    );
+
+    IPProtectionService.init();
+    await readyEvent;
+
+    // Starting with no bandwidth remaining will pause the proxy during activation.
+    const pausedEventPromise = waitForEvent(
+      IPPProxyManager,
+      "IPPProxyManager:StateChanged",
+      () => IPPProxyManager.state === IPPProxyStates.PAUSED
+    );
+
+    sandbox.restore();
+    setupStubs(sandbox, {
+      validProxyPass: false,
+      proxyUsage: new ProxyUsage("1000000", "0", "3026-02-05T00:00:00.000Z"),
+    });
+
+    IPPProxyManager.start();
+    await pausedEventPromise;
+
+    Assert.equal(
+      IPPProxyManager.state,
+      IPPProxyStates.PAUSED,
+      "Should be PAUSED after activation with no bandwidth remaining"
+    );
+
+    // Refresh usage with available bandwidth to unpause the proxy.
+    sandbox.restore();
+    setupStubs(sandbox, {
+      validProxyPass: true,
+      proxyUsage: new ProxyUsage(
+        "1000000",
+        "500000",
+        "3026-02-06T00:00:00.000Z"
+      ),
+    });
+
+    const readyAfterRefresh = waitForEvent(
+      IPPProxyManager,
+      "IPPProxyManager:StateChanged",
+      () => IPPProxyManager.state === IPPProxyStates.READY
+    );
+
+    await IPPProxyManager.refreshUsage();
+    await readyAfterRefresh;
+
+    Assert.equal(
+      IPPProxyManager.state,
+      IPPProxyStates.READY,
+      "Should be READY after refreshing usage with available bandwidth"
+    );
+
+    // Start again, should activate successfully
+    const activeEventPromise = waitForEvent(
+      IPPProxyManager,
+      "IPPProxyManager:StateChanged",
+      () => IPPProxyManager.state === IPPProxyStates.ACTIVE
+    );
+
+    await IPPProxyManager.start();
+    await activeEventPromise;
+
+    Assert.equal(
+      IPPProxyManager.state,
+      IPPProxyStates.ACTIVE,
+      "Should be ACTIVE after restarting with available bandwidth"
+    );
+    Assert.ok(IPPProxyManager.active, "Should have an active connection");
+
+    IPProtectionService.uninit();
+    sandbox.restore();
+  }
+);
+
+add_task(
   async function test_IPPProxyManager_paused_on_rotation_with_zero_quota() {
     Services.fog.testResetFOG();
     IPPProxyManager.uninit();
