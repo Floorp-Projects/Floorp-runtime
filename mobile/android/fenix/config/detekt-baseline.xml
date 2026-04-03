@@ -277,7 +277,6 @@
     <ID>UndocumentedPublicClass:ExceptionsHeaderViewHolder.kt$ExceptionsHeaderViewHolder : ViewHolder</ID>
     <ID>UndocumentedPublicClass:FenixOnboarding.kt$FenixOnboarding : PreferencesHolder</ID>
     <ID>UndocumentedPublicClass:FenixTabCounterMenu.kt$FenixTabCounterMenu : TabCounterMenu</ID>
-    <ID>UndocumentedPublicClass:FirstSessionPing.kt$FirstSessionPing</ID>
     <ID>UndocumentedPublicClass:GeckoProvider.kt$GeckoProvider</ID>
     <ID>UndocumentedPublicClass:GroupableRadioButton.kt$GroupableRadioButton</ID>
     <ID>UndocumentedPublicClass:HistoryFragment.kt$HistoryFragment : LibraryPageFragmentUserInteractionHandlerMenuProvider</ID>

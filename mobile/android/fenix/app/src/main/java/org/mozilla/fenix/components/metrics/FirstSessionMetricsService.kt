@@ -17,9 +17,13 @@ import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.ext.application
 import org.mozilla.fenix.ext.components
 
-class FirstSessionPing(
-    private val context: Context,
-) {
+/**
+ * A metrics service that handles sending the first session ping.
+ *
+ * @param context The application context.
+ */
+class FirstSessionMetricsService(private val context: Context) : MetricsService {
+    override val type = MetricServiceType.Data
 
     private val prefs: SharedPreferences by lazy {
         context.getSharedPreferences(
@@ -27,6 +31,14 @@ class FirstSessionPing(
             Context.MODE_PRIVATE,
         )
     }
+
+    override fun start() {
+        triggerPingIfNotSent()
+    }
+
+    override fun stop() = Unit
+    override fun track(event: Event) = Unit
+    override fun shouldTrack(event: Event): Boolean = false
 
     /**
      * Checks whether or not the installation ping was already
@@ -38,6 +50,7 @@ class FirstSessionPing(
      *
      * @return true if it was already triggered, false otherwise.
      */
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun wasAlreadyTriggered(): Boolean {
         return prefs.getBoolean("ping_sent", false)
     }
@@ -57,33 +70,24 @@ class FirstSessionPing(
      * This is a separate function to simplify unit-testing.
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal fun triggerPing() {
-        FirstSession.timestamp.set()
-        FirstSession.installSource.set(
-            installSourcePackage(
-                packageManager = context.application.packageManager,
-                packageName = context.application.packageName,
-            ),
-        )
-
+    internal fun triggerPingIfNotSent() {
         CoroutineScope(Dispatchers.IO).launch {
+            if (wasAlreadyTriggered()) {
+                Logger.debug("InstallationPing - already generated")
+                return@launch
+            }
+
+            FirstSession.timestamp.set()
+            FirstSession.installSource.set(
+                installSourcePackage(
+                    packageManager = context.application.packageManager,
+                    packageName = context.application.packageName,
+                ),
+            )
             FirstSession.distributionId.set(context.components.distributionIdManager.getDistributionId())
 
             Pings.firstSession.submit()
             markAsTriggered()
         }
-    }
-
-    /**
-     * Trigger sending the `installation` ping if it wasn't sent already.
-     * Then, mark it so that it doesn't get triggered next time Fenix
-     * starts.
-     */
-    fun checkAndSend() {
-        if (wasAlreadyTriggered()) {
-            Logger.debug("InstallationPing - already generated")
-            return
-        }
-        triggerPing()
     }
 }

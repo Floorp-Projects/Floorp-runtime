@@ -80,6 +80,13 @@ MediaSession::MediaSession(nsPIDOMWindowInner* aParent)
   }
 }
 
+MediaSession::~MediaSession() { DisconnectRequestAndListener(); }
+
+void MediaSession::DisconnectRequestAndListener() {
+  mLoadingArtworkRequest.DisconnectIfExists();
+  mMetadataChangeListener.DisconnectIfExists();
+}
+
 void MediaSession::Shutdown() {
   if (mDoc) {
     mDoc->UnregisterActivityObserver(this);
@@ -87,8 +94,7 @@ void MediaSession::Shutdown() {
   if (mParent) {
     SetMediaSessionDocStatus(SessionDocStatus::eInactive);
   }
-  mLoadingArtworkRequest.DisconnectIfExists();
-  mMetadataChangeListener.DisconnectIfExists();
+  DisconnectRequestAndListener();
 }
 
 void MediaSession::NotifyOwnerDocumentActivityChanged() {
@@ -121,7 +127,12 @@ MediaMetadata* MediaSession::GetMetadata() const { return mMediaMetadata; }
 void MediaSession::SetMetadata(MediaMetadata* aMetadata) {
   mMetadataChangeListener.DisconnectIfExists();
   mMediaMetadata = aMetadata;
-  if (mMediaMetadata) {
+  // Do not register a raw-pointer listener while inactive. eInactive covers
+  // both bfcache (temporary, session may resume) and Navigator::Invalidate()
+  // (permanent teardown). We still update mMediaMetadata above so that
+  // NotifyMediaSessionAttributes() can resync it when the session becomes
+  // active again after bfcache restore.
+  if (mMediaMetadata && mSessionDocState != SessionDocStatus::eInactive) {
     mMetadataChangeListener = mMediaMetadata->MetadataChangeEvent().Connect(
         AbstractThread::MainThread(), this,
         &MediaSession::NotifyMetadataUpdated);

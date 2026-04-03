@@ -21,7 +21,7 @@ add_task(
       ],
     });
 
-    await TranslationsParent.AIFeature.disable();
+    await TranslationsParent.AIFeature.block();
 
     await SelectTranslationsTestUtils.assertContextMenuTranslateSelectionItem(
       runInPage,
@@ -45,7 +45,7 @@ add_task(
 
     await SelectTranslationsTestUtils.clickDoneButton();
 
-    await TranslationsParent.AIFeature.disable();
+    await TranslationsParent.AIFeature.block();
 
     await SelectTranslationsTestUtils.assertContextMenuTranslateSelectionItem(
       runInPage,
@@ -90,7 +90,7 @@ add_task(
 
     await SelectTranslationsTestUtils.clickDoneButton();
 
-    await TranslationsParent.AIFeature.disable();
+    await TranslationsParent.AIFeature.block();
 
     await SelectTranslationsTestUtils.assertContextMenuTranslateSelectionItem(
       runInPage,

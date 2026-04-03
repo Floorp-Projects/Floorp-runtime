@@ -114,7 +114,9 @@ class MediaSession final : public nsIDocumentActivity, public nsWrapperCache {
 
   MediaSessionActionHandler* GetActionHandler(MediaSessionAction aAction) const;
 
-  ~MediaSession() = default;
+  void DisconnectRequestAndListener();
+
+  ~MediaSession();
 
   nsCOMPtr<nsPIDOMWindowInner> mParent;
 

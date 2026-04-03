@@ -9402,102 +9402,6 @@ stories_library:
       tags:
         - PocketIntegration
 first_session:
-  campaign:
-    type: string
-    send_in_pings:
-      - first-session
-    description: |
-      The name of the campaign that is responsible for this installation.
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/7295
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/8074#issuecomment-586512202
-      - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Performance
-        - Attribution
-  network:
-    type: string
-    send_in_pings:
-      - first-session
-    description: |
-      The name of the Network that sourced this installation.
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/7295
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/8074#issuecomment-586512202
-      - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Performance
-        - Attribution
-  adgroup:
-    type: string
-    send_in_pings:
-      - first-session
-    description: |
-      The name of the AdGroup that was used to source this installation.
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/pull/8074#issuecomment-586512202
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/8074#issuecomment-586480836
-      - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Telemetry
-        - Attribution
-  creative:
-    send_in_pings:
-      - first-session
-    type: string
-    description: |
-      The identifier of the creative material that the user interacted with.
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/7295
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/8074#issuecomment-586512202
-      - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
-      - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
-    data_sensitivity:
-      - technical
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Performance
-        - Attribution
   distribution_id:
     type: string
     lifetime: application
@@ -9543,29 +9447,6 @@ first_session:
       tags:
         - Performance
         - Attribution
-  adjust_attribution_time:
-    type: timing_distribution
-    time_unit: millisecond
-    send_in_pings:
-      - first-session
-      - metrics
-    description: >
-      The time that it takes to derive the attribution parameters by
-      the Adjust SDK.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1823492
-    data_reviews:
-      - https://github.com/mozilla-mobile/firefox-android/pull/1341#pullrequestreview-1354835757
-      - https://github.com/mozilla-mobile/firefox-android/pull/4039
-    data_sensitivity:
-      - technical
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - Performance
-        - Attribution
   install_source:
     type: string
     lifetime: application
@@ -9588,11 +9469,11 @@ first_session:
     expires: never
     no_lint:
       - BASELINE_PING
+
 play_store_attribution:
   install_referrer_response:
     type: text
     send_in_pings:
-      - first-session
       - play-store-attribution
     description: |
       The full install referrer response.

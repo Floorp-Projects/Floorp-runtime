@@ -54,7 +54,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_from_disabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
     "The URL bar translate button is hidden after disabling the Translations feature."
@@ -110,7 +110,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_from_enabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
     "The URL bar translate button is hidden when the Translations feature is disabled."
@@ -182,7 +182,7 @@ add_task(async function test_urlbar_button_ai_feature_toggle_multiple_tabs() {
     "The URL bar translate button is visible in tab 2."
   );
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
 
   await FullPageTranslationsTestUtils.assertTranslationsButton(
     { button: false },
@@ -244,7 +244,7 @@ add_task(
       "Opening about:blank tab"
     );
 
-    await TranslationsParent.AIFeature.disable();
+    await TranslationsParent.AIFeature.block();
 
     await switchTab(tab1, "Switching to tab 1");
 

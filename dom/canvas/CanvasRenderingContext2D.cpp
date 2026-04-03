@@ -3585,6 +3585,11 @@ void CanvasRenderingContext2D::StrokeImpl(const gfx::Path& aPath) {
     return;
   }
 
+  const bool needBounds = NeedToCalculateBounds();
+  if (!IsTargetValid()) {
+    return;
+  }
+
   const ContextState* state = &CurrentState();
   StrokeOptions strokeOptions(state->lineWidth, CanvasToGfx(state->lineJoin),
                               CanvasToGfx(state->lineCap), state->miterLimit,
@@ -3592,10 +3597,6 @@ void CanvasRenderingContext2D::StrokeImpl(const gfx::Path& aPath) {
                               state->dashOffset);
   state = nullptr;
 
-  const bool needBounds = NeedToCalculateBounds();
-  if (!IsTargetValid()) {
-    return;
-  }
   gfx::Rect bounds;
   if (needBounds) {
     bounds = aPath.GetStrokedBounds(strokeOptions, mTarget->GetTransform());

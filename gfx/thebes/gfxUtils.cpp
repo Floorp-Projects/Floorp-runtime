@@ -1513,17 +1513,28 @@ UniquePtr<uint8_t[]> gfxUtils::GetImageBuffer(gfx::DataSourceSurface* aSurface,
                                               int32_t* outFormat) {
   *outFormat = 0;
 
+  auto surfaceFormat = aSurface->GetFormat();
+  switch (surfaceFormat) {
+    case gfx::SurfaceFormat::B8G8R8A8:
+    case gfx::SurfaceFormat::B8G8R8X8:
+      break;
+    default:
+      MOZ_CRASH("Unexpected SurfaceFormat");
+  }
+  auto bpp = 4;
+
   DataSourceSurface::MappedSurface map;
   if (!aSurface->Map(DataSourceSurface::MapType::READ, &map)) return nullptr;
 
   uint32_t bufferSize =
-      aSurface->GetSize().width * aSurface->GetSize().height * 4;
+      aSurface->GetSize().width * aSurface->GetSize().height * bpp;
   auto imageBuffer = MakeUniqueFallible<uint8_t[]>(bufferSize);
   if (!imageBuffer) {
     aSurface->Unmap();
     return nullptr;
   }
-  memcpy(imageBuffer.get(), map.mData, bufferSize);
+  CopySurfaceDataToPackedArray(map.mData, imageBuffer.get(),
+                               aSurface->GetSize(), map.mStride, bpp);
 
   aSurface->Unmap();
 

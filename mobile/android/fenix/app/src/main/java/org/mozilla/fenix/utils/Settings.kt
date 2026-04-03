@@ -433,6 +433,11 @@ class Settings(
         default = "",
     )
 
+    var isUserMetaAttributed by booleanPreference(
+        appContext.getPreferenceKey(R.string.pref_key_is_user_meta_attributed),
+        default = false,
+    )
+
     var contileContextId by stringPreference(
         appContext.getPreferenceKey(R.string.pref_key_contile_context_id),
         default = { TopSites.contextId.generateAndSet().toString() },
@@ -442,7 +447,7 @@ class Settings(
     var currentWallpaperName by stringPreference(
         appContext.getPreferenceKey(R.string.pref_key_current_wallpaper),
         default = if (enableHomepageEdgeToEdgeBackgroundFeature) {
-            Wallpaper.Default.name
+            Wallpaper.EdgeToEdge.name
         } else {
             Wallpaper.Default.name
         },

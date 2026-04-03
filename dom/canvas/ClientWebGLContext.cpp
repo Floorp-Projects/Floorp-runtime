@@ -202,7 +202,18 @@ ClientWebGLContext::ClientWebGLContext(const bool webgl2)
     : mIsWebGL2(webgl2),
       mExtLoseContext(new ClientWebGLExtensionLoseContext(*this)) {}
 
-ClientWebGLContext::~ClientWebGLContext() { RemovePostRefreshObserver(); }
+static inline void SafeReleaseNotLostData(RefPtr<webgl::NotLostData>& notLost) {
+  if (notLost) {
+    const auto keepAlive = std::move(notLost);
+    keepAlive->extensions = {};
+    keepAlive->state = {};
+  }
+}
+
+ClientWebGLContext::~ClientWebGLContext() {
+  RemovePostRefreshObserver();
+  SafeReleaseNotLostData(mNotLost);
+}
 
 void ClientWebGLContext::JsWarning(const std::string& utf8) const {
   nsIGlobalObject* global = nullptr;
@@ -7240,11 +7251,7 @@ void ImplCycleCollectionTraverse(nsCycleCollectionTraversalCallback& callback,
 }
 
 void ImplCycleCollectionUnlink(RefPtr<webgl::NotLostData>& field) {
-  if (!field) return;
-  const auto keepAlive = field;
-  keepAlive->extensions = {};
-  keepAlive->state = {};
-  field = nullptr;
+  SafeReleaseNotLostData(field);
 }
 
 // -----------------------------------------------------

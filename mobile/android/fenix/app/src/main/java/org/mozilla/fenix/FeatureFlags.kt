@@ -33,11 +33,6 @@ object FeatureFlags {
     const val FX_SUGGEST = true
 
     /**
-     * Enable Meta attribution.
-     */
-    const val META_ATTRIBUTION_ENABLED = true
-
-    /**
      * Disables the Onboarding feature for debug builds by default. Set this to `true` if you need
      * to access the Onboarding feature for development purposes.
      *

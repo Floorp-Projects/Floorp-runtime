@@ -72,6 +72,31 @@ async function test_blankPage(
         await card.getUpdateComplete();
 
         titleEl = card.netErrorTitleText;
+
+        const introEl = card.shadowRoot.getElementById("netErrorIntro");
+        is(
+          introEl?.getAttribute("data-l10n-id"),
+          "fp-neterror-http-error-page-intro",
+          "Intro element has correct l10n id"
+        );
+        const introArgs = JSON.parse(introEl?.getAttribute("data-l10n-args"));
+        ok(introArgs?.hostname, "Intro has hostname arg");
+        const responseEl = card.shadowRoot.getElementById(
+          "response-status-label"
+        );
+        const responseArgs = JSON.parse(
+          responseEl?.getAttribute("data-l10n-args")
+        );
+        is(
+          responseArgs?.responsestatus,
+          expectedStatus,
+          "Intro has correct responsestatus"
+        );
+        is(
+          responseArgs?.responsestatustext,
+          expectedText,
+          "Intro has correct responsestatustext"
+        );
       } else {
         titleEl = doc.querySelector(".title-text");
 

@@ -48,6 +48,7 @@
 #include "nsIURI.h"
 #include "nsJSUtils.h"
 #include "nsTArray.h"
+#include "mozilla/WeakPtr.h"
 
 #ifdef Status
 /* Xlib headers insist on this for some reason... Nuke it because
@@ -184,6 +185,7 @@ class XMLHttpRequestDoneNotifier;
 // Make sure that any non-DOM interfaces added here are also added to
 // nsXMLHttpRequestXPCOMifier.
 class XMLHttpRequestMainThread final : public XMLHttpRequest,
+                                       public SupportsWeakPtr,
                                        public nsIStreamListener,
                                        public nsIChannelEventSink,
                                        public nsIProgressEventSink,
@@ -848,21 +850,18 @@ class nsXHRParseEndListener : public nsIDOMEventListener {
  public:
   NS_DECL_ISUPPORTS
   NS_IMETHOD HandleEvent(Event* event) override {
-    if (mXHR) {
-      mXHR->OnBodyParseEnd();
+    if (RefPtr<XMLHttpRequestMainThread> xhr = mXHR.get()) {
+      xhr->OnBodyParseEnd();
     }
-    mXHR = nullptr;
     return NS_OK;
   }
 
   explicit nsXHRParseEndListener(XMLHttpRequestMainThread* aXHR) : mXHR(aXHR) {}
 
-  void SetIsStale() { mXHR = nullptr; }
-
  private:
   virtual ~nsXHRParseEndListener() = default;
 
-  XMLHttpRequestMainThread* mXHR;
+  WeakPtr<XMLHttpRequestMainThread> mXHR;
 };
 
 }  // namespace dom

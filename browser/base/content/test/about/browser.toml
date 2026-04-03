@@ -83,6 +83,7 @@ support-files = [
 
 ["browser_aboutNetError_server_error.js"]
 support-files = [
+  "http_error.sjs",
   "server_error.sjs",
 ]
 

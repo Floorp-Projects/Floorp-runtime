@@ -1587,6 +1587,7 @@ bool JSStructuredCloneWriter::writeSharedWasmMemory(HandleObject obj) {
 
   Rooted<WasmMemoryObject*> memoryObj(context(),
                                       &obj->unwrapAs<WasmMemoryObject>());
+  JSAutoRealm ar(context(), memoryObj);
 
   if (!out.writePair(SCTAG_SHARED_WASM_MEMORY_OBJECT, 0) ||
       !out.writePair(SCTAG_BOOLEAN, memoryObj->isHuge())) {

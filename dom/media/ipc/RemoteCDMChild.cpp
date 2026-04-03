@@ -404,6 +404,7 @@ void RemoteCDMChild::NotifyOutputProtectionStatus(
 
 void RemoteCDMChild::Shutdown() {
   LOGD("[{}] RemoteCDMChild::Shutdown", fmt::ptr(this));
+  mKeys.Clear();
   // If this is the last reference, and we still have an actor, then we know
   // that the last reference is solely due to the IPDL reference. Dispatch to
   // the owning thread to delete that so that we can clean up.
