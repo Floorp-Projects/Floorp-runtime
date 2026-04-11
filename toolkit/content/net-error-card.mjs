@@ -192,6 +192,19 @@ export class NetErrorCard extends MozLitElement {
       );
     }
 
+    // nssFailure2 are TLS errors which are tracked by load_abouttlserror
+    if (!gIsCertError && gErrorCode !== "nssFailure2" && !isCaptive()) {
+      let neterrorInfo = Object.assign({}, this.errorInfo);
+      if (!neterrorInfo.errorCodeString) {
+        neterrorInfo.errorCodeString = gErrorCode;
+      }
+      recordSecurityUITelemetry(
+        "securityUiNeterror",
+        "loadAboutneterror",
+        neterrorInfo
+      );
+    }
+
     // Check if the connection is being man-in-the-middled. When the parent
     // detects an intercepted connection, the page may be reloaded with a new
     // error code (MOZILLA_PKIX_ERROR_MITM_DETECTED).
@@ -600,6 +613,7 @@ export class NetErrorCard extends MozLitElement {
   mapCustomNetErrorConfigToParams(customNetError, config) {
     const params = {
       titleL10nId: customNetError.titleL10nId,
+      showResponseStatus: customNetError.showResponseStatus,
       whyDangerousL10nId: customNetError.whyDangerousL10nId,
       whyDangerousL10nArgs: customNetError.whyDangerousL10nArgs,
       whyDidThisHappenL10nId: customNetError.whyDidThisHappenL10nId,
@@ -635,6 +649,7 @@ export class NetErrorCard extends MozLitElement {
   customNetErrorSectionTemplate(params) {
     const {
       titleL10nId,
+      showResponseStatus,
       whyDangerousL10nId,
       whyDangerousL10nArgs,
       whyDidThisHappenL10nId,
@@ -737,6 +752,16 @@ export class NetErrorCard extends MozLitElement {
 
     return html`<h1 id="neterror-title-text" data-l10n-id=${titleL10nId}></h1>
       ${this.introContentTemplate()}
+      ${showResponseStatus
+        ? html`<p
+            id="response-status-label"
+            data-l10n-id="neterror-response-status-code"
+            data-l10n-args=${JSON.stringify({
+              responsestatus: this.errorInfo?.responseStatus ?? 0,
+              responsestatustext: this.errorInfo?.responseStatusText ?? "",
+            })}
+          ></p>`
+        : null}
       ${useAdvancedSection
         ? html`<moz-button-group>
             ${goBack

@@ -106,7 +106,7 @@ class ShareFragment : AppCompatDialogFragment() {
         // is not currently supported for private tabs, we assume it's not a private tab.
         val isPrivate = args.sessionId
             ?.let { sessionId -> requireComponents.core.store.state.findTabOrCustomTab(sessionId) }
-            ?.content?.private ?: true
+            ?.content?.private ?: false
 
         shareInteractor = ShareInteractor(
             DefaultShareController(

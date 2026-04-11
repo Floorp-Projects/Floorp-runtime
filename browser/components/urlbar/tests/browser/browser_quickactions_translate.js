@@ -78,7 +78,7 @@ add_task(async function test_translate_ai_feature_toggle_from_disabled() {
     ],
   });
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
 
   info("Search for the translate quick action keyword");
   await UrlbarTestUtils.promiseAutocompleteResultPopup({
@@ -114,7 +114,7 @@ add_task(async function test_translate_ai_feature_toggle_from_disabled() {
     EventUtils.synthesizeKey("KEY_Escape");
   });
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
 
   info("Search for the translate quick action keyword after disable again");
   await UrlbarTestUtils.promiseAutocompleteResultPopup({
@@ -163,7 +163,7 @@ add_task(async function test_translate_ai_feature_toggle_from_enabled() {
     EventUtils.synthesizeKey("KEY_Escape");
   });
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
 
   info("Search for the translate quick action keyword after disable");
   await UrlbarTestUtils.promiseAutocompleteResultPopup({

@@ -55,7 +55,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_disabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: false },
     "The app-menu translate button is hidden after disabling the Translations feature."
@@ -111,7 +111,7 @@ add_task(async function test_app_menu_ai_feature_toggle_from_enabled() {
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 
-  await TranslationsParent.AIFeature.disable();
+  await TranslationsParent.AIFeature.block();
   await FullPageTranslationsTestUtils.assertAppMenuTranslateItemVisibility(
     { visible: false },
     "The app-menu translate button is hidden when the Translations feature is disabled."

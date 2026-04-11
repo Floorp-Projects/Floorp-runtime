@@ -36,13 +36,16 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.appbar.AppBarLayout
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -61,7 +64,6 @@ import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.feature.accounts.push.SendTabUseCases
 import mozilla.components.feature.tab.collections.TabCollection
 import mozilla.components.feature.top.sites.presenter.DefaultTopSitesPresenter
-import mozilla.components.lib.state.ext.consumeFlow
 import mozilla.components.lib.state.ext.consumeFrom
 import mozilla.components.lib.state.ext.flow
 import mozilla.components.lib.state.ext.observeAsComposableState
@@ -254,6 +256,7 @@ class HomeFragment : Fragment() {
         get() = nullableToolbarView!!
 
     private var lastAppliedWallpaperName: String = Wallpaper.DEFAULT
+    private var wallpaperUpdatesJob: Job? = null
 
     @VisibleForTesting
     internal val messagingFeatureHomescreen = ViewBoundFeatureWrapper<MessagingFeature>()
@@ -664,7 +667,7 @@ class HomeFragment : Fragment() {
             true -> {
                 val toolbarStore by buildToolbarStore(activity)
 
-                if (homepageEdgeToEdgeFeature.get() == null) {
+                if (isEdgeToEdgeBackgroundEnabled() && homepageEdgeToEdgeFeature.get() == null) {
                     homepageEdgeToEdgeFeature.set(
                         feature = HomepageEdgeToEdgeFeature(
                             appStore = requireComponents.appStore,
@@ -942,8 +945,6 @@ class HomeFragment : Fragment() {
         if (!browsingModeManager.mode.isPrivate) {
             HomeScreen.standardHomepageViewCount.add()
         }
-
-        observeWallpaperUpdates()
 
         observePrivateModeLock {
             findNavController().navigate(
@@ -1374,19 +1375,25 @@ class HomeFragment : Fragment() {
     internal fun shouldEnableWallpaper() =
         (activity as? HomeActivity)?.themeManager?.currentTheme?.isPrivate?.not() ?: false
 
-    internal fun isEdgeToEdgeBackgroundEnabled(): Boolean =
-        requireContext().settings().currentWallpaperName == Wallpaper.EDGE_TO_EDGE
+    internal fun isEdgeToEdgeBackgroundEnabled(): Boolean {
+        val settings = requireContext().settings()
+        return settings.enableHomepageEdgeToEdgeBackgroundFeature &&
+                settings.currentWallpaperName == Wallpaper.EDGE_TO_EDGE
+    }
 
     private fun applyWallpaper(wallpaperName: String, orientationChange: Boolean, orientation: Int) {
-        when {
-            !shouldEnableWallpaper() ||
-                (wallpaperName == lastAppliedWallpaperName && !orientationChange) -> return
-            Wallpaper.isLocalWallpaper(wallpaperName) -> {
-                binding.wallpaperImageView.isVisible = false
-                lastAppliedWallpaperName = wallpaperName
-            }
-            else -> {
-                viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            when {
+                !shouldEnableWallpaper() || (wallpaperName == lastAppliedWallpaperName && !orientationChange) -> {
+                    // no-op
+                }
+
+                Wallpaper.isLocalWallpaper(wallpaperName) -> {
+                    binding.wallpaperImageView.isVisible = false
+                    lastAppliedWallpaperName = wallpaperName
+                }
+
+                else -> {
                     // loadBitmap does file lookups based on name, so we don't need a fully
                     // qualified type to load the image
                     val wallpaper = Wallpaper.Default.copy(name = wallpaperName)
@@ -1396,7 +1403,7 @@ class HomeFragment : Fragment() {
                         binding.wallpaperImageView.isVisible = true
                         lastAppliedWallpaperName = wallpaperName
                     } ?: run {
-                        if (!isActive) return@run
+                        if (!isActive) return@launch
                         with(binding.wallpaperImageView) {
                             isVisible = false
                             showSnackBar(
@@ -1410,23 +1417,32 @@ class HomeFragment : Fragment() {
                     }
                 }
             }
+
+            observeWallpaperUpdates()
         }
     }
 
     private fun observeWallpaperUpdates() {
-        consumeFlow(requireComponents.appStore, viewLifecycleOwner) { flow ->
-            flow.filter { it.mode == BrowsingMode.Normal }
-                .map { it.wallpaperState.currentWallpaper }
-                .distinctUntilChanged()
-                .collect {
-                    if (it.name != lastAppliedWallpaperName) {
-                        applyWallpaper(
-                            wallpaperName = it.name,
-                            orientationChange = false,
-                            orientation = requireContext().resources.configuration.orientation,
-                        )
+        if (!shouldEnableWallpaper() || wallpaperUpdatesJob?.isActive == true) return
+
+        wallpaperUpdatesJob = viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                requireComponents.appStore.stateFlow
+                    .filter { it.mode == BrowsingMode.Normal }
+                    .map { it.wallpaperState.currentWallpaper }
+                    .distinctUntilChanged()
+                    .collect {
+                        if (it.name != lastAppliedWallpaperName) {
+                            applyWallpaper(
+                                wallpaperName = it.name,
+                                orientationChange = false,
+                                orientation = requireContext().resources.configuration.orientation,
+                            )
+                        }
                     }
-                }
+            }
+        }.also { job ->
+            job.invokeOnCompletion { wallpaperUpdatesJob = null }
         }
     }
 

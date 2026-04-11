@@ -311,6 +311,7 @@ class IPPProxyManagerSingleton extends EventTarget {
           }
           // Proxy failed to start but no error was given.
           if (!started) {
+            this.cancelChannelFilter();
             this.updateState();
             return { started: false };
           }
@@ -492,7 +493,7 @@ class IPPProxyManagerSingleton extends EventTarget {
     if (wasActive) {
       this.#connection?.uninitialize();
     } else {
-      this.#connection?.stop();
+      this.cancelChannelFilter();
     }
 
     Glean.ipprotection.paused.record({

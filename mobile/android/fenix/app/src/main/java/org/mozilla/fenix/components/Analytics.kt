@@ -31,6 +31,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.ReleaseChannel
 import org.mozilla.fenix.components.metrics.AdjustMetricsService
 import org.mozilla.fenix.components.metrics.DefaultMetricsStorage
+import org.mozilla.fenix.components.metrics.FirstSessionMetricsService
 import org.mozilla.fenix.components.metrics.GleanMetricsService
 import org.mozilla.fenix.components.metrics.GleanProfileIdPreferenceStore
 import org.mozilla.fenix.components.metrics.GleanUsageReportingMetricsService
@@ -173,6 +174,7 @@ class Analytics(
                     storage = metricsStorage,
                     crashReporter = crashReporter,
                 ),
+                FirstSessionMetricsService(context),
                 InstallReferrerMetricsService(context),
                 GleanUsageReportingMetricsService(gleanProfileIdStore = GleanProfileIdPreferenceStore(context)),
             ),

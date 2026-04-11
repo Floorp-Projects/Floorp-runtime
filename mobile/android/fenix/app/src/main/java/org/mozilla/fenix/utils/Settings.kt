@@ -307,6 +307,12 @@ class Settings(
     val showHomepageRecentlyVisitedSectionToggle: Boolean
         get() = !enableHomepageSearchBar
 
+    /**
+     * Indicates whether or not the homepage should use edge to edge background
+     */
+    val enableHomepageEdgeToEdgeBackgroundFeature: Boolean
+        get() = FxNimbus.features.homescreenEdgeToEdgeBackground.value().enabled
+
     var numberOfAppLaunches by intPreference(
         appContext.getPreferenceKey(R.string.pref_key_times_app_opened),
         default = 0,
@@ -427,6 +433,11 @@ class Settings(
         default = "",
     )
 
+    var isUserMetaAttributed by booleanPreference(
+        appContext.getPreferenceKey(R.string.pref_key_is_user_meta_attributed),
+        default = false,
+    )
+
     var contileContextId by stringPreference(
         appContext.getPreferenceKey(R.string.pref_key_contile_context_id),
         default = { TopSites.contextId.generateAndSet().toString() },
@@ -435,7 +446,11 @@ class Settings(
 
     var currentWallpaperName by stringPreference(
         appContext.getPreferenceKey(R.string.pref_key_current_wallpaper),
-        default = Wallpaper.Default.name,
+        default = if (enableHomepageEdgeToEdgeBackgroundFeature) {
+            Wallpaper.EdgeToEdge.name
+        } else {
+            Wallpaper.Default.name
+        },
     )
 
     /**

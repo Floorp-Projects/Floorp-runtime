@@ -83,6 +83,7 @@ support-files = [
 
 ["browser_aboutNetError_server_error.js"]
 support-files = [
+  "http_error.sjs",
   "server_error.sjs",
 ]
 
@@ -91,6 +92,8 @@ skip-if = [
   "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && asan", # Bug 1831977
   "socketprocess_networking",
 ]
+
+["browser_aboutNetError_neterror_telemetry.js"]
 
 ["browser_aboutNetError_xfo_iframe.js"]
 https_first_disabled = true

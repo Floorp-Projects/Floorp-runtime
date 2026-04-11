@@ -421,10 +421,10 @@ nsresult SerializeWebAuthnCreationOptions(
     }
 
     if (prfInputs.mEvalByCredential.WasPassed()) {
+      auto& evalByCredentialJSON = prfInputsJSON.mEvalByCredential.Construct();
       for (const auto& entry : prfInputs.mEvalByCredential.Value().Entries()) {
         auto* jsonEntry =
-            prfInputsJSON.mEvalByCredential.Construct().Entries().AppendElement(
-                fallible);
+            evalByCredentialJSON.Entries().AppendElement(fallible);
         if (!jsonEntry) {
           return NS_ERROR_OUT_OF_MEMORY;
         }
@@ -560,10 +560,10 @@ nsresult SerializeWebAuthnRequestOptions(
     }
 
     if (prfInputs.mEvalByCredential.WasPassed()) {
+      auto& evalByCredentialJSON = prfInputsJSON.mEvalByCredential.Construct();
       for (const auto& entry : prfInputs.mEvalByCredential.Value().Entries()) {
         auto* jsonEntry =
-            prfInputsJSON.mEvalByCredential.Construct().Entries().AppendElement(
-                fallible);
+            evalByCredentialJSON.Entries().AppendElement(fallible);
         if (!jsonEntry) {
           return NS_ERROR_OUT_OF_MEMORY;
         }

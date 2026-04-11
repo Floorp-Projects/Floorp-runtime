@@ -96,7 +96,7 @@ add_task(async function test_disable_sets_prefs_false_and_uninstalls_models() {
 
   const uninstallStub = sinon.stub(MLUninstallService, "uninstall").resolves();
 
-  await PdfJsGuessAltTextFeature.disable();
+  await PdfJsGuessAltTextFeature.block();
 
   Assert.equal(
     Services.prefs.getBoolPref(PREF_ENABLED, true),

@@ -200,7 +200,7 @@ bool SVGFragmentIdentifier::ProcessFragmentIdentifier(
     Document* aDocument, const nsAString& aAnchorName) {
   MOZ_ASSERT(aDocument->GetSVGRootElement(), "expecting an SVG root element");
 
-  auto* rootElement = SVGSVGElement::FromNode(aDocument->GetRootElement());
+  RefPtr rootElement = SVGSVGElement::FromNode(aDocument->GetRootElement());
 
   if (SVGViewElement::FromNodeOrNull(aDocument->GetElementById(aAnchorName))) {
     rootElement->mCurrentViewID = aAnchorName;

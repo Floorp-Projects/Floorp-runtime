@@ -19,10 +19,10 @@ import org.junit.Test
 import org.mozilla.fenix.FenixApplication
 import org.mozilla.fenix.ext.application
 
-internal class FirstSessionPingTest {
+internal class FirstSessionMetricsServiceTest {
 
     @Test
-    fun `checkAndSend() triggers the ping if it wasn't marked as triggered`() {
+    fun `start() triggers the ping if it wasn't marked as triggered`() {
         val mockedPackageManager: PackageManager = mockk(relaxed = true)
         mockedPackageManager.configureMockInstallSourcePackage()
 
@@ -32,26 +32,24 @@ internal class FirstSessionPingTest {
         val mockedContext: Context = mockk(relaxed = true)
         every { mockedContext.applicationContext } returns mockedApplication
 
-        val mockAp = spyk(FirstSessionPing(mockedContext), recordPrivateCalls = true)
+        val mockAp = spyk(FirstSessionMetricsService(mockedContext), recordPrivateCalls = true)
         every { mockAp.wasAlreadyTriggered() } returns false
         every { mockAp.markAsTriggered() } just Runs
 
-        mockAp.checkAndSend()
+        mockAp.start()
 
-        verify(exactly = 1) { mockAp.triggerPing() }
-        // Marking the ping as triggered happens in a co-routine off the main thread,
-        // so wait a bit for it.
-        verify(timeout = 5000, exactly = 1) { mockAp.markAsTriggered() }
+        verify(exactly = 1) { mockAp.triggerPingIfNotSent() }
+        verify(timeout = 1000, exactly = 1) { mockAp.markAsTriggered() }
     }
 
     @Test
-    fun `checkAndSend() doesn't trigger the ping again if it was marked as triggered`() {
-        val mockAp = spyk(FirstSessionPing(mockk()), recordPrivateCalls = true)
+    fun `start() doesn't trigger the ping again if it was marked as triggered`() {
+        val mockAp = spyk(FirstSessionMetricsService(mockk()), recordPrivateCalls = true)
         every { mockAp.wasAlreadyTriggered() } returns true
 
-        mockAp.checkAndSend()
+        mockAp.start()
 
-        verify(exactly = 0) { mockAp.triggerPing() }
+        verify(exactly = 0) { mockAp.markAsTriggered() }
     }
 
     @Test
