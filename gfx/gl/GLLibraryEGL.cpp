@@ -355,7 +355,7 @@ static bool IsAccelAngleSupported(nsACString* const out_failureId) {
 
 class AngleErrorReporting {
  public:
-  AngleErrorReporting() : mFailureId(nullptr) {
+  constexpr AngleErrorReporting() : mFailureId(nullptr) {
     // No static constructor
   }
 
@@ -390,7 +390,7 @@ class AngleErrorReporting {
   nsACString* mFailureId;
 };
 
-MOZ_RUNINIT AngleErrorReporting gAngleErrorReporter;
+constinit AngleErrorReporting gAngleErrorReporter;
 
 static std::shared_ptr<EglDisplay> GetAndInitDisplayForAccelANGLE(
     GLLibraryEGL& egl, nsACString* const out_failureId,
@@ -811,7 +811,9 @@ std::shared_ptr<EglDisplay> EglDisplay::Create(
 
   const auto ret =
       std::make_shared<EglDisplay>(PrivateUseOnly{}, lib, display, isWarp);
-  lib.mActiveDisplays.insert({display, ret});
+  // Insert if there is no existing display entry, or assign if there is an
+  // expired weak_ptr that failed to lock above and was awaiting removal.
+  lib.mActiveDisplays.insert_or_assign(display, ret);
   return ret;
 }
 
@@ -859,6 +861,13 @@ EglDisplay::EglDisplay(const PrivateUseOnly&, GLLibraryEGL& lib,
 
 EglDisplay::~EglDisplay() {
   StaticMutexAutoLock lock(GLLibraryEGL::sMutex);
+  // EglDisplay is being destructed, so its weak_ptr should be expired. If there
+  // is an entry that is still live, it means a new EGLDisplay was subsequently
+  // created that needs to use this display, so avoid terminating it.
+  const auto itr = mLib->mActiveDisplays.find(mDisplay);
+  if (itr != mLib->mActiveDisplays.end() && !itr->second.expired()) {
+    return;
+  }
   fTerminate();
   mLib->mActiveDisplays.erase(mDisplay);
 }

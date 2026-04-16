@@ -97,6 +97,9 @@ Push Information
 ``tasks_for``
    The ``tasks_for`` value used to generate the decision task.
 
+``dontbuild``
+   Set (to `true`) when the commit message requested that no tasks run on this push.
+
 Tree Information
 ----------------
 

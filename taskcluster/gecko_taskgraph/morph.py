@@ -183,6 +183,19 @@ def make_index_task(
 
 
 @register_morph
+def skip_dontbuild(taskgraph, label_to_taskid, parameters, graph_config):
+    """
+    Remove all tasks from the graph when DONTBUILD was set in the commit
+    message. target-tasks.json is written before morphing, so run-missing-tests
+    can still schedule tasks.
+    """
+    if not parameters.get("dontbuild"):
+        return taskgraph, label_to_taskid
+    logger.info("DONTBUILD set; removing all tasks from the task graph")
+    return TaskGraph({}, Graph(set(), set())), {}
+
+
+@register_morph
 def add_index_tasks(taskgraph, label_to_taskid, parameters, graph_config):
     """
     The TaskCluster queue only allows 64 routes on a task. In the event a task
@@ -261,14 +274,6 @@ def add_eager_cache_index_tasks(taskgraph, label_to_taskid, parameters, graph_co
 
 @register_morph
 def add_try_task_duplicates(taskgraph, label_to_taskid, parameters, graph_config):
-    return _add_try_task_duplicates(
-        taskgraph, label_to_taskid, parameters, graph_config
-    )
-
-
-# this shim function exists so we can call it from the unittests.
-# this works around an issue with the morph in upstream Taskgraph
-def _add_try_task_duplicates(taskgraph, label_to_taskid, parameters, graph_config):
     try_config = parameters.get("try_task_config", {})
     tasks = try_config.get("tasks", [])
     glob_tasks = {x.strip("-*") for x in tasks if x.endswith("-*")}

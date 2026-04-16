@@ -971,6 +971,9 @@
         "Chatbot": {
           "type": "boolean"
         },
+        "SmartWindow": {
+          "type": "boolean"
+        },
         "LinkPreviews": {
           "type": "boolean"
         },
@@ -1708,6 +1711,38 @@
 
     "ShowHomeButton": {
       "type": "boolean"
+    },
+
+    "SitePolicies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "Match": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+
+          "Exceptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+
+          "Policies": {
+            "type": "object",
+            "properties": {
+              "DisableJit": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "required": ["Policies"]
+      }
     },
 
     "SkipTermsOfUse": {

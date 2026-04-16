@@ -1,4 +1,3 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-*/
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -22,6 +21,7 @@ class GmpPluginNotifier : public GmpPluginNotifierInterface {
  public:
   explicit GmpPluginNotifier(nsCOMPtr<nsISerialEventTarget> aOwningThread)
       : mOwningThread(std::move(aOwningThread)),
+        mGmpPluginMutex("GmpPluginNotifier::mGmpPluginMutex"),
         mCreatedGmpPluginEvent(mOwningThread),
         mReleasedGmpPluginEvent(mOwningThread) {}
 
@@ -29,6 +29,7 @@ class GmpPluginNotifier : public GmpPluginNotifierInterface {
 
   void DisconnectAll() override {
     MOZ_ASSERT(mOwningThread->IsOnCurrentThread());
+    MutexAutoLock lock(mGmpPluginMutex);
     mCreatedGmpPluginEvent.DisconnectAll();
     mReleasedGmpPluginEvent.DisconnectAll();
   }
@@ -43,6 +44,7 @@ class GmpPluginNotifier : public GmpPluginNotifierInterface {
 
  protected:
   const nsCOMPtr<nsISerialEventTarget> mOwningThread;
+  Mutex mGmpPluginMutex MOZ_UNANNOTATED;
   MediaEventForwarder<uint64_t> mCreatedGmpPluginEvent;
   MediaEventForwarder<uint64_t> mReleasedGmpPluginEvent;
 };

@@ -73,6 +73,7 @@ const EXTENSION_REMOTE_TYPE = "extension";
 const PRIVILEGEDABOUT_REMOTE_TYPE = "privilegedabout";
 const PRIVILEGEDMOZILLA_REMOTE_TYPE = "privilegedmozilla";
 const SERVICEWORKER_REMOTE_TYPE = "webServiceWorker";
+const DISABLE_JIT_REMOTE_TYPE_SUFFIX = "disableJit=1";
 
 // This must start with the WEB_REMOTE_TYPE above.
 const DEFAULT_REMOTE_TYPE = WEB_REMOTE_TYPE;
@@ -203,6 +204,13 @@ function validatedWebRemoteType(
       geckoViewSessionContextId,
     };
 
+    let jitAllowed;
+    try {
+      jitAllowed = Services.policies.isAllowedForURI("jit", aTargetUri);
+    } catch (e) {
+      jitAllowed = true;
+    }
+
     // Get a principal to use for isolation.
     let targetPrincipal;
     if (aResultPrincipal) {
@@ -211,19 +219,27 @@ function validatedWebRemoteType(
       targetPrincipal = sm.createContentPrincipal(aTargetUri, originAttributes);
     }
 
+    let suffix = targetPrincipal.originSuffix;
+    if (!jitAllowed) {
+      if (suffix) {
+        suffix += `&${DISABLE_JIT_REMOTE_TYPE_SUFFIX}`;
+      } else {
+        suffix = `^${DISABLE_JIT_REMOTE_TYPE_SUFFIX}`;
+      }
+    }
+    let siteKey = `${targetPrincipal.siteOriginNoSuffix}${suffix}`;
+
     // If this is a special webCOOP+COEP= remote type that matches the
     // principal's siteOrigin, we don't want to override it with webIsolated=
     // as it's already isolated.
     if (
       aPreferredRemoteType &&
-      aPreferredRemoteType.startsWith(
-        `${WEB_REMOTE_COOP_COEP_TYPE_PREFIX}${targetPrincipal.siteOrigin}`
-      )
+      aPreferredRemoteType == `${WEB_REMOTE_COOP_COEP_TYPE_PREFIX}${siteKey}`
     ) {
       return aPreferredRemoteType;
     }
 
-    return `${FISSION_WEB_REMOTE_TYPE}=${targetPrincipal.siteOrigin}`;
+    return `${FISSION_WEB_REMOTE_TYPE}=${siteKey}`;
     // else fall through and probably return WEB_REMOTE_TYPE
   }
 
