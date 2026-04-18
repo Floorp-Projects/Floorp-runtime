@@ -10,13 +10,14 @@ ChromeUtils.defineESModuleGetters(lazy, {
   CustomizableUI:
     "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
   IPPExceptionsManager:
-    "moz-src:///browser/components/ipprotection/IPPExceptionsManager.sys.mjs",
+    "moz-src:///toolkit/components/ipprotection/IPPExceptionsManager.sys.mjs",
   IPPProxyManager:
-    "moz-src:///browser/components/ipprotection/IPPProxyManager.sys.mjs",
+    "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
   IPProtectionService:
-    "moz-src:///browser/components/ipprotection/IPProtectionService.sys.mjs",
+    "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
   IPPProxyStates:
-    "moz-src:///browser/components/ipprotection/IPPProxyManager.sys.mjs",
+    "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
+  ERRORS: "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
 });
 
 XPCOMUtils.defineLazyPreferenceGetter(
@@ -233,10 +234,15 @@ export class IPProtectionToolbarButton {
     let isExcluded = this.#isExcludedSite(principal);
 
     let isActive = lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE;
+    let isPaused = lazy.IPPProxyManager.state === lazy.IPPProxyStates.PAUSED;
 
     // Show error icon when proxy manager is in ERROR state.
     let hasProxyError =
       lazy.IPPProxyManager.state === lazy.IPPProxyStates.ERROR;
+
+    let isNetworkError =
+      options?.error === lazy.ERRORS.NETWORK ||
+      (hasProxyError && lazy.IPPProxyManager.errorType === lazy.ERRORS.NETWORK);
 
     let isError = hasProxyError || !!options.error;
 
@@ -259,7 +265,9 @@ export class IPProtectionToolbarButton {
     this.updateIconStatus(toolbaritem, {
       isActive,
       isError,
+      isNetworkError,
       isExcluded,
+      isPaused,
     });
   }
 
@@ -317,25 +325,42 @@ export class IPProtectionToolbarButton {
    */
   updateIconStatus(
     toolbaritem,
-    status = { isActive: false, isError: false, isExcluded: false }
+    status = {
+      isActive: false,
+      isError: false,
+      isExcluded: false,
+      isNetworkError: false,
+      isPaused: false,
+    }
   ) {
     if (!toolbaritem) {
       return;
     }
 
     let isActive = status.isActive;
-    let isError = status.isError;
+    let isNetworkError = status.isNetworkError;
+    let isError = status.isError && !isNetworkError;
     let isExcluded = status.isExcluded && this.isExceptionsFeatureEnabled;
-    let l10nId = isError ? "ipprotection-button-error" : "ipprotection-button";
+    let isPaused = status.isPaused;
+    let l10nId =
+      isError || isNetworkError
+        ? "ipprotection-button-error"
+        : "ipprotection-button";
 
     toolbaritem.classList.remove(
       "ipprotection-on",
+      "ipprotection-network-error",
       "ipprotection-error",
-      "ipprotection-excluded"
+      "ipprotection-excluded",
+      "ipprotection-paused"
     );
 
-    if (isError) {
+    if (isNetworkError) {
+      toolbaritem.classList.add("ipprotection-network-error");
+    } else if (isError) {
       toolbaritem.classList.add("ipprotection-error");
+    } else if (isPaused) {
+      toolbaritem.classList.add("ipprotection-paused");
     } else if (isExcluded && isActive) {
       toolbaritem.classList.add("ipprotection-excluded");
     } else if (isActive) {

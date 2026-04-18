@@ -114,6 +114,11 @@ PER_PROJECT_PARAMETERS = {
         "target_tasks_method": "mozilla_central_tasks",
     },
     # git projects
+    "firefox": {
+        # TODO We'll eventually need to split this out based on tasks_for and
+        # branch, but for now just use the pull request target_tasks_method.
+        "target_tasks_method": "firefox_pull_request_tasks",
+    },
     "staging-firefox": {
         "target_tasks_method": "default",
     },
@@ -239,8 +244,11 @@ def taskgraph_decision(options, parameters=None):
     write_artifact("label-to-taskid.json", tgg.label_to_taskid)
 
     # write bugbug scheduling information if it was invoked
-    if len(push_schedules) > 0:
-        write_artifact("bugbug-push-schedules.json", push_schedules.popitem()[1])
+    if push_schedules.cache_info().currsize > 0:
+        write_artifact(
+            "bugbug-push-schedules.json",
+            push_schedules(tgg.parameters["project"], tgg.parameters["head_rev"]),
+        )
 
     # upload run-task, fetch-content, robustcheckout.py and more as artifacts
     mozharness_dir = Path(GECKO, "testing", "mozharness")
@@ -383,12 +391,6 @@ def get_decision_parameters(graph_config, options):
     if options.get("target_tasks_method"):
         parameters["target_tasks_method"] = options["target_tasks_method"]
 
-    # ..but can be overridden by the commit message: if it contains the special
-    # string "DONTBUILD" and this is an on-push decision task, then use the
-    # special 'nothing' target task method.
-    if "DONTBUILD" in commit_message and options["tasks_for"] == "hg-push":
-        parameters["target_tasks_method"] = "nothing"
-
     if options.get("include_push_tasks"):
         get_existing_tasks(options.get("rebuild_kinds", []), parameters, graph_config)
 
@@ -406,11 +408,18 @@ def get_decision_parameters(graph_config, options):
         task_config_file = os.path.join(os.getcwd(), "try_task_config.json")
 
     # load try settings
-    if "try" in project and options["tasks_for"] == "hg-push":
+    if "try" in project and options["tasks_for"] in ("hg-push", "github-push"):
         set_try_config(parameters, task_config_file)
 
     if options.get("optimize_target_tasks") is not None:
         parameters["optimize_target_tasks"] = options["optimize_target_tasks"]
+
+    # If the commit message contains "DONTBUILD" and this is an on-push
+    # decision task, mark it so the morph phase can drop all tasks and so
+    # that is_backstop knows not to count this push as a backstop.
+    parameters["dontbuild"] = (
+        "DONTBUILD" in commit_message and options["tasks_for"] == "hg-push"
+    )
 
     # Determine if this should be a backstop push.
     parameters["backstop"] = is_backstop(parameters)

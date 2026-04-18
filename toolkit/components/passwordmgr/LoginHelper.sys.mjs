@@ -276,6 +276,8 @@ class ImportRowProcessor {
     login.timePasswordChanged =
       loginData.timePasswordChanged || loginData.timeCreated;
     login.timesUsed = loginData.timesUsed || 1;
+    login.timeLastBreachAlertDismissed =
+      loginData.timeLastBreachAlertDismissed || null;
     login.guid = loginData.guid || null;
     return login;
   }
@@ -911,6 +913,7 @@ export const LoginHelper = {
           case "timeLastUsed":
           case "timePasswordChanged":
           case "timesUsed":
+          case "timeLastBreachAlertDismissed":
             newLogin[prop.name] = prop.value;
             break;
 
@@ -1514,6 +1517,7 @@ export const LoginHelper = {
       "timeLastUsed",
       "timePasswordChanged",
       "timesUsed",
+      "timeLastBreachAlertDismissed",
     ]) {
       formLogin[prop] = login[prop];
     }

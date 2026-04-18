@@ -125,6 +125,16 @@ https_first_disabled = true
 
 ["browser_policy_set_startpage.js"]
 
+["browser_policy_sitepolicies.js"]
+https_first_disabled = true
+support-files = [
+  "framed.html",
+  "framed_worker.html",
+  "worker.html",
+  "service-worker.js",
+  "shared-worker.js",
+]
+
 ["browser_policy_support_menu.js"]
 
 ["browser_policy_translateenabled.js"]

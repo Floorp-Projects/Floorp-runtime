@@ -554,6 +554,12 @@ def make_job_description(config, jobs):
                 package=config.kind.split("-")[1],
             )
 
+        elif config.kind == "repackage-flatpak":
+            build_platform = attributes["build_platform"]
+            build_type = attributes["build_type"]
+            description = f"Flatpak repackaging for build {build_platform}/{build_type}"
+            attributes["flatpak_name"] = job["flatpak"]["name"]
+
         langpack_locales = []
         if config.kind in ("repackage-flatpak", "repackage-rpm"):
             assert not locale

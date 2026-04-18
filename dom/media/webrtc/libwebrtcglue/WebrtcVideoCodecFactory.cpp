@@ -1,4 +1,3 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-*/
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -38,8 +37,11 @@ std::unique_ptr<webrtc::VideoDecoder> WebrtcVideoDecoderFactory::Create(
       // Get an external decoder
       auto gmpDecoder =
           WrapUnique(GmpVideoCodec::CreateDecoder(mPCHandle, mTrackingId));
-      mCreatedGmpPluginEvent.Forward(*gmpDecoder->InitPluginEvent());
-      mReleasedGmpPluginEvent.Forward(*gmpDecoder->ReleasePluginEvent());
+      {
+        MutexAutoLock lock(mGmpPluginMutex);
+        mCreatedGmpPluginEvent.Forward(*gmpDecoder->InitPluginEvent());
+        mReleasedGmpPluginEvent.Forward(*gmpDecoder->ReleasePluginEvent());
+      }
       decoder.reset(gmpDecoder.release());
       break;
     }
@@ -132,8 +134,11 @@ WebrtcVideoEncoderFactory::InternalFactory::Create(
         // get an external encoder
         auto gmpEncoder =
             WrapUnique(GmpVideoCodec::CreateEncoder(aFormat, mPCHandle));
-        mCreatedGmpPluginEvent.Forward(*gmpEncoder->InitPluginEvent());
-        mReleasedGmpPluginEvent.Forward(*gmpEncoder->ReleasePluginEvent());
+        {
+          MutexAutoLock lock(mGmpPluginMutex);
+          mCreatedGmpPluginEvent.Forward(*gmpEncoder->InitPluginEvent());
+          mReleasedGmpPluginEvent.Forward(*gmpEncoder->ReleasePluginEvent());
+        }
         encoder.reset(gmpEncoder.release());
         break;
       }
