@@ -1,5 +1,6 @@
 ac_add_options --with-app-name=floorp
 ac_add_options --with-app-basename=Floorp
+ac_add_options --with-distribution-id=app.floorp
 # ac_add_options --disable-updater
 # this implies disable geckodriver, and puppeteer seems using the geckodriver impl.
 # so you should not disable test
