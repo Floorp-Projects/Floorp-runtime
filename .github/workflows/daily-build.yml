@@ -67,14 +67,9 @@ jobs:
       build_arm32: true
       build_x86_64: true
 
-  ios:
-    name: iOS build
-    uses: ./.github/workflows/wrapper-build-ios.yml
-    secrets: inherit
-
   publish-debug-to-core-ftp:
     name: Publish Debug Assets to Core FTP
-    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac, android, ios]
+    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac, android]
     if: ${{ github.event.inputs.debug == 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -108,12 +103,6 @@ jobs:
           name: floorp-android-all-moz-artifact
           path: artifacts/android
 
-      - name: Download iOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: floorp-ios-simulator-moz-artifact
-          path: artifacts/ios
-
       - name: Zip all artifacts for FTP upload
         run: |
           set -euo pipefail
@@ -123,7 +112,6 @@ jobs:
           (cd artifacts/linux-aarch64 && zip -r ../../ftp-upload/linux-aarch64-artifacts.zip .)
           (cd artifacts/mac && zip -r ../../ftp-upload/mac-universal-artifacts.zip .)
           (cd artifacts/android && zip -r ../../ftp-upload/android-all-artifacts.zip .)
-          (cd artifacts/ios && zip -r ../../ftp-upload/ios-simulator-artifacts.zip .)
 
       - name: Upload via FTP to Core Server
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -138,7 +126,7 @@ jobs:
 
   publish-release:
     name: Publish Release Assets
-    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac, android, ios]
+    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac, android]
     if: ${{ github.event.inputs.debug != 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -171,12 +159,6 @@ jobs:
         with:
           name: floorp-android-all-moz-artifact
           path: artifacts/android
-
-      - name: Download iOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: floorp-ios-simulator-moz-artifact
-          path: artifacts/ios
 
       - name: Download Windows dist-host artifact
         uses: actions/download-artifact@v4
@@ -276,7 +258,6 @@ jobs:
             artifacts/mac/floorp-macOS-universal-moz-artifact.dmg
             artifacts/mac/floorp-macOS.update_framework_artifacts.zip
             artifacts/android/floorp-android-all-artifacts.zip
-            artifacts/ios/floorp-ios-simulator-moz-artifact.zip
             release-assets/windows-x86_64-dist-host.zip
             release-assets/windows-x86_64-application-ini.zip
             release-assets/linux-x86_64-dist-host.zip
@@ -287,4 +268,3 @@ jobs:
             release-assets/macOS-universal-application-ini.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
