@@ -134,7 +134,11 @@ document.addEventListener(
           gContextMenu.saveMedia();
           break;
         case "context-copyimage-contents":
-          goDoCommand("cmd_copyImage");
+          if (gContextMenu.onCanvas) {
+            gContextMenu.copyCanvasImage();
+          } else {
+            goDoCommand("cmd_copyImage");
+          }
           break;
         case "context-copyaudiourl":
         case "context-copyimage":

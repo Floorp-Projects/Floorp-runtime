@@ -136,6 +136,13 @@ EnterprisePoliciesManager.prototype = {
     }
 
     this.status = Ci.nsIEnterprisePolicies.ACTIVE;
+
+    // Make Web Serial support be opt-in for enterprise policies.
+    Services.prefs
+      .getDefaultBranch("")
+      .setBoolPref("dom.webserial.enabled", false);
+    Services.prefs.lockPref("dom.webserial.enabled");
+
     this._parsedPolicies = {};
     this._activatePolicies(provider.policies);
 
@@ -624,6 +631,7 @@ class JSONPoliciesProvider {
 
         if (!this._policies) {
           lazy.log.error("Policies file doesn't contain a 'policies' object");
+          this._policies = null;
           this._failed = true;
         }
       }
