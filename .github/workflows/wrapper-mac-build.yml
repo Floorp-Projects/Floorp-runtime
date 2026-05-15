@@ -37,23 +37,45 @@ jobs:
           echo "bid=${bdat}" >> $GITHUB_OUTPUT
 
   download-macos-sdk:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Get macOS SDK path
         id: get-sdk
         run: |
-          # Find and use the latest Xcode version available on this runner
-          LATEST_XCODE=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
-          if [ -z "$LATEST_XCODE" ]; then
-            echo "Error: No Xcode installation found"
+          REQUIRED_SDK_MIN="26.4"
+          SELECTED_XCODE=""
+
+          for xcode in $(ls -d /Applications/Xcode*.app 2>/dev/null | sort -Vr); do
+            [ -L "$xcode" ] && continue
+            case "$xcode" in *beta*) continue ;; esac
+
+            SDK_DIR="${xcode}/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs"
+            [ -d "$SDK_DIR" ] || continue
+
+            MACOS_SDK=$(ls -1d "$SDK_DIR"/MacOSX*.sdk 2>/dev/null | sort -V | tail -n 1)
+            [ -z "$MACOS_SDK" ] && continue
+
+            SDK_VERSION=$(basename "$MACOS_SDK" | sed -n 's/MacOSX\([0-9.]*\)\.sdk/\1/p')
+            [ -z "$SDK_VERSION" ] && continue
+
+            echo "  $(basename "$xcode"): SDK $SDK_VERSION"
+
+            if [ "$(printf '%s\n%s' "$SDK_VERSION" "$REQUIRED_SDK_MIN" | sort -V | head -n1)" = "$REQUIRED_SDK_MIN" ]; then
+              SELECTED_XCODE="$xcode"
+              break
+            fi
+          done
+
+          if [ -z "$SELECTED_XCODE" ]; then
+            echo "Error: No stable Xcode found with macOS SDK >= $REQUIRED_SDK_MIN"
+            ls -1d /Applications/Xcode*.app 2>/dev/null
             exit 1
           fi
-          echo "Using Xcode: $LATEST_XCODE"
-          sudo xcode-select -s "$LATEST_XCODE"
-          
-          # Print Xcode and SDK version info
+
+          echo "Using Xcode: $SELECTED_XCODE"
+          sudo xcode-select -s "$SELECTED_XCODE"
           xcodebuild -version
-          
+
           SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
           echo "SDK_PATH=$SDK_PATH" >> $GITHUB_ENV
           echo "sdk_path=$SDK_PATH" >> $GITHUB_OUTPUT

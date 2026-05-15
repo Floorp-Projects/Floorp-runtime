@@ -26,7 +26,7 @@ on:
 
 jobs:
   Integration:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Init
         run: |
