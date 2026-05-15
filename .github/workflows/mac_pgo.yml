@@ -131,7 +131,7 @@ jobs:
 
       - name: Extract artifact 📂
         run: |
-          cd ${{ steps.download-artifacts-mac-enable-profgen.outputs.download-path }}
+          cd ~/downloads/artifacts
           echo "Contents of download path:"
           ls -la
           echo "Extracting floorp-mac-${ARCH_TYPE}-moz-artifact.tar.gz..."
