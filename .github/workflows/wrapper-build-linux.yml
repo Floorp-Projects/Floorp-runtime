@@ -50,7 +50,7 @@ jobs:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }}
       ${{ inputs.debug && ' Debug' || '' }}
-    if: ${{ !inputs.pgo }}
+    if: ${{ !inputs.pgo || inputs.arch == 'aarch64' }}
     uses: ./.github/workflows/common-build.yml
     with:
       platform: linux

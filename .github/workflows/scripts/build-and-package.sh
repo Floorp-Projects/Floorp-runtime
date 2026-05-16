@@ -68,11 +68,11 @@ elif [[ "$PLATFORM" == "linux" ]]; then
   fi
 elif [[ "$PLATFORM" == "mac" ]]; then
   if [[ "$PGO_MODE" == "generate" ]]; then
-    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/
-    mv floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
+    tar -czf "floorp-${ARCH}-apple-darwin-with-pgo.tar.gz" "./obj-${ARCH}-apple-darwin/"
+    mv "floorp-${ARCH}-apple-darwin-with-pgo.tar.gz" ~/output/"${ARTIFACT_NAME}.tar.gz"
   else
-    tar -czf floorp-${ARCH}-apple-darwin-dist.tar.gz -C ./obj-${ARCH}-apple-darwin/dist .
-    mv floorp-${ARCH}-apple-darwin-dist.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
+    tar -czf "floorp-${ARCH}-apple-darwin-dist.tar.gz" -C "./obj-${ARCH}-apple-darwin/dist" .
+    mv "floorp-${ARCH}-apple-darwin-dist.tar.gz" ~/output/"${ARTIFACT_NAME}.tar.gz"
   fi
 fi
 
