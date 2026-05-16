@@ -10,6 +10,7 @@ set -e
 PLATFORM="$1"
 ARCH="$2"
 MOZ_BUILD_DATE="$3"
+PGO_MODE="$4"
 
 if [[ -n "$MOZ_BUILD_DATE" ]]; then
   export MOZ_BUILD_DATE="$MOZ_BUILD_DATE"
@@ -66,13 +67,12 @@ elif [[ "$PLATFORM" == "linux" ]]; then
     cp obj-x86_64-pc-linux-gnu/dist/bin/application.ini ./floorp-application.ini || true
   fi
 elif [[ "$PLATFORM" == "mac" ]]; then
-  # Mac-specific packaging
-  if [[ "$ARCH" == "aarch64" ]]; then
-    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/
-    mv floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
+  if [[ "$PGO_MODE" == "generate" ]]; then
+    tar -czf "floorp-${ARCH}-apple-darwin-with-pgo.tar.gz" "./obj-${ARCH}-apple-darwin/"
+    mv "floorp-${ARCH}-apple-darwin-with-pgo.tar.gz" ~/output/"${ARTIFACT_NAME}.tar.gz"
   else
-    tar -czf floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ./obj-${ARCH}-apple-darwin/
-    mv floorp-${ARCH}-apple-darwin-with-pgo.tar.gz ~/output/${ARTIFACT_NAME}.tar.gz
+    tar -czf "floorp-${ARCH}-apple-darwin-dist.tar.gz" -C "./obj-${ARCH}-apple-darwin/dist" .
+    mv "floorp-${ARCH}-apple-darwin-dist.tar.gz" ~/output/"${ARTIFACT_NAME}.tar.gz"
   fi
 fi
 

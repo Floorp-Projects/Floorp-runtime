@@ -93,11 +93,11 @@ jobs:
 
       - name: Extract 📦
         run: |
-          brew install gnu-tar
-          export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
-          tar -xf ./floorp-mac-x86_64-moz-artifact.tar.gz
+          mkdir -p ./obj-x86_64-apple-darwin/dist
+          tar -xf ./floorp-mac-x86_64-moz-artifact.tar.gz -C ./obj-x86_64-apple-darwin/dist
           rm ./floorp-mac-x86_64-moz-artifact.tar.gz
-          tar -xf ./floorp-mac-aarch64-moz-artifact.tar.gz
+          mkdir -p ./obj-aarch64-apple-darwin/dist
+          tar -xf ./floorp-mac-aarch64-moz-artifact.tar.gz -C ./obj-aarch64-apple-darwin/dist
           rm ./floorp-mac-aarch64-moz-artifact.tar.gz
 
       - name: Check Branding Type

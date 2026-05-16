@@ -51,6 +51,21 @@ jobs:
           name: ${{ inputs.browser-artifact-name }}
           path: ${{ env.ARTIFACT_PATH }}
 
+      - name: Extract browser artifact
+        shell: pwsh
+        run: |
+          $artifactPath = "${{ env.ARTIFACT_PATH }}"
+          $zipFile = Get-ChildItem -Path $artifactPath -Filter "*.zip" | Select-Object -First 1
+          if ($zipFile) {
+            Write-Host "Extracting $($zipFile.Name)..."
+            Expand-Archive -Path $zipFile.FullName -DestinationPath $artifactPath -Force
+            Remove-Item $zipFile.FullName
+            Write-Host "Extraction complete. Contents:"
+            Get-ChildItem -Path $artifactPath -Recurse -Depth 1 | ForEach-Object { Write-Host $_.FullName }
+          } else {
+            Write-Error "No zip file found in $artifactPath"
+          }
+
       - name: Setup Mozilla Build
         shell: pwsh
         run: |

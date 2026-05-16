@@ -50,7 +50,7 @@ jobs:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }}
       ${{ inputs.debug && ' Debug' || '' }}
-    if: ${{ !inputs.pgo }}
+    if: ${{ !inputs.pgo || inputs.arch == 'aarch64' }}
     uses: ./.github/workflows/common-build.yml
     with:
       platform: linux
@@ -62,7 +62,7 @@ jobs:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 1
       ${{ inputs.debug && ' Debug' || '' }}
-    if: ${{ inputs.pgo }}
+    if: ${{ inputs.pgo && inputs.arch != 'aarch64' }}
     uses: ./.github/workflows/common-build.yml
     with:
       platform: linux
@@ -73,7 +73,7 @@ jobs:
 
   collect-profiles:
     name: Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 2
-    if: ${{ inputs.pgo }}
+    if: ${{ inputs.pgo && inputs.arch != 'aarch64' }}
     needs: build-pgo-stage1
     uses: ./.github/workflows/generate-pgo-profile-linux.yml
     secrets: inherit
@@ -90,7 +90,7 @@ jobs:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 3
       ${{ inputs.debug && ' Debug' || '' }}
-    if: ${{ inputs.pgo }}
+    if: ${{ inputs.pgo && inputs.arch != 'aarch64' }}
     needs: collect-profiles
     uses: ./.github/workflows/common-build.yml
     with:
