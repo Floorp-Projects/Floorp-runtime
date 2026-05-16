@@ -24,27 +24,27 @@ permissions:
 
 run-name: >-
   Daily Runtime Build
-  ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' && ' [PGO]' || '' }}
+  ${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
   ${{ github.event.inputs.debug == 'true' && ' (Debug)' || '' }}
 
 jobs:
   windows-x86_64:
     name: >-
-      Windows x86_64${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' && ' [PGO]' || '' }}
+      Windows x86_64${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
     uses: ./.github/workflows/wrapper-build-windows.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
-      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo != 'false' }}
 
   linux-x86_64:
     name: >-
-      Linux x86_64${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' && ' [PGO]' || '' }}
+      Linux x86_64${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
     uses: ./.github/workflows/wrapper-build-linux.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
-      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo != 'false' }}
 
   linux-aarch64:
     name: Linux aarch64
@@ -57,12 +57,12 @@ jobs:
 
   mac:
     name: >-
-      Mac build${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' && ' [PGO]' || '' }}
+      Mac build${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
     uses: ./.github/workflows/wrapper-mac-build.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
-      pgo: ${{ github.event.inputs.pgo == 'true' && github.event_name != 'schedule' }}
+      pgo: ${{ github.event.inputs.pgo != 'false' }}
 
   android:
     name: Android build
