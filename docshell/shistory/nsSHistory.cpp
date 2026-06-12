@@ -942,9 +942,9 @@ void nsSHistory::NotifyOnHistoryReplaceEntry() {
 }
 
 NS_IMETHODIMP
-nsSHistory::NotifyOnEntryTitleUpdated(nsISHEntry* aEntry) {
+nsSHistory::NotifyOnEntryUpdated(nsISHEntry* aEntry) {
   NotifyListeners(mListeners, [entry = nsCOMPtr{aEntry}](auto l) {
-    l->OnEntryTitleUpdated(entry);
+    l->OnEntryUpdated(entry);
   });
   return NS_OK;
 }
@@ -1604,8 +1604,8 @@ static bool MaybeCheckUnloadingIsCanceled(
   windowGlobalParent->PermitUnloadTraversable(
       targetEntry->Info(), action,
       [action, loadResults = CopyableTArray(std::move(aLoadResults)),
-       windowGlobalParent,
-       aResolver](nsIDocumentViewer::PermitUnloadResult aResult) mutable {
+       windowGlobalParent, aResolver = std::move(aResolver)](
+          nsIDocumentViewer::PermitUnloadResult aResult) mutable {
         if (aResult != nsIDocumentViewer::PermitUnloadResult::eContinue) {
           aResolver(loadResults, aResult);
           return;
@@ -2507,7 +2507,12 @@ mozilla::dom::SessionHistoryEntry* nsSHistory::FindAdjacentEntryFor(
 
   nextEntry = mEntries[i];
   if (ancestors.IsEmpty()) {
-    return static_cast<SessionHistoryEntry*>(nextEntry.get());
+    // This can happen if we somehow have duplicates in mEntries. This should
+    // ideally never happen, but since it does we need to protect against it.
+    // See bug 2042897.
+    return nextEntry != aEntry
+               ? static_cast<SessionHistoryEntry*>(nextEntry.get())
+               : nullptr;
   }
 
   foundParent =

@@ -47,12 +47,12 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import mozilla.components.compose.base.LinkText
+import mozilla.components.compose.base.LinkTextState
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.ui.colors.PhotonColors
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.LinkText
-import org.mozilla.fenix.compose.LinkTextState
 import org.mozilla.fenix.compose.ScrollIndicator
 import org.mozilla.fenix.nimbus.MarketingCardVariant
 import org.mozilla.fenix.onboarding.view.Action
@@ -91,7 +91,11 @@ fun MarketingDataOnboardingPageRedesign(
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.weight(TITLE_TOP_SPACER_WEIGHT)).takeIf { !state.isSmallDevice }
+            if (state.isSmallDevice) {
+                Spacer(modifier = Modifier.height(16.dp))
+            } else {
+                Spacer(modifier = Modifier.weight(TITLE_TOP_SPACER_WEIGHT))
+            }
 
             var checkboxChecked by remember { mutableStateOf(true) }
 
@@ -383,10 +387,13 @@ private fun primaryButtonCopyForVariant(
     marketingCardVariant: MarketingCardVariant,
 ) = when (marketingCardVariant) {
     MarketingCardVariant.DEFAULT -> defaultString
+
     MarketingCardVariant.TREATMENT_A,
     MarketingCardVariant.TREATMENT_B,
-    MarketingCardVariant.TREATMENT_C,
         -> stringResource(R.string.nova_onboarding_marketing_primary_button_text)
+
+    MarketingCardVariant.TREATMENT_C ->
+        stringResource(R.string.nova_onboarding_marketing_primary_button_text_2)
 }
 
 @Composable

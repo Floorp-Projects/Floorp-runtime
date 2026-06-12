@@ -31,7 +31,6 @@ import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
 import org.mozilla.fenix.compose.MessageCardState
 import org.mozilla.fenix.home.bookmarks.Bookmark
 import org.mozilla.fenix.home.bookmarks.interactor.BookmarksInteractor
-import org.mozilla.fenix.home.collections.CollectionColors
 import org.mozilla.fenix.home.collections.CollectionsState
 import org.mozilla.fenix.home.interactor.HomepageInteractor
 import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
@@ -48,12 +47,15 @@ import org.mozilla.fenix.home.recentvisits.RecentlyVisitedItem.RecentHistoryHigh
 import org.mozilla.fenix.home.recentvisits.interactor.RecentVisitsInteractor
 import org.mozilla.fenix.home.search.HomeSearchInteractor
 import org.mozilla.fenix.home.sessioncontrol.CollectionInteractor
+import org.mozilla.fenix.home.sports.CountrySelectorSource
+import org.mozilla.fenix.home.sports.LiveMatchRefreshSource
+import org.mozilla.fenix.home.sports.SportsCardImpressionSource
+import org.mozilla.fenix.home.sports.SportsCardType
 import org.mozilla.fenix.home.sports.SportsInteractor
 import org.mozilla.fenix.home.store.NimbusMessageState
 import org.mozilla.fenix.home.termsofuse.PrivacyNoticeBannerInteractor
 import org.mozilla.fenix.home.termsofuse.PrivacyNoticeBannerInteractorNoOp
 import org.mozilla.fenix.home.topsites.interactor.TopSiteInteractor
-import org.mozilla.fenix.search.toolbar.SearchSelectorMenu
 import org.mozilla.fenix.wallpapers.WallpaperState
 import java.io.File
 import java.util.UUID
@@ -88,8 +90,6 @@ internal object FakeHomepagePreview {
 
             override fun onMessageClosedClicked(message: Message) { /* no op */ }
 
-            override fun onMenuItemTapped(item: SearchSelectorMenu.Item) { /* no op */ }
-
             override fun showWallpapersOnboardingDialog(state: WallpaperState): Boolean {
                 return false
             }
@@ -98,7 +98,9 @@ internal object FakeHomepagePreview {
 
             override fun onRemoveChecklistButtonClicked() { /* no op */ }
 
-            override fun onLogoLongClicked() { /* no op */ }
+            override fun onPrivacyReportTapped() { /* no op */ }
+
+            override fun onLongfoxEntryPointClicked() { /* no op */ }
         }
 
     internal val sportsInteractor
@@ -111,7 +113,22 @@ internal object FakeHomepagePreview {
 
             override fun onViewScheduleClicked() { /* no op */ }
 
+            override fun onRefreshClicked(source: LiveMatchRefreshSource) { /* no op */ }
+
             override fun onCountdownWidgetDismissed() { /* no op */ }
+
+            override fun onGetCustomWallpaperClicked() { /* no op */ }
+
+            override fun onSportsWidgetShareClicked() { /* no op */ }
+
+            override fun onMatchClicked(homeTeam: String?, awayTeam: String?, date: String?) { /* no op */ }
+
+            override fun onSportsWidgetCardShown(
+                cardType: SportsCardType,
+                source: SportsCardImpressionSource,
+            ) { /* no op */ }
+
+            override fun onCountrySelectorShown(source: CountrySelectorSource) { /* no op */ }
         }
 
     internal val storiesInteractor
@@ -228,8 +245,6 @@ internal object FakeHomepagePreview {
             ) { /* no op */ }
 
             override fun onAddTabsToCollectionTapped() { /* no op */ }
-
-            override fun onRemoveCollectionsPlaceholder() { /* no op */ }
         }
 
     internal val homeSearchInteractor: HomeSearchInteractor
@@ -377,12 +392,6 @@ internal object FakeHomepagePreview {
         collections = listOf(collection(tabs = listOf(tab()))),
         expandedCollections = setOf(),
         showSaveTabsToCollection = true,
-    )
-
-    @Composable
-    internal fun collectionsPlaceholder() = CollectionsState.Placeholder(
-        showSaveTabsToCollection = true,
-        colors = CollectionColors.colors(),
     )
 
     internal fun collection(tabs: List<Tab> = emptyList()): TabCollection {

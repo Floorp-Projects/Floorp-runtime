@@ -525,6 +525,7 @@
                 <data android:host="settings"/>
                 <data android:host="settings_accessibility"/>
                 <data android:host="settings_addon_manager"/>
+                <data android:host="settings_ai_controls"/>
                 <data android:host="settings_delete_browsing_data"/>
                 <data android:host="settings_logins"/>
                 <data android:host="settings_notifications"/>
@@ -658,6 +659,12 @@
 
         <activity android:name="mozilla.components.feature.qr.QrScanActivity"
             android:theme="@style/Theme.AppCompat.Translucent"
+            android:exported="false"
+            android:taskAffinity=""
+            />
+
+        <activity android:name=".components.lens.LensCameraActivity"
+            android:theme="@style/Theme.LensCamera"
             android:exported="false"
             android:taskAffinity=""
             />
@@ -857,6 +864,16 @@
             <intent-filter>
                 <action android:name="org.mozilla.fenix.ACTION_PRINT" />
             </intent-filter>
+        </receiver>
+
+        <receiver
+          android:name="org.mozilla.fenix.messaging.QAMessageNotificationWorkerReceiver"
+          android:exported="true"
+          android:enabled="true"
+          android:permission="android.permission.DUMP">
+          <intent-filter>
+            <action android:name="org.mozilla.fenix.TRIGGER_MESSAGE_WORKER" />
+          </intent-filter>
         </receiver>
     </application>
 

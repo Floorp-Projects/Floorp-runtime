@@ -15,6 +15,10 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -69,7 +73,7 @@ class WallpapersUseCasesTest {
     }
 
     private val mockFolder: File by lazy { temporaryFolder.newFolder() }
-    private val downloadWallpaper: (Wallpaper) -> Wallpaper.ImageFileState = mockk(relaxed = true)
+    private val downloadWallpaper: (Wallpaper) -> Wallpaper.ImageFileState = { Wallpaper.ImageFileState.Downloaded }
 
     @Before
     fun setup() {
@@ -549,6 +553,32 @@ class WallpapersUseCasesTest {
         }
 
     @Test
+    fun `WHEN loadWallpaperFromDisk is cancelled THEN CancellationException propagates and code after the call does not run`() =
+        runTest {
+            val wallpaper: Wallpaper = mockk { every { name } returns "test" }
+            val ioBlockEntered = CompletableDeferred<Unit>()
+
+            val useCase = WallpapersUseCases.DefaultLoadBitmapUseCase {
+                ioBlockEntered.complete(Unit)
+                suspendCancellableCoroutine {
+                    // never resumed; will be ended via cancellation
+                }
+            }
+
+            var codeAfterLoadRan = false
+            val job = launch {
+                useCase.loadWallpaperFromDisk(wallpaper, Configuration.ORIENTATION_PORTRAIT)
+                codeAfterLoadRan = true
+            }
+            ioBlockEntered.await()
+            // Simulates the Compose runtime cancelling the LaunchedEffect scope when the fragment
+            // view is destroyed (onDestroyView), then waiting for the coroutine to finish.
+            job.cancelAndJoin()
+
+            assertFalse(codeAfterLoadRan)
+        }
+
+    @Test
     fun `GIVEN EdgeToEdgeBackground feature is enabled by Nimbus WHEN loading the wallpapers list THEN EdgeToEdge is in the list`() = runTest {
         every { mockSettings.enableHomepageEdgeToEdgeBackgroundFeature } returns true
         every { mockSettings.currentWallpaperName } returns ""
@@ -592,6 +622,16 @@ class WallpapersUseCasesTest {
             listOf(Wallpaper.Default),
             appStore.state.wallpaperState.availableWallpapers,
         )
+    }
+
+    @Test
+    fun `GIVEN EdgeToEdgeBackground feature is disabled by Nimbus WHEN EdgeToEdge wallpaper is persisted THEN default wallpaper is selected`() = runTest {
+        every { mockSettings.enableHomepageEdgeToEdgeBackgroundFeature } returns false
+        every { mockSettings.currentWallpaperName } returns Wallpaper.EDGE_TO_EDGE
+
+        WallpapersUseCases.DefaultFetchCurrentWallpaperUseCase(mockSettings, appStore).invoke()
+
+        assertEquals(Wallpaper.Default, appStore.state.wallpaperState.currentWallpaper)
     }
 
     private enum class TimeRelation {

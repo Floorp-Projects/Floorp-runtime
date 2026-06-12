@@ -12,8 +12,27 @@ import "chrome://browser/content/aiwindow/components/chat-assistant-error.mjs";
 import "chrome://browser/content/aiwindow/components/chat-assistant-loader.mjs";
 // eslint-disable-next-line import/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/website-chip-container.mjs";
+// eslint-disable-next-line import/no-unassigned-import
+import "chrome://browser/content/aiwindow/components/ai-website-confirmation.mjs";
 
 const FOLLOW_UP_QTY = 2;
+/**
+ * UI labels for tool results and follow-ups.
+ */
+const UI_TYPES = {
+  WEBSITE_CONFIRMATION: "website-confirmation",
+  AI_ACTION_RESULT: "ai-action-result",
+  CANCELLED_COMPONENT: "cancelled-component",
+  ACTION_LOG: "action-log",
+};
+/**
+ * UI update types for communicating user interactions with tool UIs back to the actor.
+ */
+const UI_UPDATE_TYPES = {
+  CONFIRMATION_TAB_SELECTION: "confirmation-tab-selection",
+  CANCEL_TAB_SELECTION: "cancel-tab-selection",
+  UNDO_TAB_CLOSE: "undo-tab-close",
+};
 
 /**
  * A custom element for managing AI Chat Content
@@ -37,6 +56,7 @@ export class AIChatContent extends MozLitElement {
   #scrollClickHandler = null;
   #scrollRafId = null;
   #pendingAnnouncementMessageId = null;
+  #scrollPositions = new Map();
 
   constructor() {
     super();
@@ -73,6 +93,7 @@ export class AIChatContent extends MozLitElement {
     this.#initFooterActionListeners();
     this.#initOverflowObserver();
     this.#initScrollListener();
+    this.#scrollPositions.clear();
   }
 
   disconnectedCallback() {
@@ -118,6 +139,11 @@ export class AIChatContent extends MozLitElement {
     this.addEventListener(
       "aiChatContentActor:seen-urls",
       this.#handleSeenUrls.bind(this)
+    );
+
+    this.addEventListener(
+      "aiChatContentActor:set-generating",
+      this.#handleSetGenerating.bind(this)
     );
 
     this.addEventListener(
@@ -183,6 +209,14 @@ export class AIChatContent extends MozLitElement {
 
     this.addEventListener("open-memories-learn-more", event => {
       this.#dispatchAction("open-memories-learn-more", event.detail);
+    });
+
+    this.addEventListener("thumbs-up", event => {
+      this.#dispatchAction("thumbs-up", event.detail);
+    });
+
+    this.addEventListener("thumbs-down", event => {
+      this.#dispatchAction("thumbs-down", event.detail);
     });
   }
 
@@ -332,6 +366,10 @@ export class AIChatContent extends MozLitElement {
         this.#checkConversationState(message);
         this.handleAIResponseEvent(event);
         break;
+      case "tool":
+        this.#checkConversationState(message);
+        this.handleToolMessageEvent(event);
+        break;
       case "user":
         this.#checkConversationState(message);
         this.handleUserPromptEvent(event);
@@ -339,14 +377,75 @@ export class AIChatContent extends MozLitElement {
       case "assistant-message-complete":
         this.#setMessageComplete(message);
         break;
+      case "restored-all-messages-in-a-conversation":
+        this.#restoreChatScrollPosition(message.convId);
+        break;
       // Used to clear the conversation state via side effects ( new conv id )
       case "clear-conversation":
         this.#checkConversationState(message);
     }
   }
 
+  #handleSetGenerating(event) {
+    this.assistantIsLoading = !!event.detail?.isGenerating;
+    if (!this.assistantIsLoading) {
+      this.isSearching = false;
+    }
+    this.requestUpdate();
+  }
+
+  async #restoreChatScrollPosition(convId) {
+    await this.updateComplete;
+
+    // Making sure we check if convId hasn't changed while we awaited
+    const lastMessage = this.conversationState.findLast(
+      m => m.convId === convId
+    );
+    if (!lastMessage) {
+      return;
+    }
+
+    // Wait a frame to ensure the footer and its children are visible
+    await new Promise(r =>
+      requestAnimationFrame(() => requestAnimationFrame(r))
+    );
+
+    const wrapper = this.#wrapper;
+    if (!wrapper) {
+      return;
+    }
+
+    const savedPosition = this.#scrollPositions.get(convId);
+    if (savedPosition?.contentHeight) {
+      this.shadowRoot
+        ?.querySelector(".chat-inner-wrapper")
+        ?.style.setProperty("--content-height", savedPosition.contentHeight);
+    }
+
+    const goToBottom =
+      !savedPosition ||
+      savedPosition.wasAtBottom ||
+      savedPosition.wasWaitingForResponse;
+
+    if (!goToBottom) {
+      wrapper.scrollTo({
+        top: savedPosition.scrollTop,
+        behavior: "instant",
+      });
+      return;
+    }
+
+    const lastChild = this.shadowRoot.querySelector(
+      ".chat-inner-wrapper"
+    )?.lastElementChild;
+    if (lastChild) {
+      lastChild.scrollIntoView({ block: "end", behavior: "instant" });
+      return;
+    }
+    wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: "instant" });
+  }
+
   #setMessageComplete(message) {
-    this.assistantIsLoading = false;
     const messageId = message.content?.id;
     if (!messageId) {
       return;
@@ -385,12 +484,15 @@ export class AIChatContent extends MozLitElement {
       firstMessage.ordinal === message.ordinal;
     const convIdChanged = message.convId !== lastMessage?.convId;
 
+    if (convIdChanged && lastMessage?.convId && this.#wrapper) {
+      this.saveScrollPosition(lastMessage, this.#wrapper);
+    }
+
     // If the conversation ID has changed, reset the conversation state
     if (convIdChanged || isReloadingSameConvo) {
       this.conversationState = [];
       this.followUpSuggestions = [];
       this.#clearAssistantResponseAnnouncement();
-      this.assistantIsLoading = false;
       this.isSearching = false;
       if (convIdChanged) {
         this.shadowRoot
@@ -401,18 +503,77 @@ export class AIChatContent extends MozLitElement {
     }
   }
 
+  /* Saves the scroll position when we switch tabs */
+  saveScrollPosition(lastMessage, wrapper) {
+    const innerWrapper = this.shadowRoot.querySelector(".chat-inner-wrapper");
+
+    // if element is near the bottom (50px or less)
+    // we scroll all the way to the end as default
+    let wasAtBottom = true;
+    const lastChild = innerWrapper?.lastElementChild;
+    if (lastChild) {
+      const lastChildRect = lastChild.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      wasAtBottom = lastChildRect.bottom <= wrapperRect.bottom + 50;
+    }
+
+    const wasWaitingForResponse =
+      this.assistantIsLoading ||
+      this.isSearching ||
+      lastMessage.role !== "assistant" ||
+      !lastMessage.isLastChunk;
+
+    this.#scrollPositions.set(lastMessage.convId, {
+      scrollTop: wrapper.scrollTop,
+      wasAtBottom,
+      wasWaitingForResponse,
+      contentHeight:
+        innerWrapper?.style.getPropertyValue("--content-height") || null,
+    });
+  }
+
   handleLoadingEvent(event) {
     const { isSearching } = event.detail;
     this.#clearAssistantResponseAnnouncement();
     this.isSearching = !!isSearching;
-    this.assistantIsLoading = true;
     this.requestUpdate();
   }
 
   handleErrorEvent(error) {
-    this.assistantIsLoading = false;
     this.isSearching = false;
     this.errorObj = error;
+    this.requestUpdate();
+  }
+
+  /**
+   * Handle tool role messages produced when a toolcall completes
+   *
+   * @param {CustomEvent} event
+   */
+  handleToolMessageEvent(event) {
+    const { convId, ordinal, content, actionLog } = event.detail ?? {};
+
+    if (!content?.name || !actionLog?.uiType) {
+      return;
+    }
+
+    // uiTypes that this conversation knows how to render as tool UI
+    const ACCEPTED_UI_TYPES = [UI_TYPES.ACTION_LOG];
+    if (!ACCEPTED_UI_TYPES.includes(actionLog.uiType)) {
+      return;
+    }
+
+    this.conversationState[ordinal] = {
+      role: "tool",
+      uiType: actionLog.uiType,
+      convId,
+      ordinal,
+      toolCallId: content.tool_call_id,
+      toolName: content.name,
+      pendingLabel: actionLog.pendingLabel,
+      row: actionLog.row,
+    };
+
     this.requestUpdate();
   }
 
@@ -426,7 +587,6 @@ export class AIChatContent extends MozLitElement {
     this.followUpSuggestions = [];
     const { convId, content, ordinal, isPreviousMessage } = event.detail;
     if (!isPreviousMessage) {
-      this.assistantIsLoading = true;
       this.#clearAssistantResponseAnnouncement();
     }
     this.conversationState[ordinal] = {
@@ -460,6 +620,10 @@ export class AIChatContent extends MozLitElement {
     });
   }
 
+  #isAIResponseValid(content, toolUIData) {
+    return (typeof content?.body === "string" && content.body) || !!toolUIData;
+  }
+
   /**
    * Handle AI response events
    *
@@ -468,7 +632,6 @@ export class AIChatContent extends MozLitElement {
 
   handleAIResponseEvent(event) {
     this.isSearching = false;
-    this.assistantIsLoading = false;
 
     const {
       convId,
@@ -480,9 +643,10 @@ export class AIChatContent extends MozLitElement {
       webSearchQueries = [],
       followUpSuggestions = [],
       isPreviousMessage,
+      toolUIData,
     } = event.detail;
 
-    if (typeof content.body !== "string" || !content.body) {
+    if (!this.#isAIResponseValid(content, toolUIData)) {
       return;
     }
 
@@ -498,8 +662,8 @@ export class AIChatContent extends MozLitElement {
       body: content.body,
       appliedMemories: memoriesApplied ?? [],
       showCallout: showMemoriesCallout ?? false,
-      searchTokens: webSearchQueries ?? [],
       isLastChunk: !!isPreviousMessage,
+      toolUIData,
     };
 
     this.requestUpdate();
@@ -605,6 +769,92 @@ export class AIChatContent extends MozLitElement {
     this.dispatchEvent(event);
   }
 
+  /**
+   * Render a turn's tool calls as a single grouped action log container
+   *
+   * @param {Array<object>} toolMsgs - one entry per tool call this turn
+   * @param {boolean} isComplete - whether the turn has finished
+   */
+  #renderActionLogGroup(toolMsgs, isComplete) {
+    const finalMessage = {
+      l10nId: "action-log-completed-steps",
+      l10nArgs: { count: toolMsgs.length },
+    };
+    const summary = isComplete
+      ? finalMessage
+      : toolMsgs[toolMsgs.length - 1]?.pendingLabel;
+    return html`
+      <ai-action-result
+        .labelL10nId=${summary?.l10nId}
+        .labelL10nArgs=${summary?.l10nArgs}
+        .rows=${this.#buildGroupedActionLogRows(toolMsgs)}
+        .isExpanded=${false}
+      ></ai-action-result>
+    `;
+  }
+
+  #renderToolUI(toolUIData, messageId) {
+    if (!toolUIData) {
+      return nothing;
+    }
+
+    switch (toolUIData.uiType) {
+      case "website-confirmation":
+        return html`
+          <ai-website-confirmation
+            .tabs=${toolUIData.properties?.tabs || []}
+            @ai-website-confirmation:submit=${event =>
+              this.#handleConfirmationSubmit(
+                event,
+                messageId,
+                toolUIData.toolCallId
+              )}
+            @ai-website-confirmation:close=${event =>
+              this.#handleConfirmationClose(
+                event,
+                messageId,
+                toolUIData.toolCallId
+              )}
+          ></ai-website-confirmation>
+        `;
+      case "ai-action-result":
+        return html`<div>confirmation placeholder</div>`;
+      case "cancelled-component":
+        return html`<div>cancelled placeholder</div>`;
+      default:
+        return nothing;
+    }
+  }
+
+  #handleConfirmationSubmit = (event, messageId, toolCallId) => {
+    // TODO - add selected tabs, this will be part of the card integration pach
+    this.#dispatchToolUIUpdate({
+      messageId,
+      toolCallId,
+      updateType: UI_UPDATE_TYPES.CONFIRMATION_TAB_SELECTION,
+      updateData: event.detail,
+    });
+  };
+
+  #handleConfirmationClose = (event, messageId, toolCallId) => {
+    this.#dispatchToolUIUpdate({
+      messageId,
+      toolCallId,
+      updateType: UI_UPDATE_TYPES.CANCEL_TAB_SELECTION,
+      updateData: event.detail,
+    });
+  };
+
+  #dispatchToolUIUpdate(data) {
+    this.dispatchEvent(
+      new CustomEvent("AIChatContent:ToolUIUpdate", {
+        bubbles: true,
+        composed: true,
+        detail: data,
+      })
+    );
+  }
+
   #renderMessage(msg, chips) {
     if (!msg) {
       return nothing;
@@ -620,11 +870,13 @@ export class AIChatContent extends MozLitElement {
           .message=${msg.body}
           .role=${msg.role}
           .messageId=${msg.messageId}
-          .searchTokens=${msg.searchTokens || []}
           .complete=${msg.role === "assistant" && !!msg.isLastChunk}
           .conversationId=${this.conversationId}
           .seenUrls=${this.seenUrls}
         ></ai-chat-message>
+        ${msg.role === "assistant" && msg.toolUIData
+          ? this.#renderToolUI(msg.toolUIData, msg.messageId)
+          : nothing}
         ${msg.role === "assistant" && msg.isLastChunk
           ? html`
               <assistant-message-footer
@@ -656,7 +908,7 @@ export class AIChatContent extends MozLitElement {
       return nothing;
     }
     return html`<chat-assistant-loader
-      .isSearch=${this.isSearching}
+      .mode=${this.isSearching ? "search" : "default"}
     ></chat-assistant-loader>`;
   }
 
@@ -669,13 +921,121 @@ export class AIChatContent extends MozLitElement {
     ></chat-assistant-error>`;
   }
 
-  #renderMessages() {
+  /**
+   * Build the render list one turn at a time.
+   *
+   * The model creates an empty assistant placeholder before tools run so by
+   * ordinal the assistant has a lower index than the toolcall messages it produces.
+   * We buffer per turn so action log UI render above the assistant reply,
+   * flipping that ordinal order for display
+   *
+   * @return {Array<{ type: string, msg: object, contextPageUrl?: string }>}
+   */
+  #buildTurnRenderItems() {
+    const items = [];
     let lastContextPageUrl;
-    return this.conversationState.map(msg => {
-      const chips = this.#getVisibleChips(msg, lastContextPageUrl);
-      if (msg?.role === "user") {
+    let pendingActionLogs = [];
+    let pendingAssistantMessage = null;
+    let pendingAssistantContextUrl;
+
+    // Commit the current turn's buffered action logs and assistant reply into
+    // items. Action log render above the assistant message
+    //
+    // isComplete marks whether the turn has finished
+    const appendPendingAssistantTurn = isComplete => {
+      if (!pendingActionLogs.length && !pendingAssistantMessage) {
+        return;
+      }
+
+      // Emit one grouped action-log item per turn carrying all the tool
+      // messages of that turn. The renderer collapses them into a single
+      // <ai-action-result> with one row per tool.
+      if (pendingActionLogs.length) {
+        items.push({
+          type: "action-log",
+          msgs: pendingActionLogs,
+          isComplete,
+        });
+      }
+
+      if (pendingAssistantMessage) {
+        items.push({
+          type: "message",
+          msg: pendingAssistantMessage,
+          contextPageUrl: pendingAssistantContextUrl,
+        });
+      }
+
+      pendingActionLogs = [];
+      pendingAssistantMessage = null;
+      pendingAssistantContextUrl = undefined;
+    };
+
+    for (const msg of this.conversationState) {
+      if (!msg) {
+        continue;
+      }
+
+      // Hold tool UI messages for the current turn
+      if (msg.uiType === UI_TYPES.ACTION_LOG) {
+        pendingActionLogs.push(msg);
+        continue;
+      }
+
+      // Hold the assistant reply
+      // If a previous assistant is still pending, commit it first, so it isn't dropped
+      if (msg.role === "assistant") {
+        if (pendingAssistantMessage) {
+          appendPendingAssistantTurn(true);
+        }
+
+        pendingAssistantMessage = msg;
+        pendingAssistantContextUrl = lastContextPageUrl;
+        continue;
+      }
+
+      // A user or any other role ends the previous turn. Commit first then push.
+      appendPendingAssistantTurn(true);
+
+      // Capture the previous context URL for this message's duplicate-chip check,
+      // then update lastContextPageUrl for subsequent messages.
+      const contextPageUrl = lastContextPageUrl;
+      if (msg.role === "user") {
         lastContextPageUrl = msg.pageUrl;
       }
+
+      items.push({
+        type: "message",
+        msg,
+        contextPageUrl,
+      });
+    }
+
+    // Commit anything still pending at end of loop. The in-flight turn is
+    // complete once assistantIsLoading set false
+    appendPendingAssistantTurn(!this.assistantIsLoading);
+
+    return items;
+  }
+
+  /**
+   * Collect the per-tool rows for the grouped action log card
+   *
+   * @param {Array<object>} toolMsgs
+   * @returns {Array<{ labelL10nId?: string, labelL10nArgs?: object, label?: string, items: Array }>}
+   */
+  #buildGroupedActionLogRows(toolMsgs) {
+    return toolMsgs.map(msg => msg.row).filter(Boolean);
+  }
+
+  #renderMessages() {
+    return this.#buildTurnRenderItems().map(item => {
+      const { type, msgs, msg, isComplete, contextPageUrl } = item;
+      if (type === "action-log") {
+        return this.#renderActionLogGroup(msgs, isComplete);
+      }
+
+      const chips = this.#getVisibleChips(msg, contextPageUrl);
       return this.#renderMessage(msg, chips);
     });
   }
@@ -686,7 +1046,7 @@ export class AIChatContent extends MozLitElement {
         rel="stylesheet"
         href="chrome://browser/content/aiwindow/components/ai-chat-content.css"
       />
-      <div class="chat-content-wrapper">
+      <div class="chat-content-wrapper" tabindex="-1">
         <div class="chat-inner-wrapper">
           ${this.#renderMessages()} ${this.#renderFollowUpSuggestions()}
           ${this.#renderLoader()} ${this.#renderError()}

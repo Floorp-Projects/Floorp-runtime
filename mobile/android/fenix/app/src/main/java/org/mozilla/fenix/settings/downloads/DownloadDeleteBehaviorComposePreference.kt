@@ -31,8 +31,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
+import mozilla.components.compose.base.button.RadioButton
 import org.mozilla.fenix.R
-import org.mozilla.fenix.compose.button.RadioButton
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.theme.PreviewThemeProvider
 import org.mozilla.fenix.theme.Theme
@@ -52,7 +52,7 @@ class DownloadDeleteBehaviorComposePreference @JvmOverloads constructor(
     defStyleAttr: Int = 0,
 ) : Preference(context, attrs, defStyleAttr) {
 
-    var currentBehavior by mutableStateOf(DeleteDownloadBehavior.DELETE_FROM_DEVICE)
+    var currentBehavior by mutableStateOf(DeleteDownloadBehavior.ASK_WHEN_DELETING)
     var onBehaviorSelected: ((DeleteDownloadBehavior) -> Unit)? = null
 
     init {
@@ -161,7 +161,7 @@ private fun DeleteBehaviorRadioGroupPreview(
     FirefoxTheme(theme) {
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             var selectedBehavior by remember {
-                mutableStateOf(DeleteDownloadBehavior.DELETE_FROM_DEVICE)
+                mutableStateOf(DeleteDownloadBehavior.ASK_WHEN_DELETING)
             }
 
             DeleteBehaviorRadioGroup(

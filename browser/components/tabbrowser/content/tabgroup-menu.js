@@ -107,8 +107,10 @@
           tabindex="0"
           id="tabGroupEditor_shareTabGroup"
           class="subviewbutton"
+          badged="true"
           data-l10n-id="tab-group-editor-action-share-tab-group"
           hidden="">
+          <html:moz-badge type="new" move-after-stack="true"></html:moz-badge>
         </toolbarbutton>
         <toolbarseparator class="tab-group-edit-mode-only" />
         <toolbarbutton
@@ -511,6 +513,7 @@
 
       this.#commandButtons.shareTabGroup.addEventListener("command", () => {
         ContentSharingUtils.handleShareTabGroup(this.activeGroup);
+        this.close();
       });
 
       this.panel.addEventListener("popupshown", this);
@@ -525,7 +528,7 @@
         Services.locale.appLocaleAsBCP47.startsWith("en") &&
         this.smartTabGroupsUserEnabled &&
         this.smartTabGroupsFeatureConfigEnabled &&
-        !PrivateBrowsingUtils.isWindowPrivate(this.ownerGlobal) &&
+        !PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal) &&
         this.mlEnabled
       );
     }
@@ -740,7 +743,9 @@
         label.htmlFor = input.id;
         label.style.setProperty(
           "--tabgroup-swatch-color",
-          `var(--tab-group-color-${colorCode})`
+          Services.prefs.getBoolPref("browser.nova.enabled")
+            ? `var(--tab-group-${colorCode})`
+            : `var(--tab-group-color-${colorCode})`
         );
         label.style.setProperty(
           "--tabgroup-swatch-color-invert",
@@ -937,7 +942,7 @@
       const saveAndCloseGroup = document.getElementById(
         "tabGroupEditor_saveAndCloseGroup"
       );
-      if (PrivateBrowsingUtils.isWindowPrivate(this.ownerGlobal)) {
+      if (PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal)) {
         saveAndCloseGroup.hidden = true;
         return;
       }

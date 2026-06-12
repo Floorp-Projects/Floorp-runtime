@@ -88,6 +88,15 @@ class InstallReferrerWorker(
                 settings.isUserMetaAttributed = false
             }
 
+            settings.isUserTikTokAttributed =
+                InstallReferrerHandlingService.isTikTokAttribution(installReferrerResponse)
+
+            settings.isUserRedditAttributed =
+                InstallReferrerHandlingService.isRedditAttribution(installReferrerResponse)
+
+            settings.isUserXTwitterAttributed =
+                InstallReferrerHandlingService.isXTwitterAttribution(installReferrerResponse)
+
             utmParams.recordInstallReferrer(settings)
         }
 
@@ -177,35 +186,6 @@ class InstallReferrerWorker(
 }
 
 /**
- * Wrapper interface for InstallReferrerClient to enable testing.
- */
-@VisibleForTesting
-internal interface InstallReferrerClientWrapper {
-    fun startConnection(listener: InstallReferrerStateListener)
-    fun getInstallReferrer(): String?
-    fun endConnection()
-}
-
-/**
- * Default implementation that wraps the actual InstallReferrerClient.
- */
-private class DefaultInstallReferrerClient(context: Context) : InstallReferrerClientWrapper {
-    private val client = InstallReferrerClient.newBuilder(context).build()
-
-    override fun startConnection(listener: InstallReferrerStateListener) {
-        client.startConnection(listener)
-    }
-
-    override fun getInstallReferrer(): String? {
-        return client.installReferrer?.installReferrer
-    }
-
-    override fun endConnection() {
-        client.endConnection()
-    }
-}
-
-/**
  * Descriptions of utm parameters comes from
  * https://support.google.com/analytics/answer/1033863
  * - utm_source
@@ -243,19 +223,24 @@ data class UTMParams(
         /**
          * Try and unpack the install referrer response.
          */
-        fun parseUTMParameters(installReferrerResponse: String): UTMParams {
-            val utmParams = mutableMapOf<String, String>()
-            val params = installReferrerResponse.split("&")
-
-            for (param in params) {
-                val keyValue = param.split("=")
+        fun parseInstallReferrer(installReferrerResponse: String): Map<String, String> {
+            val params = mutableMapOf<String, String>()
+            for (param in installReferrerResponse.split("&")) {
+                val keyValue = param.split("=", limit = 2)
                 if (keyValue.size == 2) {
                     val key = keyValue[0]
                     val value = keyValue[1]
-                    utmParams[key] = value
+                    params[key] = value
                 }
             }
+            return params
+        }
 
+        /**
+         * Extract the [UTMParams] from the install referrer response.
+         */
+        fun parseUTMParameters(installReferrerResponse: String): UTMParams {
+            val utmParams = parseInstallReferrer(installReferrerResponse)
             return UTMParams(
                 source = utmParams[UTM_SOURCE] ?: "",
                 medium = utmParams[UTM_MEDIUM] ?: "",

@@ -19,8 +19,7 @@ const mockBandwidthUsage = {
 
 add_task(async function test_paused_content() {
   setupService({
-    isSignedIn: true,
-    isEnrolledAndEntitled: true,
+    isReady: true,
     canEnroll: true,
     proxyPass: {
       status: 200,
@@ -28,13 +27,25 @@ add_task(async function test_paused_content() {
       pass: makePass(),
     },
   });
-  await IPPEnrollAndEntitleManager.refetchEntitlement();
+  await IPPFxaAuthProvider.checkForUpgrade();
+
+  let { promise, resolve } = Promise.withResolvers();
+  let refreshStub = sinon
+    .stub(IPPProxyManager, "refreshUsage")
+    .callsFake(() => promise);
 
   let content = await openPanel({
     paused: true,
     hasUpgraded: false,
     bandwidthUsage: mockBandwidthUsage,
   });
+  resolve();
+  refreshStub.restore();
+
+  await BrowserTestUtils.waitForCondition(
+    () => content.statusBoxEl,
+    "Status box should be shown when paused"
+  );
 
   let statusBox = content.statusBoxEl;
   Assert.ok(statusBox, "Status box should be shown when paused");
@@ -49,6 +60,7 @@ add_task(async function test_paused_content() {
 
   Assert.ok(pausedTitle, "Paused title should be present");
   Assert.ok(pausedDescription, "Paused description should be present");
+  await checkStatusBoxAriaLabel(statusBox);
   Assert.ok(
     upgradeContent,
     "Upgrade content should be present when not upgraded"
@@ -83,8 +95,7 @@ add_task(async function test_paused_content() {
 
 add_task(async function test_paused_content_upgraded() {
   setupService({
-    isSignedIn: true,
-    isEnrolledAndEntitled: true,
+    isReady: true,
     hasUpgraded: true,
     canEnroll: true,
     proxyPass: {
@@ -94,12 +105,23 @@ add_task(async function test_paused_content_upgraded() {
     },
   });
 
+  let { promise, resolve } = Promise.withResolvers();
+  let refreshStub = sinon
+    .stub(IPPProxyManager, "refreshUsage")
+    .callsFake(() => promise);
+
   let content = await openPanel({
-    isSignedOut: false,
     paused: true,
     hasUpgraded: true,
     bandwidthUsage: mockBandwidthUsage,
   });
+  resolve();
+  refreshStub.restore();
+
+  await BrowserTestUtils.waitForCondition(
+    () => content.statusBoxEl,
+    "Status box should be shown when paused"
+  );
 
   let statusBox = content.statusBoxEl;
   Assert.ok(statusBox, "Status box should be shown when paused");
@@ -110,6 +132,7 @@ add_task(async function test_paused_content_upgraded() {
 
   Assert.ok(pausedTitle, "Paused title should be present");
   Assert.ok(pausedDescription, "Paused description should be present");
+  await checkStatusBoxAriaLabel(statusBox);
   Assert.ok(
     !upgradeContent,
     "Upgrade content should not be present when user has upgraded"
@@ -122,11 +145,67 @@ add_task(async function test_paused_content_upgraded() {
 });
 
 /**
+ * Tests that opening the panel while paused re-checks usage, showing the
+ * loading state until the refresh completes and then the paused screen.
+ */
+add_task(async function test_showing_refreshes_usage_when_paused() {
+  setupService({
+    isReady: true,
+    hasUpgraded: true,
+    canEnroll: true,
+    proxyPass: {
+      status: 200,
+      error: undefined,
+      pass: makePass(),
+    },
+  });
+
+  let { promise, resolve } = Promise.withResolvers();
+  let refreshStub = sinon
+    .stub(IPPProxyManager, "refreshUsage")
+    .callsFake(() => promise);
+
+  let content = await openPanel({
+    paused: true,
+    hasUpgraded: true,
+    bandwidthUsage: mockBandwidthUsage,
+  });
+
+  Assert.ok(
+    refreshStub.calledOnce,
+    "Usage should be refreshed when opening the panel while paused"
+  );
+  Assert.ok(
+    content.shadowRoot.querySelector("#enrolling-container"),
+    "Loading state should be shown while usage is refreshing"
+  );
+  Assert.ok(
+    !content.statusBoxEl,
+    "Paused screen should be hidden while usage is refreshing"
+  );
+
+  resolve();
+  refreshStub.restore();
+
+  await BrowserTestUtils.waitForCondition(
+    () => content.statusBoxEl,
+    "Paused screen should be shown once the usage refresh completes"
+  );
+  Assert.ok(
+    !content.shadowRoot.querySelector("#enrolling-container"),
+    "Loading state should be hidden once the usage refresh completes"
+  );
+
+  await setPanelState();
+  await closePanel();
+  cleanupService();
+});
+
+/**
  * Tests the generic error type.
  */
 add_task(async function test_generic_error() {
   let content = await openPanel({
-    isSignedOut: false,
     unauthenticated: false,
     error: ERRORS.GENERIC,
   });
@@ -139,6 +218,7 @@ add_task(async function test_generic_error() {
 
   Assert.ok(errorTitle, "Error title should be present");
   Assert.ok(errorDescription, "Error description should be present");
+  await checkStatusBoxAriaLabel(statusBox);
 
   Assert.equal(
     statusBox.type,
@@ -159,7 +239,6 @@ add_task(async function test_generic_error() {
  */
 add_task(async function test_network_error() {
   let content = await openPanel({
-    isSignedOut: false,
     unauthenticated: false,
     error: ERRORS.NETWORK,
   });
@@ -172,6 +251,7 @@ add_task(async function test_network_error() {
 
   Assert.ok(errorTitle, "Error title should be present");
   Assert.ok(errorDescription, "Error description should be present");
+  await checkStatusBoxAriaLabel(statusBox);
 
   Assert.equal(
     statusBox.type,
@@ -196,7 +276,6 @@ add_task(async function test_network_error() {
  */
 add_task(async function test_catastrophic_error() {
   let content = await openPanel({
-    isSignedOut: false,
     unauthenticated: false,
     error: ERRORS.CATASTROPHIC,
   });
@@ -209,6 +288,7 @@ add_task(async function test_catastrophic_error() {
 
   Assert.ok(errorTitle, "Error title should be present");
   Assert.ok(errorDescription, "Error description should be present");
+  await checkStatusBoxAriaLabel(statusBox);
 
   Assert.equal(
     statusBox.type,

@@ -9,7 +9,6 @@ import androidx.annotation.VisibleForTesting
 import com.adjust.sdk.Adjust
 import com.adjust.sdk.AdjustConfig
 import com.adjust.sdk.AdjustEvent
-import com.adjust.sdk.AdjustThirdPartySharing
 import com.adjust.sdk.Constants.ADJUST_PREINSTALL_SYSTEM_PROPERTY_PATH
 import com.adjust.sdk.LogLevel
 import kotlinx.coroutines.CoroutineDispatcher
@@ -22,7 +21,14 @@ import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.AdjustAttribution
 import org.mozilla.fenix.GleanMetrics.Pings
+import org.mozilla.fenix.components.metrics.AdjustThirdPartySharingController.Companion.AURA_PARTNER_ID
+import org.mozilla.fenix.components.metrics.AdjustThirdPartySharingController.Companion.GOOGLE_PARTNER_ID
+import org.mozilla.fenix.components.metrics.AdjustThirdPartySharingController.Companion.META_PARTNER_ID
+import org.mozilla.fenix.components.metrics.AdjustThirdPartySharingController.Companion.REDDIT_PARTNER_ID
+import org.mozilla.fenix.components.metrics.AdjustThirdPartySharingController.Companion.TIKTOK_PARTNER_ID
+import org.mozilla.fenix.components.metrics.AdjustThirdPartySharingController.Companion.X_TWITTER_PARTNER_ID
 import org.mozilla.fenix.distributions.DistributionAdjustStartupStrategy
+import org.mozilla.fenix.distributions.DistributionIdManager
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.utils.Settings
 
@@ -106,16 +112,23 @@ class AdjustMetricsService(
 
             config.setLogLevel(LogLevel.SUPPRESS)
 
-            if (settings.isUserMetaAttributed) {
-                enableOnlyMetaThirdPartySharing()
-            } else {
-                disableMetaThirdPartySharing()
-            }
+            config.disableFbIdReading()
+            applyThirdPartySharingSettings(
+                distribution = distributionIdManager.getDistribution(),
+                isUserMetaAttributed = settings.isUserMetaAttributed,
+                isUserTikTokAttributed = settings.isUserTikTokAttributed,
+                isUserRedditAttributed = settings.isUserRedditAttributed,
+                isUserXTwitterAttributed = settings.isUserXTwitterAttributed,
+            )
 
             // All configuration have to be done before this.
             Adjust.initSdk(config)
             Adjust.enable()
             logger.info("Adjust SDK enabled")
+
+            // This is a temporary race condition workaround until
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=2016858 is fixed
+            track(Event.GrowthData.ConversionEvent6)
         }
     }
 
@@ -157,8 +170,6 @@ class AdjustMetricsService(
         event is Event.GrowthData || event is Event.FirstWeekPostInstall
 
     companion object {
-        const val META_PARTNER_ID = "34"
-
         const val CONVERSION_EVENT_1 = 1
         const val CONVERSION_EVENT_2 = 2
         const val CONVERSION_EVENT_3 = 3
@@ -202,21 +213,51 @@ class AdjustMetricsService(
             }
         }
 
-        private fun enableOnlyMetaThirdPartySharing() {
-            Adjust.trackThirdPartySharing(
-                AdjustThirdPartySharing(true).apply {
-                    addPartnerSharingSetting("all", "all", false)
-                    addPartnerSharingSetting(META_PARTNER_ID, "all", true)
-                },
-            )
-        }
+        /**
+         * Sets third party sharing settings based on distribution and attribution.
+         */
+        @VisibleForTesting
+        internal fun applyThirdPartySharingSettings(
+            distribution: DistributionIdManager.Distribution,
+            isUserMetaAttributed: Boolean,
+            isUserTikTokAttributed: Boolean,
+            isUserRedditAttributed: Boolean,
+            isUserXTwitterAttributed: Boolean,
+            controller: ThirdPartySharingController = AdjustThirdPartySharingController(),
+        ) {
+            when (distribution) {
+                DistributionIdManager.Distribution.DEFAULT -> {
+                    controller.disableAllThirdPartySharing()
+                    // Listed in priority order. Multiple flags can be true at once, so the order
+                    // is load-bearing. Insert new partners at the position matching their priority.
+                    when {
+                        isUserMetaAttributed ->
+                            controller.enableThirdPartySharingForPartner(META_PARTNER_ID)
+                        isUserTikTokAttributed ->
+                            controller.enableThirdPartySharingForPartner(TIKTOK_PARTNER_ID)
+                        isUserRedditAttributed ->
+                            controller.enableThirdPartySharingForPartner(REDDIT_PARTNER_ID)
+                        isUserXTwitterAttributed ->
+                            controller.enableThirdPartySharingForPartner(X_TWITTER_PARTNER_ID)
+                        else ->
+                            controller.enableThirdPartySharingForPartner(GOOGLE_PARTNER_ID)
+                    }
+                }
 
-        private fun disableMetaThirdPartySharing() {
-            Adjust.trackThirdPartySharing(
-                AdjustThirdPartySharing(true).apply {
-                    addPartnerSharingSetting(META_PARTNER_ID, "all", false)
-                },
-            )
+                DistributionIdManager.Distribution.AURA_001 -> {
+                    controller.enableThirdPartySharingForPartner(AURA_PARTNER_ID)
+                }
+
+                DistributionIdManager.Distribution.VIVO_001,
+                DistributionIdManager.Distribution.DT_001,
+                DistributionIdManager.Distribution.DT_002,
+                DistributionIdManager.Distribution.DT_003,
+                DistributionIdManager.Distribution.XIAOMI_001,
+                    -> {
+                    controller.disableAllThirdPartySharing()
+                }
+                // Do not add an else branch here. All distributions should be handled deliberately.
+            }
         }
 
         @VisibleForTesting
