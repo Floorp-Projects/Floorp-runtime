@@ -1,12 +1,12 @@
 diff --git a/moz.build b/moz.build
-index 4d0f3d6ba9..20fd75bae6 100644
+index bd4e5d2b907..f652eef1cf5 100644
 --- a/moz.build
 +++ b/moz.build
-@@ -163,6 +163,7 @@ DIRS += [
+@@ -173,6 +173,7 @@ DIRS += [
      "python",
      "testing",
      "third_party/python",
-+    "noraneko"
++    "noraneko",
  ]
  
- if not CONFIG["JS_STANDALONE"]:
+ if CONFIG["MOZ_APPSERVICES_IN_TREE"]:
