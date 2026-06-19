@@ -28,9 +28,20 @@ fi
 sudo rm -f "${SWAP_FILE}" || true
 
 # Determine how much space is available (in GiB) on the filesystem that will
-# hold the swap file. df outputs 1K-blocks; convert to GiB.
-AVAIL_KB=$(df -P --output=avail "$(dirname "${SWAP_FILE}")" | tail -n 1 | tr -d ' ')
-AVAIL_GB=$(( AVAIL_KB / 1024 / 1024 ))
+# hold the swap file. Use --output=avail (without -P, which is mutually
+# exclusive with --output on GNU df) and fall back to a portable awk parse of
+# plain `df` if --output is unsupported. df reports 1K-blocks; convert to GiB.
+SWAP_DIR="$(dirname "${SWAP_FILE}")"
+AVAIL_KB=$(df --output=avail "${SWAP_DIR}" 2>/dev/null | tail -n 1 | tr -d ' ')
+if [ -z "${AVAIL_KB}" ] || [ "${AVAIL_KB}" -lt 0 ] 2>/dev/null; then
+  AVAIL_KB=$(df "${SWAP_DIR}" | awk 'NR==2 {print $4}')
+fi
+if ! [ "${AVAIL_KB}" -gt 0 ] 2>/dev/null; then
+  echo "Warning: could not determine free space under ${SWAP_DIR}; defaulting to ${SWAP_MIN_GB}GiB swap" >&2
+  AVAIL_GB=0
+else
+  AVAIL_GB=$(( AVAIL_KB / 1024 / 1024 ))
+fi
 TARGET_GB=$(( (AVAIL_GB * SWAP_FREE_RATIO) / 100 ))
 if [ "${TARGET_GB}" -lt "${SWAP_MIN_GB}" ]; then
   echo "Warning: only ${AVAIL_GB}GiB free under $(dirname "${SWAP_FILE}"); using minimum ${SWAP_MIN_GB}GiB swap" >&2
