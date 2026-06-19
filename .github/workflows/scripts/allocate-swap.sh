@@ -1,4 +1,16 @@
+#!/usr/bin/env bash
 # SPDX-License-Identifier: MPL-2.0
+#
+# Allocate a swap file on the runner to provide additional virtual memory
+# during the build. The size is chosen dynamically based on the free space
+# available on the target filesystem so that a runner with a smaller disk
+# (e.g. some aarch64 images) does not fail with "No space left on device".
+set -uo pipefail
+
+SWAP_FILE="/mnt/swapfile"
+SWAP_MIN_GB=4      # minimum useful swap size
+SWAP_MAX_GB=30     # upper cap (matches the previous fixed size)
+SWAP_FREE_RATIO=90 # use at most 90% of the available space (in percent)
 
 echo "Before:"
 free -h
@@ -7,12 +19,32 @@ df -h
 echo
 echo
 
-sudo swapoff /mnt/swapfile
-sudo rm /mnt/swapfile
-sudo fallocate -l 30G /mnt/swapfile
-sudo chmod 600 /mnt/swapfile
-sudo mkswap /mnt/swapfile
-sudo swapon /mnt/swapfile
+# Release any previously allocated swap file. These commands are expected to
+# fail when no swap file exists yet (first run on a fresh runner), so their
+# failures must not abort the script.
+if sudo swapon --show=NAME --noheadings 2>/dev/null | grep -qx "${SWAP_FILE}"; then
+  sudo swapoff "${SWAP_FILE}" || true
+fi
+sudo rm -f "${SWAP_FILE}" || true
+
+# Determine how much space is available (in GiB) on the filesystem that will
+# hold the swap file. df outputs 1K-blocks; convert to GiB.
+AVAIL_KB=$(df -P --output=avail "$(dirname "${SWAP_FILE}")" | tail -n 1 | tr -d ' ')
+AVAIL_GB=$(( AVAIL_KB / 1024 / 1024 ))
+TARGET_GB=$(( (AVAIL_GB * SWAP_FREE_RATIO) / 100 ))
+if [ "${TARGET_GB}" -lt "${SWAP_MIN_GB}" ]; then
+  echo "Warning: only ${AVAIL_GB}GiB free under $(dirname "${SWAP_FILE}"); using minimum ${SWAP_MIN_GB}GiB swap" >&2
+  TARGET_GB="${SWAP_MIN_GB}"
+fi
+if [ "${TARGET_GB}" -gt "${SWAP_MAX_GB}" ]; then
+  TARGET_GB="${SWAP_MAX_GB}"
+fi
+
+echo "Allocating ${TARGET_GB}GiB swap file at ${SWAP_FILE} (available: ${AVAIL_GB}GiB)"
+sudo fallocate -l "${TARGET_GB}G" "${SWAP_FILE}"
+sudo chmod 600 "${SWAP_FILE}"
+sudo mkswap "${SWAP_FILE}"
+sudo swapon "${SWAP_FILE}"
 
 # APT operations with quiet flags
 sudo apt autoremove -y -qq
