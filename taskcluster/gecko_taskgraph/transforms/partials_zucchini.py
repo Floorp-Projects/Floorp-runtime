@@ -39,6 +39,29 @@ def identify_desired_signing_keys(config):
     return get_signing_type(config=config)
 
 
+def find_enus_partials_zucchini_task(config, build_platform, build_type):
+    """Find the matching enUS partials-zucchini task for an l10n task by
+    iterating kind_dependencies_tasks and filtering on attributes."""
+    matches = [
+        t
+        for t in config.kind_dependencies_tasks.values()
+        if t.kind == "partials-zucchini"
+        and t.attributes.get("build_platform") == build_platform
+        and t.attributes.get("build_type") == build_type
+    ]
+    if not matches:
+        raise Exception(
+            f"No matching partials-zucchini task found for "
+            f"{build_platform}/{build_type}"
+        )
+    if len(matches) > 1:
+        raise Exception(
+            f"Multiple matching partials-zucchini tasks found for "
+            f"{build_platform}/{build_type}: {[t.label for t in matches]}"
+        )
+    return matches[0]
+
+
 @transforms.add
 def make_task_description(config, tasks):
     # If no balrog release history, then don't generate partials
@@ -106,6 +129,19 @@ def make_task_description(config, tasks):
 
         if release_level(config.params) == "staging":
             extra_params.append("--allow-staging-urls")
+
+        if config.kind == "partials-zucchini":
+            extra_params.append("--generate-hashes")
+        elif config.kind == "partials-zucchini-l10n":
+            enus_task = find_enus_partials_zucchini_task(
+                config, build_platform, task["attributes"]["build_type"]
+            )
+            task.setdefault("dependencies", {})[enus_task.label] = enus_task.label
+            cache_fetches = [{"artifact": "hashes.json", "extract": False}]
+            for entry in from_data:
+                cache_fetches.append({"artifact": entry["dest_mar"], "extract": False})
+            task["fetches"][enus_task.label] = cache_fetches
+            extra_params.append("--patch-cache-dir=$MOZ_FETCHES_DIR")
 
         for artifact in dep_task.attributes["release_artifacts"]:
             if artifact.endswith(".complete.mar"):
