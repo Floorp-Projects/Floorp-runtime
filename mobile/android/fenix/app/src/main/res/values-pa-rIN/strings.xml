@@ -1712,8 +1712,6 @@
   <string name="tab_group_color_pink">ਗੁਲਾਬੀ</string>
   <!-- Tab group color: Purple -->
   <string name="tab_group_color_purple">ਵੈਂਗਣੀ</string>
-  <!-- Tab group color: Violet -->
-  <string name="tab_group_color_violet">ਜਾਮਨੀ</string>
   <!-- Tab group color: Blue -->
   <string name="tab_group_color_blue">ਨੀਲਾ</string>
   <!-- Tab group color: Cyan -->
@@ -1973,6 +1971,8 @@
   <string name="webcompat_reporter_clear_reason_content_description">ਚੁਣੇ ਕਾਰਨ ਨੂੰ ਮਿਟਾਓ</string>
   <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
   <string name="webcompat_reporter_description_error">ਘੱਟੋ-ਘੱਟ 10 ਅੱਖਰ ਦਿਓ</string>
+  <!-- The label/title of a mandatory field in the Web Compat Reporter feature for adding additional information. -->
+  <string name="webcompat_reporter_label_mandatory_description">ਮਸਲੇ ਬਾਰੇ ਜਾਂਚ ਕਰਨ ਲਈ ਸਾਡੀ ਮਦਦ ਵਾਸਤੇ ਵੇਰਵੇ ਸਮੇਤ ਸਮੱਸਿਆ ਦੀ ਜਾਣਕਾਰੀ ਦਿਓ</string>
   <!-- The label/title of a field in the Web Compat Reporter feature for explaining a high-level reason why the site is broken. -->
   <string name="webcompat_reporter_label_whats_broken_2">ਕੀ ਖ਼ਰਾਬ ਹੈ?</string>
   <!-- The placeholder text for the dropdown where a user selects a high-level reason why the site is broken. -->
@@ -1981,26 +1981,20 @@
   <string name="webcompat_reporter_choose_reason_error">ਕਾਰਨ ਚੁਣੋ ਜੀ</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_description_2">ਮਸਲੇ ਬਾਰੇ ਜਾਂਚ ਕਰਨ ਲਈ ਸਾਡੀ ਮਦਦ ਵਾਸਤੇ ਵੇਰਵੇ ਸਮੇਤ ਸਮੱਸਿਆ ਦੀ ਜਾਣਕਾਰੀ ਦਿਓ (ਚੋਣਵਾਂ)</string>
-  <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
-  <string name="webcompat_reporter_label_description">ਸਮੱਸਿਆ ਬਾਰੇ ਜਾਣਕਾਰੀ ਦਿਓ (ਚੋਣਵਾਂ)</string>
   <!-- The button text for navigating away from the feature to provide more information on the broken site's bug report. -->
   <string name="webcompat_reporter_add_more_info">ਹੋਰ ਜਾਣਕਾਰੀ ਨੂੰ ਜੋੜੋ</string>
   <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
   <string name="webcompat_reporter_cancel">ਰੱਦ ਕਰੋ</string>
+  <!-- The button text for the send button to submit the provided form data. -->
+  <string name="webcompat_reporter_send_report">ਰਿਪੋਰਟ ਭੇਜੋ</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send">ਭੇਜੋ</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">ਰਿਪੋਰਟ ਭੇਜੀ</string>
   <!-- Placeholder text for the description field to prompt the user on what they should type. -->
   <string name="webcompat_reporter_problem_description_placeholder_text_2">ਕੀ ਹੋਇਆ ਹੈ? ਤੁਸੀ ਕੀ ਹੋਣ ਦੀ ਆਸ ਕਰ ਰਹੇ ਸੀ? ਮਸਲਾ ਮੁੜ ਤਿਆਰ ਕਰਨ ਲਈ ਪੜਾਅ ਦਿਓ।</string>
-  <!-- Placeholder text for the description field to prompt the user on what they should type. -->
-  <string name="webcompat_reporter_problem_description_placeholder_text">ਕੀ ਵਾਪਰਿਆ ਸੀ? ਕੀ ਹੋਣਾ ਚਾਹੀਦਾ ਸੀ?</string>
   <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
   <string name="webcompat_reporter_etp_checkbox_text_2">ਟਰੈਕਿੰਗ ਸੁਰੱਖਿਆ ਵਲੋਂ ਪਾਬੰਦੀ ਲਈਆਂ ਚੀਜ਼ਾਂ ਦੀ ਸੂਚੀ ਭੇਜੋ</string>
-  <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
-  <string name="webcompat_reporter_etp_checkbox_text">ਟਰੈਕਿੰਗ ਸੁਰੱਖਿਆ ਵਲੋਂ URL ਨੂੰ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ</string>
-  <!-- Description text for the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. It informs the user when checked, the report will include the list of URLs that were blocked by Enhanced Tracking Protection on the current page. -->
-  <string name="webcompat_reporter_etp_checkbox_description">ਵਧਾਈ ਟਰੈਕਿੰਗ ਸੁਰੱਖਿਆ ਟਰੈਕਿੰਗ ਅਤੇ ਸਕ੍ਰਿਪਟਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾ ਸਕਦੀ ਹੈ, ਜੋ ਕਿ ਵੈੱਬਸਾਈਟਾਂ ਨੂੰ ਠੀਕ ਤਰ੍ਹਾਂ ਕੰਮ ਕਰਨ ਲਈ ਚਾਹੀਦੀਆਂ ਹੋ ਸਕਦੀਆਂ ਹਨ।</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">ਰਿਪੋਰਟ ਦੀ ਝਲਕ</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -2605,7 +2599,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">ਸੁਰੱਖਿਆ ਸੈਟਿੰਗਾਂ</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">ਟਰੈਕ ਹੋਣ ਤੋਂ ਵਾਧਾ ਕੀਤੀ ਸੁਰੱਖਿਆ</string>
   <!-- Preference summary for enhanced tracking protection settings on/off switch -->
   <string name="preference_enhanced_tracking_protection_summary">ਨਵੀਂ ਆਈ ਕੁੱਲ ਕੂਕੀ ਸੁਰੱਖਿਆ, ਅੰਤਰ-ਸਾਈਟ ਟਰੈਕਰਾਂ ਖ਼ਿਲਾਫ਼ ਸਾਡੀ ਸਭ ਤੋਂ ਮਜ਼ਬੂਤ ਢਾਲ ਹੈ।</string>
@@ -2621,15 +2619,6 @@
     -->
     <item quantity="one">%d ਟਰੈਕਰ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਈ</item>
     <item quantity="other">%d ਟਰੈਕਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਈ</item>
-  </plurals>
-  <plurals name="trackers_blocked_count">
-    <!--
-      Trackers blocked card on homepage
-
-      Text shown on the trackers blocked card. %d is the number of trackers blocked.
-    -->
-    <item quantity="one">%d ਟਰੈਕਰ ਉੱਤੇ ਪਾਬੰਦੀ ਲਗਾਈ</item>
-    <item quantity="other">%d ਟਰੈਕਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਗਾਈ</item>
   </plurals>
   <!-- Text shown on the trackers blocked card when no trackers have been blocked yet -->
   <string name="trackers_blocked_empty">ਤੁਸੀਂ ਸੁਰੱਖਿਅਤ ਹੋ</string>
@@ -3285,8 +3274,6 @@
   <string name="addresses_save_button">ਸੰਭਾਲੋ</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">ਰੱਦ ਕਰੋ</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">ਸਿਰਨਾਵੇਂ ਨੂੰ ਹਟਾਓ</string>
   <!-- The title for the "Delete address" confirmation dialog -->
   <string name="addressess_confirm_dialog_message_2">ਇਹ ਸਿਰਨਾਵੇਂ ਨੂੰ ਹਟਾਉਣਾ ਹੈ?</string>
   <!-- The text for the positive button on "Delete address" dialog -->
@@ -3841,8 +3828,6 @@
     and there are no trackers blocked.
   -->
   <string name="protection_panel_banner_protected_no_blocked_trackers_description">ਤੁਸੀਂ ਸੁਰੱਖਿਅਤ ਹੋ।</string>
-  <!-- Description text for the protection panel banner when tracking protection is enabled. -->
-  <string name="protection_panel_banner_protected_description">ਤੁਸੀਂ ਸੁਰੱਖਿਅਤ ਹੋ। ਜੇ ਸਾਨੂੰ ਕੁਝ ਲੱਭਿਆ ਤਾਂ ਅਸੀਂ ਤੁਹਾਨੂੰ ਦੱਸਾਂਗੇ।</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">ਵਾਧਾ ਕੀਤੀ ਟਰੈਕਿੰਗ ਸੁਰੱਖਿਆ</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
@@ -3858,8 +3843,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="protection_panel_num_trackers_blocked">ਪਾਬੰਦੀ ਲਾਏ ਟਰੈਕਰ: %d</string>
-  <!-- Text for when no trackers have been blocked. -->
-  <string name="protection_panel_no_trackers_blocked">ਕੋਈ ਟਰੈਕਰ ਨਹੀਂ ਲੱਭੇ</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">ਟਰੈਕਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਨਹੀਂ ਲਾਈ ਹੈ</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -3922,17 +3905,6 @@
     <item quantity="one">ਇਸ ਹਫ਼ਤੇ %1$d ਟਰੈਕਰ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਈ</item>
     <item quantity="other">ਇਸ ਹਫ਼ਤੇ %1$d ਟਰੈਕਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਈ</item>
   </plurals>
-  <!--
-    Text for displaying the total number of trackers blocked in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_total_num_trackers_blocked">ਪਾਬੰਦੀ ਲਾਏ ਟਰੈਕਰ: %d</string>
-  <!--
-    Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
-    %s is a placeholder for the name of the tracker category.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4085,17 +4057,17 @@
   -->
   <string name="microsurvey_uninstall_survey_title">ਤੁਹਾਡੇ ਸੁਝਾਅ ਸਾਡੇ ਲਈ ਅਸਰ ਰੱਖਦੇ ਹਨ। ਤੁਸੀਂ ਅਣ-ਇੰਸਟਾਲ ਕਿਉਂ ਕਰ ਰਹੇ ਹੋ?</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_1">ਵੈੱਬ-ਸਫ਼ੇ ਨਾਲ ਮਸਲੇ</string>
+  <string name="uninstall_survey_option_1_v2">ਇਹ ਹੌਲੀ ਜਾਂ ਗ਼ੈਰ-ਭਰੋਸੇਯੋਗ</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_2">ਵੀਡੀਓ ਅਤੇ ਡਾਊਨੋਲਡ ਮਸਲੇ</string>
+  <string name="uninstall_survey_option_2_v2">ਵੈੱਬਸਾਈਟ ਠੀਕ ਤਰ੍ਹਾਂ ਕੰਮ ਨਹੀਂ ਕਰਦੀ ਹੈ</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_3">ਕਾਰਗੁਜ਼ਾਰੀ ਸੰਬੰਧੀ ਮਸਲੇ</string>
+  <string name="uninstall_survey_option_3_v2">ਮੈਨੂੰ ਚਾਹੀਦੇ ਫ਼ੀਚਰ ਨਹੀਂ ਹਨ</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_4">ਫੰਕਸ਼ਨ ਅਤੇ ਡਿਜ਼ਾਇਨ ਮਸਲੇ</string>
+  <string name="uninstall_survey_option_4_v2">ਵੀਡੀਓ, ਡਾਊਨਲੋਡ ਜਾਂ ਮੀਡੀਆ ਕੰਮ ਨਹੀਂ ਕਰਦਾ ਹੈ</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_5">ਪਰਦੇਦਾਰੀ ਨਾਲ ਸੰਬੰਧਿਤ ਮਸਲੇ</string>
+  <string name="uninstall_survey_option_5_v2">ਵਰਤਣਾ ਔਖਾ ਹੈ ਜਾਂ ਠੀਕ ਤਰ੍ਹਾਂ ਡਿਜ਼ਾਇਨ ਨਹੀਂ ਕੀਤਾ ਹੈ</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_6">ਭੁਗਤਾਨ ਅਤੇ ਮੈਂਬਰੀ ਮਸਲੇ</string>
+  <string name="uninstall_survey_option_6_v2">ਪਰਦੇਦਾਰੀ ਜਾਂ ਸੁਰੱਖਿਆ ਫ਼ਿਕਰ</string>
   <!-- Button label shown at the bottom of the uninstall survey -->
   <string name="uninstall_survey_button_label">ਸੁਝਾਅ ਭੇਜੋ ਅਤੇ ਅਣ-ਇੰਸਟਾਲ ਕਰੋ</string>
   <!--
@@ -4689,6 +4661,22 @@
   <string name="context_menu_open_image_with_google_lens">Google Lens ਨਾਲ ਖੋਜੋ</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
   <string name="lens_camera_permission_denied">ਇਜਾਜ਼ਤ ਤੋਂ ਇਨਕਾਰ ਕੀਤਾ</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the photo they capture will be sent to Google Lens for a visual search.
+  -->
+  <string name="lens_camera_title_lens">Google Lens</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the camera is being used to scan a QR code.
+  -->
+  <string name="lens_camera_title_qr">QR ਕੋਡ</string>
+  <!-- Title for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_title">Google Lens ਖੋਜ ਨੂੰ ਸਮਰੱਥ ਕਰੋ</string>
+  <!-- Description for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_description">ਦਿੱਖ ਖੋਜ ਲਈ Google ਨੂੰ ਚਿੱਤਰ ਅਤੇ ਫ਼ੋਟੋ ਭੇਜਦਾ ਹੈ।</string>
+  <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
+  <string name="preferences_google_lens_availability_caption">ਜਦੋਂ ਉੱਤੇ Google ਸਮਰੱਥ ਹੁੰਦਾ ਹੈ ਤਾਂ ਹੀ ਮੌਜੂਦ ਹੁੰਦਾ ਹੈ ਅਤੇ ਬਰਾਊਜ਼ ਕਰਨ ਦੇ ਦੌਰਾਨ ਤੁਹਾਡਾ ਸਰਗਰਮ ਖੋਜ ਇੰਜਣ ਹੁੰਦਾ ਹੈ।</string>
   <!-- Title for the Google Lens AI feature toggle -->
   <string name="ai_controls_google_lens_title">Google Lens</string>
   <!-- Description for the Google Lens AI feature toggle -->

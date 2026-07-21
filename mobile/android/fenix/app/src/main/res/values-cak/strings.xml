@@ -1254,7 +1254,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">Runuk\'ulem Ojqanem</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">Utzirisan Chajinïk chuwäch Ojqanem</string>
   <!-- Description of enhanced tracking protection. %s is the name of the app (for example "Firefox"). -->
   <string name="preference_enhanced_tracking_protection_explanation_2">%s yaruchajij chi kiwäch relik ojqanela\', ri nikoqaj ri nab\'än pa k\'amab\'ey.</string>
@@ -1557,8 +1561,6 @@
   <string name="addresses_save_button">Tiyak</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">Tiq\'at</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">Keyuj ochochib\'äl</string>
   <!-- The text for the positive button on "Delete address" dialog -->
   <string name="addressess_confirm_dialog_ok_button">Tiyuj</string>
   <!-- The text for the negative button on "Delete address" dialog -->

@@ -149,6 +149,8 @@
   <string name="home_screen_shortcut_open_new_private_tab_2">ახალი პირადი ჩანართი</string>
   <!-- Shortcut action to open Passwords screen -->
   <string name="home_screen_shortcut_passwords">პაროლები</string>
+  <!-- Shortcut action to open uninstall survey -->
+  <string name="home_screen_shortcut_uninstall_survey">ამოიშალოს, რატომ?</string>
   <!--
     Recent Tabs
 
@@ -663,9 +665,13 @@
   <!-- Marketing onboarding primary button text. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_marketing_primary_button_text" tools:ignore="BrandUsage,UnusedResources">დაეხმარეთ Firefox-ს</string>
   <!-- Marketing onboarding primary button text. -->
+  <string name="nova_onboarding_marketing_primary_button_text_3">დიახ</string>
+  <!-- Marketing onboarding primary button text. -->
   <string name="nova_onboarding_marketing_primary_button_text_2">თანხმობა და გაგრძელება</string>
   <!-- Marketing onboarding secondary button text. -->
   <string name="nova_onboarding_marketing_secondary_button_text" tools:ignore="UnusedResources">არა, გმადლობთ</string>
+  <!-- Marketing onboarding secondary button text. -->
+  <string name="nova_onboarding_marketing_secondary_button_text_2">არა</string>
   <!-- Notifications onboarding title. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">შეტყობინებები დაგეხმარებათ, მეტად უსაფრთხოდ გამოიყენოთ Firefox</string>
   <!-- Notifications onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
@@ -1535,6 +1541,8 @@
   <string name="add_tab">ჩანართის დამატება</string>
   <!-- Content description (not visible, for screen readers etc.): Add tab button. Adds a news tab when pressed -->
   <string name="add_private_tab">პირადი ჩანართის დამატება</string>
+  <!-- Content description (not visible, for screen readers etc.): Create tab group button. Opens the create tab group sheet when pressed -->
+  <string name="create_tab_group_content_description">ჩანართების ჯგუფის შექმნა</string>
   <!-- Text for the tab search bar placeholder -->
   <string name="tab_manager_search_bar_placeholder">ძიება თქვენს ჩანართებში</string>
   <!-- Text shown in the menu to view recently closed tabs -->
@@ -1706,8 +1714,6 @@
   <string name="tab_group_color_pink">ვარდისფერი</string>
   <!-- Tab group color: Purple -->
   <string name="tab_group_color_purple">მეწამული</string>
-  <!-- Tab group color: Violet -->
-  <string name="tab_group_color_violet">იისფერი</string>
   <!-- Tab group color: Blue -->
   <string name="tab_group_color_blue">ლურჯი</string>
   <!-- Tab group color: Cyan -->
@@ -1965,6 +1971,10 @@
   <string name="webcompat_reporter_label_whats_broken_3">რა არ მუშაობს?</string>
   <!-- Content description for the icon button that clears the selected broken site reason in the WebCompat Reporter. -->
   <string name="webcompat_reporter_clear_reason_content_description">შერჩეული მიზეზის გასუფთავება</string>
+  <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
+  <string name="webcompat_reporter_description_error">უნდა შედგებოდეს არანაკლებ 10 ასონიშნისგან</string>
+  <!-- The label/title of a mandatory field in the Web Compat Reporter feature for adding additional information. -->
+  <string name="webcompat_reporter_label_mandatory_description">აღწერეთ ხარვეზი დაწვრილებით, რაც დაგვეხმარება საკითხის გამოკვლევაში</string>
   <!-- The label/title of a field in the Web Compat Reporter feature for explaining a high-level reason why the site is broken. -->
   <string name="webcompat_reporter_label_whats_broken_2">რა დაზიანდა?</string>
   <!-- The placeholder text for the dropdown where a user selects a high-level reason why the site is broken. -->
@@ -1973,26 +1983,20 @@
   <string name="webcompat_reporter_choose_reason_error">გთხოვთ მიუთითოთ მიზეზი</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_description_2">აღწერეთ ხარვეზი დაწვრილებით, რაც დაგვეხმარება საკითხის გამოკვლევაში (არასავალდებულო)</string>
-  <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
-  <string name="webcompat_reporter_label_description">აღწერეთ ხარვეზი (არასავალდებულო)</string>
   <!-- The button text for navigating away from the feature to provide more information on the broken site's bug report. -->
   <string name="webcompat_reporter_add_more_info">დაწვრილებითი მონაცემების დართვა</string>
   <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
   <string name="webcompat_reporter_cancel">გაუქმება</string>
+  <!-- The button text for the send button to submit the provided form data. -->
+  <string name="webcompat_reporter_send_report">მოხსენების გაგზავნა</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send">გაგზავნა</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">მოხსენება გაიგზავნა</string>
   <!-- Placeholder text for the description field to prompt the user on what they should type. -->
   <string name="webcompat_reporter_problem_description_placeholder_text_2">რა მოხდა? და რა შედეგს ელოდით? გთხოვთ, მიუთითოთ ხარვეზის გამომწვევი ნაბიჯები, რომ ჩვენც შევძლოთ გამეორება შესამოწმებლად.</string>
-  <!-- Placeholder text for the description field to prompt the user on what they should type. -->
-  <string name="webcompat_reporter_problem_description_placeholder_text">რა მოხდა? რა უნდა მომხდარიყო?</string>
   <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
   <string name="webcompat_reporter_etp_checkbox_text_2">თვალთვალისგან დაცვისას შეზღუდულთა სიის გადაგზავნა</string>
-  <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
-  <string name="webcompat_reporter_etp_checkbox_text">თვალთვალისგან დაცვისას შეზღუდული ბმულების გადაგზავნა</string>
-  <!-- Description text for the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. It informs the user when checked, the report will include the list of URLs that were blocked by Enhanced Tracking Protection on the current page. -->
-  <string name="webcompat_reporter_etp_checkbox_description">თვალთვალისგან გაძლიერებულმა დაცვამ ზოგიერთ საიტზე შეიძლება შეზღუდოს გამართულად მუშაობისთვის საჭირო მეთვალყურეები და სკრიპტები.</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">მოხსენების შეთვალიერება</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -2447,6 +2451,8 @@
   <string name="preferences_take_survey">კითხვარის შევსება</string>
   <!-- Preference for not taking the short survey. -->
   <string name="preferences_not_take_survey">არა, გმადლობთ</string>
+  <!-- Error message shown in a Toast when the system fails to trigger the device uninstallation prompt. -->
+  <string name="uninstall_survey_error_failed">ვერ იხსნება სისტემის ამოშლის არე, გთხოვთ პირდაპირ გამოიყენოთ სისტემიდან ამოშლის შესაძლებლობა.</string>
   <!--
     Snackbar
 
@@ -2595,7 +2601,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">დაცვის პარამეტრები</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">თვალთვალისგან გაძლიერებული დაცვა</string>
   <!-- Preference summary for enhanced tracking protection settings on/off switch -->
   <string name="preference_enhanced_tracking_protection_summary">ახლა უკვე ახლავს ფუნთუშებისგან ყოველმხრივი დაცვაც, ჩვენი არნახულად მძლავრი საშუალება საიტთაშორისი მეთვალყურეების წინააღმდეგ.</string>
@@ -2604,15 +2614,6 @@
   <!-- Text displayed that links to website about enhanced tracking protection -->
   <string name="preference_enhanced_tracking_protection_explanation_learn_more">ვრცლად</string>
   <plurals name="trackers_blocked_count_2">
-    <!--
-      Trackers blocked card on homepage
-
-      Text shown on the trackers blocked card. %d is the number of trackers blocked.
-    -->
-    <item quantity="one">%d მეთვალყურე შეიზღუდა</item>
-    <item quantity="other">%d მეთვალყურე შეიზღუდა</item>
-  </plurals>
-  <plurals name="trackers_blocked_count">
     <!--
       Trackers blocked card on homepage
 
@@ -3275,8 +3276,6 @@
   <string name="addresses_save_button">შენახვა</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">გაუქმება</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">მისამართის წაშლა</string>
   <!-- The title for the "Delete address" confirmation dialog -->
   <string name="addressess_confirm_dialog_message_2">წაიშალოს მისამართი?</string>
   <!-- The text for the positive button on "Delete address" dialog -->
@@ -3831,8 +3830,6 @@
     and there are no trackers blocked.
   -->
   <string name="protection_panel_banner_protected_no_blocked_trackers_description">დაცული ხართ.</string>
-  <!-- Description text for the protection panel banner when tracking protection is enabled. -->
-  <string name="protection_panel_banner_protected_description">დაცული ხართ. თუ რამეს შევამჩნევთ, გაცნობებთ.</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">თვალთვალისგან გაძლიერებული დაცვა</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
@@ -3848,8 +3845,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="protection_panel_num_trackers_blocked">შეზღუდული მეთვალყურე: %d</string>
-  <!-- Text for when no trackers have been blocked. -->
-  <string name="protection_panel_no_trackers_blocked">მეთვალყურეები არაა ნაპოვნი</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">მეთვალყურეები არ იზღუდება</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -3913,17 +3908,6 @@
     <item quantity="other">%1$d შეზღუდული მეთვალყურე ამ კვირაში</item>
   </plurals>
   <!--
-    Text for displaying the total number of trackers blocked in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_total_num_trackers_blocked">შეზღუდული მეთვალყურე: %d</string>
-  <!--
-    Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
-    %s is a placeholder for the name of the tracker category.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
-  <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
   -->
@@ -3943,6 +3927,8 @@
     %s is a placeholder for the name of the certificate authority that issued the certificate.
   -->
   <string name="connection_security_panel_verified_by">დამმოწმებელია %s</string>
+  <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the protections dashboard to the bottom of the screen and close it. -->
+  <string name="tracker_protections_dashboard_close_handlebar_content_description">მაჩვენებლების დახურვა</string>
   <!--
     Text for the connection security panel when the site uses a QWAC.
     %s is a placeholder for the organization for which the certificate was issued.
@@ -4066,6 +4052,26 @@
   <string name="microsurvey_sync_title" tools:ignore="BrandUsage,UnusedResources">რამდენად კმაყოფილი ხართ Firefox-ში სინქრონიზაციის შესაძლებლობით?</string>
   <!-- Text shown in the survey title for 'describe your experience so far' microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_describe_your_experience_title" tools:ignore="BrandUsage,UnusedResources">დაგვეხმარეთ, გავაუმჯობესოთ Firefox. როგორ აღწერდით თქვენს დამოკიდებულებას?</string>
+  <!--
+    Uninstall Survey
+
+    Title text for the uninstall survey dialog, asking the user for the reason they are removing the app
+  -->
+  <string name="microsurvey_uninstall_survey_title">თქვენი გამოხმაურება მნიშვნელოვანია. რატომ გსურთ ამოშლა?</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_1_v2">ნელი ან არასაიმედოა</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_2_v2">საიტებს გაუმართავად აჩვენებს</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_3_v2">აკლია საჭირო შესაძლებლობები</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_4_v2">ვიდეოები, ჩამოტვირთვები ან ფაილები ვერ იხსნება</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_5_v2">ძნელად გამოსაყენებელი ან უხარისხოდ აწყობილია</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_6_v2">პირადულობა და უსაფრთხოება დაუცველია</string>
+  <!-- Button label shown at the bottom of the uninstall survey -->
+  <string name="uninstall_survey_button_label">გამოხმაურების გაგზავნა და ამოშლა</string>
   <!--
     Accessibility
 
@@ -4657,6 +4663,22 @@
   <string name="context_menu_open_image_with_google_lens">Google Lens ძიებისთვის</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
   <string name="lens_camera_permission_denied">ნებართვა უარყოფილია</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the photo they capture will be sent to Google Lens for a visual search.
+  -->
+  <string name="lens_camera_title_lens">Google Lens</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the camera is being used to scan a QR code.
+  -->
+  <string name="lens_camera_title_qr">QR-კოდი</string>
+  <!-- Title for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_title">ჩაირთოს საძიებოდ Google Lens</string>
+  <!-- Description for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_description">გაგზავნილ სურათებს Google დაამუშავებს მსგავსებით მოსაძიებლად.</string>
+  <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
+  <string name="preferences_google_lens_availability_caption">ხელმისაწვდომია მხოლოდ მაშინ, როცა Google ჩართულია ზემოთ და თქვენი მოქმედი საძიებოა გვერდების თვალიერებისას.</string>
   <!-- Title for the Google Lens AI feature toggle -->
   <string name="ai_controls_google_lens_title">Google Lens</string>
   <!-- Description for the Google Lens AI feature toggle -->
@@ -4703,6 +4725,8 @@
   <string name="firefox_labs_feature_enable_dialog_message">ამ შესაძლებლობის ჩასართავად კვლავ გაუშვით %s.</string>
   <!-- The description text that is displayed in the confirmation dialog on the Firefox Labs screen for toggling "off" experimental features. %s is the name of the app (for example "Firefox Nightly") -->
   <string name="firefox_labs_feature_disable_dialog_message">ამ შესაძლებლობის გამოსართავად კვლავ გაუშვით %s.</string>
+  <!-- Helper text shown beneath a Firefox Labs item when it is blocked from being turned on. -->
+  <string name="firefox_labs_feature_conflict">გამოსაცდელი შესაძლებლობა მიუწვდომელია.</string>
   <!-- Text displayed on the Firefox Labs screen when there are no Labs experimental features present. -->
   <string name="firefox_labs_no_labs_available_description">საცდელი შესაძლებლობები ამჟამად არაა</string>
 </resources>

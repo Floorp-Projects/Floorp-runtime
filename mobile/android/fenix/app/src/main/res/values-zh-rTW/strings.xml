@@ -31,6 +31,8 @@
   <string name="history_search_hint">搜尋紀錄</string>
   <!-- Placeholder text shown in search bar when using bookmarks search -->
   <string name="bookmark_search_hint">搜尋書籤</string>
+  <!-- Content description for the toolbar back button while searching bookmarks -->
+  <string name="bookmark_close_search_description">返回並結束搜尋</string>
   <!-- Placeholder text shown in search bar when using tabs search -->
   <string name="tab_search_hint">搜尋分頁</string>
   <!-- Placeholder text shown in the search bar when using application search engines -->
@@ -1540,6 +1542,8 @@
   <string name="add_tab">新增分頁</string>
   <!-- Content description (not visible, for screen readers etc.): Add tab button. Adds a news tab when pressed -->
   <string name="add_private_tab">開新隱私瀏覽分頁</string>
+  <!-- Content description (not visible, for screen readers etc.): Create tab group button. Opens the create tab group sheet when pressed -->
+  <string name="create_tab_group_content_description">建立分頁群組</string>
   <!-- Text for the tab search bar placeholder -->
   <string name="tab_manager_search_bar_placeholder">搜尋您的分頁</string>
   <!-- Text shown in the menu to view recently closed tabs -->
@@ -1707,8 +1711,6 @@
   <string name="tab_group_color_pink">粉紅色</string>
   <!-- Tab group color: Purple -->
   <string name="tab_group_color_purple">紫色</string>
-  <!-- Tab group color: Violet -->
-  <string name="tab_group_color_violet">紫羅蘭色</string>
   <!-- Tab group color: Blue -->
   <string name="tab_group_color_blue">藍色</string>
   <!-- Tab group color: Cyan -->
@@ -1968,6 +1970,8 @@
   <string name="webcompat_reporter_clear_reason_content_description">清除選擇的原因</string>
   <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
   <string name="webcompat_reporter_description_error">請輸入至少 10 個字元</string>
+  <!-- The label/title of a mandatory field in the Web Compat Reporter feature for adding additional information. -->
+  <string name="webcompat_reporter_label_mandatory_description">請詳細描述問題，幫助我們調查問題</string>
   <!-- The label/title of a field in the Web Compat Reporter feature for explaining a high-level reason why the site is broken. -->
   <string name="webcompat_reporter_label_whats_broken_2">哪個部分故障了？</string>
   <!-- The placeholder text for the dropdown where a user selects a high-level reason why the site is broken. -->
@@ -1976,26 +1980,20 @@
   <string name="webcompat_reporter_choose_reason_error">請選擇原因</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_description_2">請詳細描述問題，幫助我們調查（選填）</string>
-  <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
-  <string name="webcompat_reporter_label_description">請描述問題（選填）</string>
   <!-- The button text for navigating away from the feature to provide more information on the broken site's bug report. -->
   <string name="webcompat_reporter_add_more_info">加入更多資訊</string>
   <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
   <string name="webcompat_reporter_cancel">取消</string>
+  <!-- The button text for the send button to submit the provided form data. -->
+  <string name="webcompat_reporter_send_report">傳送報告</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send">傳送</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">已送出報告</string>
   <!-- Placeholder text for the description field to prompt the user on what they should type. -->
   <string name="webcompat_reporter_problem_description_placeholder_text_2">發生了什麼事？您認為應該發生什麼？請提供重現問題的步驟。</string>
-  <!-- Placeholder text for the description field to prompt the user on what they should type. -->
-  <string name="webcompat_reporter_problem_description_placeholder_text">應該發生什麼事，卻又實際發生什麼事？</string>
   <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
   <string name="webcompat_reporter_etp_checkbox_text_2">傳送被追蹤保護功能封鎖的項目清單</string>
-  <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
-  <string name="webcompat_reporter_etp_checkbox_text">傳送被追蹤保護功能封鎖的網址</string>
-  <!-- Description text for the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. It informs the user when checked, the report will include the list of URLs that were blocked by Enhanced Tracking Protection on the current page. -->
-  <string name="webcompat_reporter_etp_checkbox_description">「加強型追蹤保護」功能可能會封鎖某些網站正常運作所必需的追蹤器與指令碼。</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">預覽回報內容</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -2193,6 +2191,10 @@
   <string name="bookmark_select_folder_new_folder_button_title">新增資料夾</string>
   <!-- Bookmark snackbar message for moving a single item. %1$s is the title of the item being moved and %2$s is the new parent folder of the bookmark -->
   <string name="bookmark_moved_single_item">已將 %1$s 移動至 %2$s</string>
+  <!-- Text for bookmark search page when there are no results. -->
+  <string name="bookmark_no_search_results">找不到符合的項目。</string>
+  <!-- Additional text for bookmark search page when there are no results. -->
+  <string name="bookmark_no_search_results_additional_text">再搜尋一次！</string>
   <!--
     Site Permissions
 
@@ -2600,7 +2602,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">保護設定</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">加強型追蹤保護</string>
   <!-- Preference summary for enhanced tracking protection settings on/off switch -->
   <string name="preference_enhanced_tracking_protection_summary">現在提供 Total Cookie Protection 功能，這是我們針對跨網站追蹤器迄今最強大的屏障。</string>
@@ -2609,14 +2615,6 @@
   <!-- Text displayed that links to website about enhanced tracking protection -->
   <string name="preference_enhanced_tracking_protection_explanation_learn_more">了解更多</string>
   <plurals name="trackers_blocked_count_2">
-    <!--
-      Trackers blocked card on homepage
-
-      Text shown on the trackers blocked card. %d is the number of trackers blocked.
-    -->
-    <item quantity="other">已封鎖 %d 組追蹤器</item>
-  </plurals>
-  <plurals name="trackers_blocked_count">
     <!--
       Trackers blocked card on homepage
 
@@ -3126,6 +3124,30 @@
   <string name="ip_protection_data_limit_reached_snackbar">已使用 %1$d GB VPN 流量。將於下個月重設存取權限。</string>
   <!-- Snackbar (in-app pop-up notification) action button text that takes the user to the VPN settings screen. -->
   <string name="ip_protection_data_limit_reached_snackbar_action">設定</string>
+  <!-- Description shown on the browser VPN settings screen prompting the user to turn the VPN on. -->
+  <string name="ip_protection_settings_description" tools:ignore="UnusedResources">開啟 VPN，讓您的上網過程更有隱私、更難被追蹤。</string>
+  <!-- Title shown on the browser VPN settings screen for location selection section. -->
+  <string name="ip_protection_location_title" tools:ignore="UnusedResources">位置</string>
+  <!-- Label for the Recommended server location option which is automatically selected by the browser. -->
+  <string name="ip_protection_recommended_location" tools:ignore="UnusedResources">推薦</string>
+  <!-- Headline for the card that promotes the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_headline" tools:ignore="UnusedResources,BrandUsage">使用 Mozilla VPN 獲得更多保護</string>
+  <!-- Body for the card that promotes the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_body" tools:ignore="UnusedResources">超過 300 個位置任選，並可於最多 5 台裝置保護您的所有應用程式。</string>
+  <!-- Label for the button that takes the user to get the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_button" tools:ignore="UnusedResources,BrandUsage">下載 Mozilla VPN</string>
+  <!-- Title for the browser VPN location picker screen. -->
+  <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">選擇 VPN 連線位置</string>
+  <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
+  <string name="ip_protection_location_fastest_description" tools:ignore="UnusedResources, BrandUsage">Firefox 會自動尋找最快位置</string>
+  <!-- Error message shown when the selected browser VPN location is unavailable. -->
+  <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">無法使用此位置，請改選其他位置。</string>
+  <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
+  <string name="ip_protection_location_unavailable_recommended_snackbar" tools:ignore="UnusedResources">選擇的 VPN 連線位置無法使用，已改連線至建議位置。</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_location_unavailable_title" tools:ignore="UnusedResources">無法使用先前的連線位置</string>
+  <!-- Description for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_location_unavailable_recommended_description" tools:ignore="UnusedResources">已連線到建議位置。</string>
   <!--
     Autofill
 
@@ -3278,8 +3300,6 @@
   <string name="addresses_save_button">儲存</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">取消</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">刪除地址</string>
   <!-- The title for the "Delete address" confirmation dialog -->
   <string name="addressess_confirm_dialog_message_2">要刪除這筆地址嗎？</string>
   <!-- The text for the positive button on "Delete address" dialog -->
@@ -3833,8 +3853,6 @@
     and there are no trackers blocked.
   -->
   <string name="protection_panel_banner_protected_no_blocked_trackers_description">讓我們保護您。</string>
-  <!-- Description text for the protection panel banner when tracking protection is enabled. -->
-  <string name="protection_panel_banner_protected_description">您已受到保護，若我們發現某些不安全的地方會再通知您。</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">加強型追蹤保護</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
@@ -3850,8 +3868,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="protection_panel_num_trackers_blocked">追蹤器封鎖數量：%d</string>
-  <!-- Text for when no trackers have been blocked. -->
-  <string name="protection_panel_no_trackers_blocked">找不到追蹤器</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">不會封鎖追蹤器</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -3907,17 +3923,6 @@
     -->
     <item quantity="other">本週已封鎖 %1$d 組追蹤器</item>
   </plurals>
-  <!--
-    Text for displaying the total number of trackers blocked in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_total_num_trackers_blocked">追蹤器封鎖數量：%d</string>
-  <!--
-    Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
-    %s is a placeholder for the name of the tracker category.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s：%d 組</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4070,17 +4075,17 @@
   -->
   <string name="microsurvey_uninstall_survey_title">您的意見對我們很重要。請讓我們知道移除原因？</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_1">網頁問題</string>
+  <string name="uninstall_survey_option_1_v2">網站速度很慢或不穩定</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_2">影片或檔案下載問題</string>
+  <string name="uninstall_survey_option_2_v2">網站無法正常運作</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_3">效能問題</string>
+  <string name="uninstall_survey_option_3_v2">缺少我需要的功能</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_4">功能或設計問題</string>
+  <string name="uninstall_survey_option_4_v2">無法影片、下載檔案或播放媒體內容</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_5">與隱私權相關的問題</string>
+  <string name="uninstall_survey_option_5_v2">很難使用，或設計不良</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_6">付款與訂閱問題</string>
+  <string name="uninstall_survey_option_6_v2">有隱私權或安全性疑慮</string>
   <!-- Button label shown at the bottom of the uninstall survey -->
   <string name="uninstall_survey_button_label">送出意見回饋並移除</string>
   <!--
@@ -4674,6 +4679,22 @@
   <string name="context_menu_open_image_with_google_lens">使用 Google 智慧鏡頭搜尋</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
   <string name="lens_camera_permission_denied">存取被拒</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the photo they capture will be sent to Google Lens for a visual search.
+  -->
+  <string name="lens_camera_title_lens">Google 智慧鏡頭</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the camera is being used to scan a QR code.
+  -->
+  <string name="lens_camera_title_qr">QR Code</string>
+  <!-- Title for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_title">開啟 Google 智慧鏡頭搜尋功能</string>
+  <!-- Description for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_description">將圖片或照片傳送到 Google 進行圖片搜尋。</string>
+  <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
+  <string name="preferences_google_lens_availability_caption">僅在上方有開啟 Google，且 Google 也是您當下選用的搜尋引擎時可以使用。</string>
   <!-- Title for the Google Lens AI feature toggle -->
   <string name="ai_controls_google_lens_title">Google 智慧鏡頭</string>
   <!-- Description for the Google Lens AI feature toggle -->

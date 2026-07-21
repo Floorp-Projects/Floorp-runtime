@@ -31,6 +31,8 @@
   <string name="history_search_hint">Historiju pśepytaś</string>
   <!-- Placeholder text shown in search bar when using bookmarks search -->
   <string name="bookmark_search_hint">Cytańske znamjenja pśepytaś</string>
+  <!-- Content description for the toolbar back button while searching bookmarks -->
+  <string name="bookmark_close_search_description">Slědk a pytanje zacyniś</string>
   <!-- Placeholder text shown in search bar when using tabs search -->
   <string name="tab_search_hint">Rejtariki pśepytaś</string>
   <!-- Placeholder text shown in the search bar when using application search engines -->
@@ -1545,6 +1547,8 @@
   <string name="add_tab">Rejtarik pśidaś</string>
   <!-- Content description (not visible, for screen readers etc.): Add tab button. Adds a news tab when pressed -->
   <string name="add_private_tab">Priwatny rejtarik pśidaś</string>
+  <!-- Content description (not visible, for screen readers etc.): Create tab group button. Opens the create tab group sheet when pressed -->
+  <string name="create_tab_group_content_description">Rejtarikowu kupku napóraś</string>
   <!-- Text for the tab search bar placeholder -->
   <string name="tab_manager_search_bar_placeholder">Pśepytajśo swóje rejtariki</string>
   <!-- Text shown in the menu to view recently closed tabs -->
@@ -1724,8 +1728,6 @@
   <string name="tab_group_color_pink">Pink</string>
   <!-- Tab group color: Purple -->
   <string name="tab_group_color_purple">Purpurowy</string>
-  <!-- Tab group color: Violet -->
-  <string name="tab_group_color_violet">Wioletny</string>
   <!-- Tab group color: Blue -->
   <string name="tab_group_color_blue">Módry</string>
   <!-- Tab group color: Cyan -->
@@ -1987,6 +1989,8 @@
   <string name="webcompat_reporter_clear_reason_content_description">Wubranu pśicynu lašowaś</string>
   <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
   <string name="webcompat_reporter_description_error">Pšosym zapódajśo nanejmjenjej 10 znamuškow</string>
+  <!-- The label/title of a mandatory field in the Web Compat Reporter feature for adding additional information. -->
+  <string name="webcompat_reporter_label_mandatory_description">Wopišćo problem nadrobnje, aby nam pomagał, problem pśespytowaś</string>
   <!-- The label/title of a field in the Web Compat Reporter feature for explaining a high-level reason why the site is broken. -->
   <string name="webcompat_reporter_label_whats_broken_2">Co jo wobškóźone?</string>
   <!-- The placeholder text for the dropdown where a user selects a high-level reason why the site is broken. -->
@@ -1995,26 +1999,20 @@
   <string name="webcompat_reporter_choose_reason_error">Pšosym wubjeŕśo pśicynu</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_description_2">Wopišćo problem nadrobnje, aby nam pomagał, problem pśespytowaś (na žycenje)</string>
-  <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
-  <string name="webcompat_reporter_label_description">Wopišćo problem (na žycenje)</string>
   <!-- The button text for navigating away from the feature to provide more information on the broken site's bug report. -->
   <string name="webcompat_reporter_add_more_info">Dalšne informacije pśidaś</string>
   <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
   <string name="webcompat_reporter_cancel">Pśetergnuś</string>
+  <!-- The button text for the send button to submit the provided form data. -->
+  <string name="webcompat_reporter_send_report">Rozpšawu pósłaś</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send">Pósłaś</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">Rozpšawa jo se pósłała</string>
   <!-- Placeholder text for the description field to prompt the user on what they should type. -->
   <string name="webcompat_reporter_problem_description_placeholder_text_2">Co jo se stało? Co ma se staś? Pšosym pódajśo kšace za reprodukciju problema.</string>
-  <!-- Placeholder text for the description field to prompt the user on what they should type. -->
-  <string name="webcompat_reporter_problem_description_placeholder_text">Co jo se stało? Co měło se staś?</string>
   <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
   <string name="webcompat_reporter_etp_checkbox_text_2">Lisćinu zapiskow pósłaś, kótarež su se blokěrowali pśez pśeslědowański šćit</string>
-  <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
-  <string name="webcompat_reporter_etp_checkbox_text">URL pósłaś, kótarež su se blokěrowali pśez pśeslědowański šćit</string>
-  <!-- Description text for the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. It informs the user when checked, the report will include the list of URLs that were blocked by Enhanced Tracking Protection on the current page. -->
-  <string name="webcompat_reporter_etp_checkbox_description">Pólěpšony pśeslědowański šćit móžo pśeslědowaki a skripty blokěrowaś, aby někotare websedła korektnje funkcioněrowali.</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">Pśeglěd rozpšawy pokazaś</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -2212,6 +2210,10 @@
   <string name="bookmark_select_folder_new_folder_button_title">Nowy zarědnik</string>
   <!-- Bookmark snackbar message for moving a single item. %1$s is the title of the item being moved and %2$s is the new parent folder of the bookmark -->
   <string name="bookmark_moved_single_item">%1$s do %2$s pśesunjony</string>
+  <!-- Text for bookmark search page when there are no results. -->
+  <string name="bookmark_no_search_results">Žedne wótpowědniki namakane.</string>
+  <!-- Additional text for bookmark search page when there are no results. -->
+  <string name="bookmark_no_search_results_additional_text">Wopytajśo druge pytanje!</string>
   <!--
     Site Permissions
 
@@ -2619,7 +2621,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">Šćitowe nastajenja</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">Pólěpšony slědowański šćit</string>
   <!-- Preference summary for enhanced tracking protection settings on/off switch -->
   <string name="preference_enhanced_tracking_protection_summary">Něnto z dospołnm šćitom pśeśiwo cookiejam, našeju nejmócnjejšeju barieru pśeśiwo sedła pśesegajucym slědowakam.</string>
@@ -2628,17 +2634,6 @@
   <!-- Text displayed that links to website about enhanced tracking protection -->
   <string name="preference_enhanced_tracking_protection_explanation_learn_more">Dalšne informacije</string>
   <plurals name="trackers_blocked_count_2">
-    <!--
-      Trackers blocked card on homepage
-
-      Text shown on the trackers blocked card. %d is the number of trackers blocked.
-    -->
-    <item quantity="one">%d pśeslědowak blokěrowany</item>
-    <item quantity="two">%d pśeslědowaka blokěrowanej</item>
-    <item quantity="few">%d pśeslědowaki blokěrowane</item>
-    <item quantity="other">%d pśeslědowakow blokěrowane</item>
-  </plurals>
-  <plurals name="trackers_blocked_count">
     <!--
       Trackers blocked card on homepage
 
@@ -3151,6 +3146,30 @@
   <string name="ip_protection_data_limit_reached_snackbar">%1$d GB datow VPN jo se pśetrjebało. Pśistup se w pśiducem mjasecu slědk stajijo.</string>
   <!-- Snackbar (in-app pop-up notification) action button text that takes the user to the VPN settings screen. -->
   <string name="ip_protection_data_limit_reached_snackbar_action">Nastajenja</string>
+  <!-- Description shown on the browser VPN settings screen prompting the user to turn the VPN on. -->
+  <string name="ip_protection_settings_description" tools:ignore="UnusedResources">Zmóžniśo VPN, aby swójo pśeglědowanje priwatnjejše cynił a śěše slědujobne.</string>
+  <!-- Title shown on the browser VPN settings screen for location selection section. -->
+  <string name="ip_protection_location_title" tools:ignore="UnusedResources">Stojnišćo</string>
+  <!-- Label for the Recommended server location option which is automatically selected by the browser. -->
+  <string name="ip_protection_recommended_location" tools:ignore="UnusedResources">Dopórucony</string>
+  <!-- Headline for the card that promotes the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_headline" tools:ignore="UnusedResources,BrandUsage">Šćitajśo wěcej z Mozilla VPN</string>
+  <!-- Body for the card that promotes the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_body" tools:ignore="UnusedResources">Wubjeŕśo z wěcej ako 300 stojnišćow a šćitajśo wšykne swóje nałoženja na až do 5 rědach.</string>
+  <!-- Label for the button that takes the user to get the standalone Mozilla VPN product. -->
+  <string name="ip_protection_mozilla_vpn_upsell_button" tools:ignore="UnusedResources,BrandUsage">Mozilla VPN wobstaraś</string>
+  <!-- Title for the browser VPN location picker screen. -->
+  <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Stojnišćo VPN wubraś</string>
+  <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
+  <string name="ip_protection_location_fastest_description" tools:ignore="UnusedResources, BrandUsage">Firefox namakajo nejmalsnjejše stojnišćo</string>
+  <!-- Error message shown when the selected browser VPN location is unavailable. -->
+  <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">Stojnišćo njejo k dispoziciji. Wubjeŕśo druge stojnišćo.</string>
+  <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
+  <string name="ip_protection_location_unavailable_recommended_snackbar" tools:ignore="UnusedResources">Wubrane stojnišćo VPN njejo k dispoziciji. Zwězany z dopóruconym stojnišćom.</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_location_unavailable_title" tools:ignore="UnusedResources">Pjerwjejšne stojnišćo njejo k dispoziciji</string>
+  <!-- Description for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_location_unavailable_recommended_description" tools:ignore="UnusedResources">Zwězany z dopóruconym stojnišćom.</string>
   <!--
     Autofill
 
@@ -3303,8 +3322,6 @@
   <string name="addresses_save_button">Składowaś</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">Pśetergnuś</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">Adresu lašowaś</string>
   <!-- The title for the "Delete address" confirmation dialog -->
   <string name="addressess_confirm_dialog_message_2">Toś tu adresu lašowaś?</string>
   <!-- The text for the positive button on "Delete address" dialog -->
@@ -3861,8 +3878,6 @@
     and there are no trackers blocked.
   -->
   <string name="protection_panel_banner_protected_no_blocked_trackers_description">Sćo šćitany.</string>
-  <!-- Description text for the protection panel banner when tracking protection is enabled. -->
-  <string name="protection_panel_banner_protected_description">Sćo šćitany. Jolic něco namakajomy, dajomy wam to k wěsći.</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">Pólěpšony slědowański šćit</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
@@ -3878,8 +3893,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="protection_panel_num_trackers_blocked">Pśeslědowaki blokěrowane: %d</string>
-  <!-- Text for when no trackers have been blocked. -->
-  <string name="protection_panel_no_trackers_blocked">Žedne pśeslědowaki namakane</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Pśeslědowaki se njeblokěruju</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -3956,17 +3969,6 @@
     <item quantity="few">%1$d pśeslědowaki, kótarež su se blokěrowali toś ten tyźeń</item>
     <item quantity="other">%1$d pśeslědowakow, kótarež jo se blokěrowało toś ten tyźeń</item>
   </plurals>
-  <!--
-    Text for displaying the total number of trackers blocked in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_total_num_trackers_blocked">Pśeslědowaki blokěrowane: %d</string>
-  <!--
-    Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
-    %s is a placeholder for the name of the tracker category.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4119,17 +4121,17 @@
   -->
   <string name="microsurvey_uninstall_survey_title">Wašo měnjenje jo wažne. Cogodla wótinstalěrujośo?</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_1">Problemy z webbokami</string>
+  <string name="uninstall_survey_option_1_v2">Jo pómały abo njespušćobny</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_2">Problemy z wideo a ześěgnjenjami</string>
+  <string name="uninstall_survey_option_2_v2">Websedła korektnje njefunkcioněruju</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_3">Problemy z wugbaśim</string>
+  <string name="uninstall_survey_option_3_v2">Felujuce funkcije, kótarež trjebam</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_4">Problemy z funkcijami a designom</string>
+  <string name="uninstall_survey_option_4_v2">Wideo, ześěgnjenja abo medije njefunkcioněruju</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_5">Problemy z priwatnosću</string>
+  <string name="uninstall_survey_option_5_v2">Dajo se śěžko wužywaś abo jo špatnje nacerjony</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_6">Problemy z płaśenim a abonementom</string>
+  <string name="uninstall_survey_option_6_v2">Wobmyslenja priwatnosći abo wěstoty</string>
   <!-- Button label shown at the bottom of the uninstall survey -->
   <string name="uninstall_survey_button_label">Měnjenje zapódaś a wótinstalěrowaś</string>
   <!--
@@ -4723,6 +4725,22 @@
   <string name="context_menu_open_image_with_google_lens">Z Google Lens pytaś</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
   <string name="lens_camera_permission_denied">Dowólnosć zapowěźona</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the photo they capture will be sent to Google Lens for a visual search.
+  -->
+  <string name="lens_camera_title_lens">Google Lens</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the camera is being used to scan a QR code.
+  -->
+  <string name="lens_camera_title_qr">QR-kod</string>
+  <!-- Title for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_title">Pytanje Google Lens zmóžniś</string>
+  <!-- Description for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_description">Sćelo wobraze a fota na Google za wizuelne pytanje.</string>
+  <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
+  <string name="preferences_google_lens_availability_caption">Jano k dispoziciji, gaž Google jo górjejce zmóžnjony a jo waša aktiwna pytnica, mjaztym až pśeglědujośo.</string>
   <!-- Title for the Google Lens AI feature toggle -->
   <string name="ai_controls_google_lens_title">Google Lens</string>
   <!-- Description for the Google Lens AI feature toggle -->

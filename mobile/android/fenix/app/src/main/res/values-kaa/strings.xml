@@ -1073,7 +1073,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">Qorǵaw sazlawları</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">Baqlawdan keńeytilgen qorǵanıw</string>
   <!-- Text displayed that links to website about enhanced tracking protection -->
   <string name="preference_enhanced_tracking_protection_explanation_learn_more">Tolıǵıraq úyreniw</string>
@@ -1344,8 +1348,6 @@
   <string name="addresses_save_button">Saqlaw</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">Biykarlaw</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">Mánzildi óshiriw</string>
   <!-- The text for the positive button on "Delete address" dialog -->
   <string name="addressess_confirm_dialog_ok_button">Óshiriw</string>
   <!-- The text for the negative button on "Delete address" dialog -->

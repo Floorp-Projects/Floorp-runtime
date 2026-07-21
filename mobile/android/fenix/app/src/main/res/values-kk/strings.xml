@@ -1712,8 +1712,6 @@
   <string name="tab_group_color_pink">Қызғылт</string>
   <!-- Tab group color: Purple -->
   <string name="tab_group_color_purple">Қызыл көк</string>
-  <!-- Tab group color: Violet -->
-  <string name="tab_group_color_violet">Күлгін</string>
   <!-- Tab group color: Blue -->
   <string name="tab_group_color_blue">Көк</string>
   <!-- Tab group color: Cyan -->
@@ -1973,6 +1971,8 @@
   <string name="webcompat_reporter_clear_reason_content_description">Таңдалған себепті тазалау</string>
   <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
   <string name="webcompat_reporter_description_error">Кемінде 10 таңба енгізіңіз</string>
+  <!-- The label/title of a mandatory field in the Web Compat Reporter feature for adding additional information. -->
+  <string name="webcompat_reporter_label_mandatory_description">Мәселені зерттеуге көмектесу үшін мәселені толықтай сипаттаңыз</string>
   <!-- The label/title of a field in the Web Compat Reporter feature for explaining a high-level reason why the site is broken. -->
   <string name="webcompat_reporter_label_whats_broken_2">Не сынған?</string>
   <!-- The placeholder text for the dropdown where a user selects a high-level reason why the site is broken. -->
@@ -1981,26 +1981,20 @@
   <string name="webcompat_reporter_choose_reason_error">Себебін таңдаңыз</string>
   <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_description_2">Мәселені зерттеуге көмектесу үшін мәселені толықтай сипаттаңыз (міндетті емес)</string>
-  <!-- The label/title of an optional field in the Web Compat Reporter feature for adding additional information. -->
-  <string name="webcompat_reporter_label_description">Мәселені сипаттаңыз (қосымша түрде)</string>
   <!-- The button text for navigating away from the feature to provide more information on the broken site's bug report. -->
   <string name="webcompat_reporter_add_more_info">Қосымша ақпарат қосу</string>
   <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
   <string name="webcompat_reporter_cancel">Бас тарту</string>
+  <!-- The button text for the send button to submit the provided form data. -->
+  <string name="webcompat_reporter_send_report">Есептемені жіберу</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send">Жіберу</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">Есептеме жіберілді</string>
   <!-- Placeholder text for the description field to prompt the user on what they should type. -->
   <string name="webcompat_reporter_problem_description_placeholder_text_2">Не болды? Не болады деп күттіңіз? Мәселені қайталау үшін керек қадамдарды сипаттаңыз.</string>
-  <!-- Placeholder text for the description field to prompt the user on what they should type. -->
-  <string name="webcompat_reporter_problem_description_placeholder_text">Не болды? Не болуы керек еді?</string>
   <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
   <string name="webcompat_reporter_etp_checkbox_text_2">Бақылаудан қорғаныс блоктаған нәрселер адрестерін жіберу</string>
-  <!-- Label of the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. -->
-  <string name="webcompat_reporter_etp_checkbox_text">Бақылаудан қорғаныс блоктаған URL адрестерін жіберу</string>
-  <!-- Description text for the checkbox on the “Report broken site” screen for sending URLS blocked by Enhanced Tracking Protection. It informs the user when checked, the report will include the list of URLs that were blocked by Enhanced Tracking Protection on the current page. -->
-  <string name="webcompat_reporter_etp_checkbox_description">Бақылаудан кеңейтілген қорғаныс кейбір веб-сайттар дұрыс жұмыс істеуіне қажет трекерлер мен скрипттерді блоктауы мүмкін.</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">Есептемені алдын ала қарау</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -2605,7 +2599,11 @@
     Link displayed in enhanced tracking protection panel to access tracking protection settings
   -->
   <string name="etp_settings">Қорғаныс баптаулары</string>
-  <!-- Preference title for enhanced tracking protection settings -->
+  <!--
+    Enhanced Tracking Protection
+
+    Preference title for enhanced tracking protection settings
+  -->
   <string name="preference_enhanced_tracking_protection">Бақылаудан кеңейтілген қорғаныс</string>
   <!-- Preference summary for enhanced tracking protection settings on/off switch -->
   <string name="preference_enhanced_tracking_protection_summary">Енді сайтаралық трекерлерге қарсы ең күшті тосқауыл болып табылатын Cookie файлдарынан Толық қорғаныс функциясы бар.</string>
@@ -2621,15 +2619,6 @@
     -->
     <item quantity="one">%d трекер бұғатталды</item>
     <item quantity="other">%d трекер бұғатталды</item>
-  </plurals>
-  <plurals name="trackers_blocked_count">
-    <!--
-      Trackers blocked card on homepage
-
-      Text shown on the trackers blocked card. %d is the number of trackers blocked.
-    -->
-    <item quantity="one">%d трекер блокталды</item>
-    <item quantity="other">%d трекер блокталды</item>
   </plurals>
   <!-- Text shown on the trackers blocked card when no trackers have been blocked yet -->
   <string name="trackers_blocked_empty">Сіз қорғалғансыз</string>
@@ -3285,8 +3274,6 @@
   <string name="addresses_save_button">Сақтау</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">Бас тарту</string>
-  <!-- The text for the "Delete address" button for deleting an address -->
-  <string name="addressess_delete_address_button">Адресті өшіру</string>
   <!-- The title for the "Delete address" confirmation dialog -->
   <string name="addressess_confirm_dialog_message_2">Бұл адресті өшіру керек пе?</string>
   <!-- The text for the positive button on "Delete address" dialog -->
@@ -3841,8 +3828,6 @@
     and there are no trackers blocked.
   -->
   <string name="protection_panel_banner_protected_no_blocked_trackers_description">Сіз қорғалғансыз.</string>
-  <!-- Description text for the protection panel banner when tracking protection is enabled. -->
-  <string name="protection_panel_banner_protected_description">Сіз қорғалғансыз. Бірдеңені байқасақ, сізге хабарлаймыз.</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">Бақылаудан кеңейтілген қорғаныс</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
@@ -3858,8 +3843,6 @@
     %d is a placeholder for the number of trackers blocked.
   -->
   <string name="protection_panel_num_trackers_blocked">Блокталған трекерлер: %d</string>
-  <!-- Text for when no trackers have been blocked. -->
-  <string name="protection_panel_no_trackers_blocked">Трекерлер табылмады</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Трекерлер блокталмаған</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -3922,17 +3905,6 @@
     <item quantity="one">Осы аптада %1$d трекер бұғатталған</item>
     <item quantity="other">Осы аптада %1$d трекер бұғатталған</item>
   </plurals>
-  <!--
-    Text for displaying the total number of trackers blocked in the trackers blocked panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_total_num_trackers_blocked">Блокталған трекерлер: %d</string>
-  <!--
-    Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
-    %s is a placeholder for the name of the tracker category.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4085,17 +4057,17 @@
   -->
   <string name="microsurvey_uninstall_survey_title">Сіздің пікіріңіз маңызды. Оны неліктен өшіріп жатырсыз?</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_1">Веб-бет мәселелері</string>
+  <string name="uninstall_survey_option_1_v2">Ол баяу немесе сенімсіз</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_2">Видео және жүктеу мәселелері</string>
+  <string name="uninstall_survey_option_2_v2">Веб-сайттар дұрыс жұмыс істемеді</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_3">Өнімділік мәселелері</string>
+  <string name="uninstall_survey_option_3_v2">Маған қажетті функциялар жетіспейді</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_4">Функция және дизайн мәселелері</string>
+  <string name="uninstall_survey_option_4_v2">Видеолар, жүктемелер немесе медиа файлдар жұмыс істемеді</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_5">Жекелікке қатысты мәселелер</string>
+  <string name="uninstall_survey_option_5_v2">Оны қолдану қиын немесе ол нашар жасалған</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_6">Төлем және жазылым мәселелері</string>
+  <string name="uninstall_survey_option_6_v2">Жекелік немесе қауіпсіздік мәселелері</string>
   <!-- Button label shown at the bottom of the uninstall survey -->
   <string name="uninstall_survey_button_label">Пікір жіберу және өшіру</string>
   <!--
@@ -4689,6 +4661,22 @@
   <string name="context_menu_open_image_with_google_lens">Google Lens арқылы іздеу</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
   <string name="lens_camera_permission_denied">Рұқсат берілмеді</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the photo they capture will be sent to Google Lens for a visual search.
+  -->
+  <string name="lens_camera_title_lens">Google Lens</string>
+  <!--
+    Title shown at the top of the camera screen, next to the close button, telling the
+    user that the camera is being used to scan a QR code.
+  -->
+  <string name="lens_camera_title_qr">QR коды</string>
+  <!-- Title for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_title">Google Lens іздеуін іске қосу</string>
+  <!-- Description for the Google Lens Search Settings page feature toggle -->
+  <string name="search_settings_google_lens_description">Визуалды іздеу үшін Google-ға суреттер мен фотосуреттер жібереді.</string>
+  <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
+  <string name="preferences_google_lens_availability_caption">Тек Google жоғарыда іске қосылған кезде және шолу кезінде белсенді іздеу жүйесі болған кезде ғана қолжетімді.</string>
   <!-- Title for the Google Lens AI feature toggle -->
   <string name="ai_controls_google_lens_title">Google Lens</string>
   <!-- Description for the Google Lens AI feature toggle -->
