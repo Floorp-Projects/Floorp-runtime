@@ -3,6 +3,7 @@
 ac_add_options --with-app-name=floorp
 ac_add_options --with-app-basename=Floorp
 ac_add_options --disable-maintenance-service
+ac_add_options --disable-desktop-launcher
 # ac_add_options --disable-updater
 ## this implies disable geckodriver, and puppeteer seems using the geckodriver impl.
 ## so you should not disable test

@@ -1,0 +1,27 @@
+diff --git a/toolkit/moz.configure b/toolkit/moz.configure
+--- a/toolkit/moz.configure
++++ b/toolkit/moz.configure
+@@ -4324,14 +4324,20 @@ set_define(
+ 
+ 
+ # Desktop Launcher
+ # ==============================================================
++option(
++    "--disable-desktop-launcher",
++    default=True,
++    help="Disable the Windows desktop launcher",
++)
++
+ with only_when(target_is_windows):
+ 
+-    @depends(target.abi)
+-    def desktop_launcher_enabled(abi):
+-        return abi == "msvc"
++    @depends(target.abi, "--disable-desktop-launcher")
++    def desktop_launcher_enabled(abi, enabled):
++        return abi == "msvc" and bool(enabled)
+ 
+     set_config("DESKTOP_LAUNCHER_ENABLED", True, when=desktop_launcher_enabled)
+     set_define("DESKTOP_LAUNCHER_ENABLED", True, when=desktop_launcher_enabled)
+ 
+ 
