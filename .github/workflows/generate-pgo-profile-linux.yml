@@ -3,6 +3,10 @@
 
 name: Generate PGO Profile (Linux)
 
+permissions:
+  actions: read
+  contents: read
+
 'on':
   workflow_call:
     inputs:
@@ -21,7 +25,7 @@ name: Generate PGO Profile (Linux)
         type: string
         default: 'ubuntu-latest'
       target-arch:
-        description: 'Target architecture (x86_64, aarch64)'
+        description: 'Target architecture (x86_64 only)'
         required: false
         type: string
         default: 'x86_64'
@@ -29,12 +33,19 @@ name: Generate PGO Profile (Linux)
         description: 'Name for uploaded profile data artifact'
         required: false
         type: string
+      MOZ_BUILD_DATE:
+        description: 'Expected 14-digit Stage 1 build ID'
+        required: true
+        type: string
 
 jobs:
   generate-profdata-and-jarlog:
     name: Generate PGO Profile Data (${{ inputs.target-arch }})
     runs-on: ${{ inputs.runner }}
     env:
+      ARTIFACT_PATH: ${{ inputs.artifact-path }}
+      EXPECTED_BUILD_ID: ${{ inputs.MOZ_BUILD_DATE }}
+      TARGET_ARCH: ${{ inputs.target-arch }}
       UPLOAD_ARTIFACT_NAME: >-
         ${{ inputs.upload-artifact-name ||
         format('{0}-profile-generate-output', inputs.browser-artifact-name) }}
@@ -43,116 +54,162 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate PGO inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$TARGET_ARCH" != "x86_64" ]]; then
+            echo "Linux PGO profile generation only supports x86_64." >&2
+            exit 1
+          fi
+
+          if [[ ! "$EXPECTED_BUILD_ID" =~ ^[0-9]{14}$ ]]; then
+            echo "MOZ_BUILD_DATE must be exactly 14 decimal digits." >&2
+            exit 1
+          fi
+
       - name: Download browser artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.browser-artifact-name }}
-          path: ${{ inputs.artifact-path }}
-
-      - name: Set up QEMU for ARM64 (if needed)
-        if: inputs.target-arch == 'aarch64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/arm64
+          path: ${{ env.ARTIFACT_PATH }}
 
       - name: Install dependencies
         run: |
+          set -euo pipefail
           sudo apt update -qq
-          if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
-            # Install cross-compilation tools and ARM64 libraries
-            sudo apt install -y \
-              qemu-user-static \
-              binfmt-support \
-              gcc-aarch64-linux-gnu \
-              g++-aarch64-linux-gnu \
-              libc6-dev-arm64-cross \
-              libc6-arm64-cross \
-              xvfb \
-              mesa-utils
-
-            # Register QEMU ARM64 handler with binfmt_misc
-            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-
-            # Setup QEMU_LD_PREFIX for ARM64 dynamic linker
-            echo "QEMU_LD_PREFIX=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
-          else
-            sudo apt install -y xvfb llvm-19 clang-19 mesa-utils
-          fi
+          sudo apt install -y xvfb llvm-19 clang-19 mesa-utils
 
       - name: Bootstrap Mozilla build
         run: |
+          set -euo pipefail
           chmod +x ./mach
-          if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
-            # Use QEMU for ARM64 bootstrap if needed
-            ./mach --no-interactive bootstrap --application-choice browser
-          else
-            ./mach --no-interactive bootstrap --application-choice browser
-          fi
+          ./mach --no-interactive bootstrap --application-choice browser
 
       - name: Setup directories and tools
         run: |
+          set -euo pipefail
           mkdir -p obj-firefox/dist
           mkdir -p /tmp/output
           mkdir -p /tmp/clang/bin
-
-          if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
-            # Setup ARM64 cross-compilation tools
-            # Use Docker container to get ARM64 LLVM tools
-            docker run --rm -v /tmp/clang:/tmp/clang --platform linux/arm64 ubuntu:24.04 bash -c "
-              apt update -qq &&
-              apt install -y llvm-19 &&
-              cp /usr/bin/llvm-profdata-19 /tmp/clang/llvm-profdata-arm64
-            "
-            ln -sf /tmp/clang/llvm-profdata-arm64 /tmp/clang/bin/llvm-profdata
-          else
-            ln -sf $(which llvm-profdata-19) /tmp/clang/bin/llvm-profdata
-          fi
+          ln -sf "$(command -v llvm-profdata-19)" \
+            /tmp/clang/bin/llvm-profdata
 
       - name: Extract and prepare browser
+        shell: bash
         run: |
-          cd ${{ inputs.artifact-path }}
-          
-          # Extract archive
-          if ls *.tar.* >/dev/null 2>&1; then
-            tar -xf *.tar.*
-          elif ls *.zip >/dev/null 2>&1; then
-            unzip -q *.zip
-          fi
+          set -euo pipefail
+          shopt -s nullglob
 
-          echo "Contents after extraction:"
-          ls -la
-
-          # Find browser directory - look for directories first, then check subdirectories
-          BROWSER_DIR=""
-
-          # Look for top-level directories containing browser
-          for dir in */; do
-            if [[ -d "$dir" ]]; then
-              if find "$dir" -name "floorp" -o -name "firefox" -o -name "firefox-bin" | grep -q .; then
-                BROWSER_DIR="$dir"
-                break
-              fi
-            fi
-          done
-
-          # If not found, look for any directory with floorp or firefox in name
-          if [[ -z "$BROWSER_DIR" ]]; then
-            BROWSER_DIR=$(find . -maxdepth 1 -type d \( -name "*floorp*" -o -name "*firefox*" \) | head -1)
-          fi
-
-          if [[ -n "$BROWSER_DIR" && -d "$BROWSER_DIR" ]]; then
-            echo "Found browser directory: $BROWSER_DIR"
-            mv "$BROWSER_DIR" $GITHUB_WORKSPACE/obj-firefox/dist/firefox
-          else
-            echo "Browser directory not found. Available contents:"
-            find . -type d -maxdepth 2
-            echo "Files:"
-            find . -name "*floorp*" -o -name "*firefox*"
+          archives=("$ARTIFACT_PATH"/*.tar.* "$ARTIFACT_PATH"/*.zip)
+          if (( ${#archives[@]} != 1 )); then
+            echo "Expected exactly one Stage 1 archive, found ${#archives[@]}." >&2
+            printf '  %s\n' "${archives[@]}" >&2
             exit 1
           fi
 
-      - name: Generate profile
+          archive="${archives[0]}"
+          case "$archive" in
+            *.tar.*) tar -xf "$archive" -C "$ARTIFACT_PATH" ;;
+            *.zip) unzip -q "$archive" -d "$ARTIFACT_PATH" ;;
+            *)
+              echo "Unsupported Stage 1 archive: $archive" >&2
+              exit 1
+              ;;
+          esac
+
+          mapfile -t browser_binaries < <(
+            find "$ARTIFACT_PATH" -type f -name floorp -print
+          )
+          if (( ${#browser_binaries[@]} != 1 )); then
+            echo "Expected exactly one extracted floorp binary, found ${#browser_binaries[@]}." >&2
+            printf '  %s\n' "${browser_binaries[@]}" >&2
+            exit 1
+          fi
+
+          browser_dir="$(dirname "${browser_binaries[0]}")"
+          destination="$GITHUB_WORKSPACE/obj-firefox/dist/firefox"
+          if [[ -e "$destination" ]]; then
+            echo "Browser destination already exists: $destination" >&2
+            exit 1
+          fi
+
+          mv "$browser_dir" "$destination"
+          chmod +x "$destination/floorp"
+          echo "BROWSER_PATH=$destination/floorp" >> "$GITHUB_ENV"
+
+      - name: Verify Stage 1 runtime identity natively
+        shell: bash
         run: |
+          set -euo pipefail
+
+          host_arch="$(uname -m)"
+          if [[ "$host_arch" != "x86_64" ]]; then
+            echo "The Stage 1 identity check requires an x86_64 host; got $host_arch." >&2
+            exit 1
+          fi
+
+          binary_description="$(file -b "$BROWSER_PATH")"
+          echo "Stage 1 binary: $binary_description"
+          if [[ "$binary_description" != *"x86-64"* ]]; then
+            echo "Stage 1 floorp is not a native x86_64 executable." >&2
+            exit 1
+          fi
+
+          # Exercise the packaged binary's compiled kStaticAppData. Do not
+          # permit an inherited external application.ini override.
+          unset XUL_APP_FILE
+          if full_version="$(timeout 30s "$BROWSER_PATH" --full-version 2>&1)"; then
+            :
+          else
+            status=$?
+            echo "Native floorp --full-version failed with exit code $status." >&2
+            printf '%s\n' "$full_version" >&2
+            exit "$status"
+          fi
+          printf 'floorp --full-version: %s\n' "$full_version"
+
+          build_id_pattern='(^|[^0-9])([0-9]{14})[[:space:]]+([0-9]{14})([^0-9]|$)'
+          identity_pairs=()
+          remaining="$full_version"
+          while [[ "$remaining" =~ $build_id_pattern ]]; do
+            identity_pairs+=("${BASH_REMATCH[2]} ${BASH_REMATCH[3]}")
+            matched_text="${BASH_REMATCH[0]}"
+            remaining="${remaining#*"$matched_text"}"
+          done
+          if (( ${#identity_pairs[@]} != 1 )); then
+            echo "Expected exactly one adjacent app/platform build ID pair; found ${#identity_pairs[@]}." >&2
+            exit 1
+          fi
+
+          read -r app_build_id platform_build_id <<< "${identity_pairs[0]}"
+          if [[ "$app_build_id" != "$EXPECTED_BUILD_ID" ]]; then
+            echo "App build ID mismatch: expected $EXPECTED_BUILD_ID, got $app_build_id." >&2
+            exit 1
+          fi
+          if [[ "$platform_build_id" != "$EXPECTED_BUILD_ID" ]]; then
+            echo "Platform build ID mismatch: expected $EXPECTED_BUILD_ID, got $platform_build_id." >&2
+            exit 1
+          fi
+
+          application_ini="$(dirname "$BROWSER_PATH")/application.ini"
+          if [[ -f "$application_ini" ]]; then
+            diagnostic_build_id="$(awk -F= '
+              /^\[App\]$/ { in_app = 1; next }
+              /^\[/ { in_app = 0 }
+              in_app && $1 == "BuildID" { print $2; exit }
+            ' "$application_ini")"
+            echo "Diagnostic application.ini BuildID: ${diagnostic_build_id:-<missing>}"
+          else
+            echo "Diagnostic application.ini BuildID: <file missing>"
+          fi
+          echo "Stage 1 native app and platform build IDs both match $EXPECTED_BUILD_ID."
+
+      - name: Generate profile
+        shell: bash
+        run: |
+          set -euo pipefail
           export MOZ_FETCHES_DIR=/tmp
           export JARLOG_FILE=en-US.log
           export LLVM_PROFDATA=/tmp/clang/bin/llvm-profdata
@@ -161,119 +218,10 @@ jobs:
           # Start Xvfb
           Xvfb :99 -screen 0 1024x768x24 &
           XVFB_PID=$!
+          trap 'kill "$XVFB_PID" 2>/dev/null || true' EXIT
           sleep 3
 
-          # Find browser binary (look for actual executable files, not directories)
-          echo "Looking for browser binary in obj-firefox/dist/firefox/..."
-          ls -la obj-firefox/dist/firefox/ || echo "Directory doesn't exist or is empty"
-
-          BROWSER=""
-          for binary_name in floorp firefox firefox-bin; do
-            if [[ -f "obj-firefox/dist/firefox/$binary_name" ]]; then
-              BROWSER="obj-firefox/dist/firefox/$binary_name"
-              break
-            fi
-          done
-
-          if [[ -z "$BROWSER" ]]; then
-            echo "No browser binary found. Available files:"
-            find obj-firefox/dist/firefox -type f -executable 2>/dev/null || echo "No executable files found"
-            find obj-firefox/dist/firefox -name "*" -type f | head -10
-            kill $XVFB_PID
-            exit 1
-          fi
-
-          echo "Found browser binary: $BROWSER"
-
-          # Check architecture and handle accordingly
-          ARCH=$(file "$BROWSER" | grep -o "ARM aarch64\|x86-64\|x86_64")
-          echo "Browser binary architecture: $ARCH"
-
-          if [[ "${{ inputs.target-arch }}" == "aarch64" && "$ARCH" == *"ARM aarch64"* ]]; then
-            echo "Running ARM64 binary with QEMU user-mode emulation"
-
-            # Ensure QEMU is available
-            QEMU_PATH=""
-            if [[ -f "/usr/bin/qemu-aarch64-static" ]]; then
-              QEMU_PATH="/usr/bin/qemu-aarch64-static"
-            elif [[ -f "/usr/local/bin/qemu-aarch64-static" ]]; then
-              QEMU_PATH="/usr/local/bin/qemu-aarch64-static"
-            else
-              echo "ERROR: qemu-aarch64-static not found in standard locations"
-              kill $XVFB_PID
-              exit 1
-            fi
-
-            echo "Found QEMU at: $QEMU_PATH"
-
-            # Ensure QEMU static is properly registered with binfmt_misc
-            if [[ ! -f /proc/sys/fs/binfmt_misc/qemu-aarch64 ]]; then
-              echo "Registering QEMU ARM64 handler with binfmt_misc"
-              docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-              sleep 3
-            fi
-
-            # Make sure the binary is executable
-            chmod +x "$BROWSER"
-
-            # Store the actual browser path
-            ACTUAL_BROWSER="$BROWSER"
-
-            # Create a wrapper script with QEMU_LD_PREFIX  
-            echo "Creating QEMU wrapper script with library path..."
-            cat > browser-wrapper.sh << 'WRAPPER_SCRIPT_END'
-          #!/bin/bash
-          export QEMU_LD_PREFIX=/usr/aarch64-linux-gnu
-          export LD_LIBRARY_PATH=/usr/aarch64-linux-gnu/lib
-          BROWSER_BIN="$1"
-          shift
-          exec "$BROWSER_BIN" "$@"
-          WRAPPER_SCRIPT_END
-
-            chmod +x browser-wrapper.sh
-            
-            # Test if binfmt handles ARM64 execution with the wrapper
-            echo "Testing ARM64 execution with QEMU and library prefix..."
-            if timeout 15s bash browser-wrapper.sh "$ACTUAL_BROWSER" --version 2>&1; then
-              echo "✓ ARM64 execution test passed"
-            else
-              echo "⚠ Direct execution test failed, but continuing with wrapper"
-            fi
-
-            # Update BROWSER to use wrapper with actual browser as argument
-            BROWSER="bash $GITHUB_WORKSPACE/browser-wrapper.sh $ACTUAL_BROWSER"
-            echo "Final browser command: $BROWSER"
-          else
-            chmod +x "$BROWSER"
-          fi
-
-          # Verify browser is executable
-          echo "Testing browser execution..."
-          if timeout 30s "$BROWSER" --version 2>&1; then
-            echo "✓ Browser execution test passed"
-          else
-            EXIT_CODE=$?
-            echo "✗ Browser execution test failed with exit code: $EXIT_CODE"
-            if [[ "${{ inputs.target-arch }}" == "aarch64" ]]; then
-              echo "Debugging QEMU/binfmt setup:"
-              which qemu-aarch64-static || echo "  qemu-aarch64-static not in PATH"
-              ls -la /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null || echo "  QEMU ARM64 binfmt not registered"
-              file "$BROWSER"
-              echo "  This may still work for profile generation..."
-            else
-              kill $XVFB_PID
-              exit 1
-            fi
-          fi
-
-          echo "Final browser path: $BROWSER"
-
-          # Generate profile
-          echo "Starting profile generation..."
-          ./mach python build/pgo/profileserver.py --binary "$BROWSER"
-
-          # Cleanup
-          kill $XVFB_PID
+          ./mach python build/pgo/profileserver.py --binary "$BROWSER_PATH"
 
       - name: Upload profile data
         uses: actions/upload-artifact@v4
@@ -283,3 +231,5 @@ jobs:
             merged.profdata
             en-US.log
           retention-days: 7
+          if-no-files-found: error
+          overwrite: true

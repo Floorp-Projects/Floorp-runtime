@@ -4,6 +4,7 @@
 name: Daily Runtime Build
 
 permissions:
+  actions: read
   contents: write
 
 'on':
@@ -21,51 +22,86 @@ permissions:
         required: false
         type: boolean
         default: true
+      validation_only:
+        description: >-
+          Build and verify desktop artifacts without Android or publishing
+        required: false
+        type: boolean
+        default: false
+      requested_MOZ_BUILD_DATE:
+        description: >-
+          Optional 14-digit build ID assertion; the run creation time remains
+          authoritative
+        required: false
+        type: string
+        default: ''
 
 run-name: >-
   Daily Runtime Build
   ${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
   ${{ github.event.inputs.debug == 'true' && ' (Debug)' || '' }}
+  ${{ inputs.validation_only && ' [Validation only]' || '' }}
 
 jobs:
+  resolve-build-context:
+    uses: ./.github/workflows/resolve-build-context.yml
+    with:
+      requested_moz_build_date: >-
+        ${{ inputs.requested_MOZ_BUILD_DATE || '' }}
+      require_run_metadata: true
+
   windows-x86_64:
     name: >-
       Windows x86_64${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+    needs: resolve-build-context
     uses: ./.github/workflows/wrapper-build-windows.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
       pgo: ${{ github.event.inputs.pgo != 'false' }}
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   linux-x86_64:
     name: >-
       Linux x86_64${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+    needs: resolve-build-context
     uses: ./.github/workflows/wrapper-build-linux.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
       pgo: ${{ github.event.inputs.pgo != 'false' }}
+      arch: x86_64
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   linux-aarch64:
     name: Linux aarch64
+    needs: resolve-build-context
     uses: ./.github/workflows/wrapper-build-linux.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
       pgo: false
       arch: aarch64
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   mac:
     name: >-
       Mac build${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+    needs: resolve-build-context
     uses: ./.github/workflows/wrapper-mac-build.yml
     secrets: inherit
     with:
       debug: ${{ github.event.inputs.debug == 'true' }}
       pgo: ${{ github.event.inputs.pgo != 'false' }}
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   android:
     name: Android build
+    if: ${{ inputs.validation_only != true }}
     uses: ./.github/workflows/wrapper-build-android.yml
     secrets: inherit
     with:
@@ -73,10 +109,319 @@ jobs:
       build_arm32: true
       build_x86_64: true
 
+  verify-windows-x86_64:
+    name: Verify Windows x86_64 runtime artifact
+    needs: windows-x86_64
+    uses: ./.github/workflows/verify-runtime-artifact.yml
+    with:
+      artifact-id: ${{ needs.windows-x86_64.outputs.artifact-id }}
+      artifact-name: ${{ needs.windows-x86_64.outputs.artifact-name }}
+      expected-build-id: ${{ needs.windows-x86_64.outputs.expected-build-id }}
+      platform: Windows
+      arch: x86_64
+      runner: windows-2025
+
+  verify-linux-x86_64:
+    name: Verify Linux x86_64 runtime artifact
+    needs: linux-x86_64
+    uses: ./.github/workflows/verify-runtime-artifact.yml
+    with:
+      artifact-id: ${{ needs.linux-x86_64.outputs.artifact-id }}
+      artifact-name: ${{ needs.linux-x86_64.outputs.artifact-name }}
+      expected-build-id: ${{ needs.linux-x86_64.outputs.expected-build-id }}
+      platform: Linux
+      arch: x86_64
+      runner: ubuntu-24.04
+
+  verify-linux-aarch64:
+    name: Verify Linux aarch64 runtime artifact
+    needs: linux-aarch64
+    uses: ./.github/workflows/verify-runtime-artifact.yml
+    with:
+      artifact-id: ${{ needs.linux-aarch64.outputs.artifact-id }}
+      artifact-name: ${{ needs.linux-aarch64.outputs.artifact-name }}
+      expected-build-id: ${{ needs.linux-aarch64.outputs.expected-build-id }}
+      platform: Linux
+      arch: aarch64
+      runner: ubuntu-24.04-arm
+
+  verify-mac-x86_64:
+    name: Verify macOS x86_64 runtime artifact
+    needs: mac
+    uses: ./.github/workflows/verify-runtime-artifact.yml
+    with:
+      artifact-id: ${{ needs.mac.outputs.artifact-id }}
+      artifact-name: ${{ needs.mac.outputs.artifact-name }}
+      expected-build-id: ${{ needs.mac.outputs.expected-build-id }}
+      platform: Darwin
+      arch: x86_64
+      runner: macos-15-intel
+
+  verify-mac-aarch64:
+    name: Verify macOS aarch64 runtime artifact
+    needs: mac
+    uses: ./.github/workflows/verify-runtime-artifact.yml
+    with:
+      artifact-id: ${{ needs.mac.outputs.artifact-id }}
+      artifact-name: ${{ needs.mac.outputs.artifact-name }}
+      expected-build-id: ${{ needs.mac.outputs.expected-build-id }}
+      platform: Darwin
+      arch: aarch64
+      runner: macos-14
+
+  aggregate-runtime-manifest-v2:
+    name: Aggregate Runtime Build Manifest v2
+    if: >-
+      ${{ inputs.validation_only == true ||
+          github.event.inputs.debug != 'true' }}
+    needs:
+      - resolve-build-context
+      - windows-x86_64
+      - linux-x86_64
+      - linux-aarch64
+      - mac
+      - verify-windows-x86_64
+      - verify-linux-x86_64
+      - verify-linux-aarch64
+      - verify-mac-x86_64
+      - verify-mac-aarch64
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: floorp-runtime-build-manifest-v2
+      artifact-id: ${{ steps.upload-manifest.outputs.artifact-id }}
+      artifact-digest: ${{ steps.upload-manifest.outputs.artifact-digest }}
+      expected-build-id: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
+    steps:
+      - name: Create and validate runtime-build-manifest-v2.json
+        shell: bash
+        env:
+          MANIFEST_REPOSITORY: >-
+            ${{ needs.resolve-build-context.outputs.repository }}
+          MANIFEST_HEAD_SHA: >-
+            ${{ needs.resolve-build-context.outputs.head-sha }}
+          MANIFEST_WORKFLOW_RUN_ID: >-
+            ${{ needs.resolve-build-context.outputs.workflow-run-id }}
+          MANIFEST_RUN_CREATED_AT: >-
+            ${{ needs.resolve-build-context.outputs.run-created-at }}
+          # A rerun-failed attempt can reuse successful attempt-1 resolver
+          # outputs. Manifest freshness belongs to this aggregate job attempt;
+          # the BuildID remains derived from the original run created_at.
+          MANIFEST_RUN_ATTEMPT: ${{ github.run_attempt }}
+          MANIFEST_EXPECTED_BUILD_ID: >-
+            ${{ needs.resolve-build-context.outputs.expected-build-id }}
+          WINDOWS_ARTIFACT_NAME: ${{ needs.windows-x86_64.outputs.artifact-name }}
+          WINDOWS_ARTIFACT_ID: ${{ needs.windows-x86_64.outputs.artifact-id }}
+          WINDOWS_ARTIFACT_DIGEST: >-
+            ${{ needs.windows-x86_64.outputs.artifact-digest }}
+          WINDOWS_EXPECTED_BUILD_ID: >-
+            ${{ needs.windows-x86_64.outputs.expected-build-id }}
+          LINUX_X64_ARTIFACT_NAME: ${{ needs.linux-x86_64.outputs.artifact-name }}
+          LINUX_X64_ARTIFACT_ID: ${{ needs.linux-x86_64.outputs.artifact-id }}
+          LINUX_X64_ARTIFACT_DIGEST: >-
+            ${{ needs.linux-x86_64.outputs.artifact-digest }}
+          LINUX_X64_EXPECTED_BUILD_ID: >-
+            ${{ needs.linux-x86_64.outputs.expected-build-id }}
+          LINUX_ARM64_ARTIFACT_NAME: ${{ needs.linux-aarch64.outputs.artifact-name }}
+          LINUX_ARM64_ARTIFACT_ID: ${{ needs.linux-aarch64.outputs.artifact-id }}
+          LINUX_ARM64_ARTIFACT_DIGEST: >-
+            ${{ needs.linux-aarch64.outputs.artifact-digest }}
+          LINUX_ARM64_EXPECTED_BUILD_ID: >-
+            ${{ needs.linux-aarch64.outputs.expected-build-id }}
+          MAC_ARTIFACT_NAME: ${{ needs.mac.outputs.artifact-name }}
+          MAC_ARTIFACT_ID: ${{ needs.mac.outputs.artifact-id }}
+          MAC_ARTIFACT_DIGEST: ${{ needs.mac.outputs.artifact-digest }}
+          MAC_EXPECTED_BUILD_ID: ${{ needs.mac.outputs.expected-build-id }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-manifest
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          BUILD_ID_RE = re.compile(r"[0-9]{14}")
+          SHA_RE = re.compile(r"[0-9a-f]{40}")
+          DIGEST_RE = re.compile(r"[0-9a-f]{64}")
+
+
+          def required(name):
+              value = os.environ.get(name, "").strip()
+              if not value:
+                  raise ValueError(f"missing required value: {name}")
+              return value
+
+
+          def positive_int(name):
+              value = required(name)
+              if not re.fullmatch(r"[1-9][0-9]*", value):
+                  raise ValueError(f"{name} must be a positive decimal integer")
+              return int(value)
+
+
+          def normalize_digest(name):
+              value = required(name).lower()
+              if value.startswith("sha256:"):
+                  value = value.removeprefix("sha256:")
+              if not DIGEST_RE.fullmatch(value):
+                  raise ValueError(f"{name} must be a SHA-256 digest")
+              return f"sha256:{value}"
+
+
+          repository = required("MANIFEST_REPOSITORY")
+          if repository != required("GITHUB_REPOSITORY"):
+              raise ValueError("resolver repository does not match this workflow")
+
+          head_sha = required("MANIFEST_HEAD_SHA").lower()
+          if not SHA_RE.fullmatch(head_sha):
+              raise ValueError("MANIFEST_HEAD_SHA must be exactly 40 hex digits")
+          if head_sha != required("GITHUB_SHA").lower():
+              raise ValueError("resolver head SHA does not match this workflow")
+
+          workflow_run_id = positive_int("MANIFEST_WORKFLOW_RUN_ID")
+          if workflow_run_id != positive_int("GITHUB_RUN_ID"):
+              raise ValueError("resolver workflow run ID does not match this workflow")
+
+          run_attempt = positive_int("MANIFEST_RUN_ATTEMPT")
+          if run_attempt != positive_int("GITHUB_RUN_ATTEMPT"):
+              raise ValueError("resolver run attempt does not match this workflow")
+
+          expected_build_id = required("MANIFEST_EXPECTED_BUILD_ID")
+          if not BUILD_ID_RE.fullmatch(expected_build_id):
+              raise ValueError("expected build ID must be exactly 14 digits")
+
+          run_created_at = required("MANIFEST_RUN_CREATED_AT")
+          if not run_created_at.endswith("Z"):
+              raise ValueError("run creation time must be UTC with a Z suffix")
+          created = datetime.fromisoformat(run_created_at.replace("Z", "+00:00"))
+          if created.tzinfo is None:
+              raise ValueError("run creation time must be timezone-aware")
+          if created.astimezone(timezone.utc).strftime("%Y%m%d%H%M%S") != expected_build_id:
+              raise ValueError("run creation time does not match expected build ID")
+
+          target_specs = [
+              (
+                  "Windows",
+                  "x86_64",
+                  "floorp-windows-x86_64-moz-artifact",
+                  "WINDOWS",
+              ),
+              (
+                  "Linux",
+                  "x86_64",
+                  "floorp-linux-x86_64-moz-artifact",
+                  "LINUX_X64",
+              ),
+              (
+                  "Linux",
+                  "aarch64",
+                  "floorp-linux-aarch64-moz-artifact",
+                  "LINUX_ARM64",
+              ),
+              (
+                  "Darwin",
+                  "universal",
+                  "floorp-mac-universal-moz-artifact",
+                  "MAC",
+              ),
+          ]
+
+          targets = []
+          artifact_ids = set()
+          for platform, arch, expected_name, prefix in target_specs:
+              artifact_name = required(f"{prefix}_ARTIFACT_NAME")
+              if artifact_name != expected_name:
+                  raise ValueError(
+                      f"{platform}/{arch} artifact name mismatch: {artifact_name}"
+                  )
+
+              artifact_id = positive_int(f"{prefix}_ARTIFACT_ID")
+              if artifact_id in artifact_ids:
+                  raise ValueError(f"duplicate artifact ID: {artifact_id}")
+              artifact_ids.add(artifact_id)
+
+              target_build_id = required(f"{prefix}_EXPECTED_BUILD_ID")
+              if target_build_id != expected_build_id:
+                  raise ValueError(
+                      f"{platform}/{arch} expected build ID mismatch: {target_build_id}"
+                  )
+
+              targets.append(
+                  {
+                      "platform": platform,
+                      "arch": arch,
+                      "artifact_name": artifact_name,
+                      "artifact_id": artifact_id,
+                      "artifact_digest": normalize_digest(
+                          f"{prefix}_ARTIFACT_DIGEST"
+                      ),
+                      "expected_build_id": target_build_id,
+                  }
+              )
+
+          manifest = {
+              "schema_version": 2,
+              "repository": repository,
+              "head_sha": head_sha,
+              "workflow_run_id": workflow_run_id,
+              "run_created_at": run_created_at,
+              "run_attempt": run_attempt,
+              "expected_build_id": expected_build_id,
+              "targets": targets,
+          }
+          output = Path("runtime-manifest/runtime-build-manifest-v2.json")
+          output.write_text(
+              json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print(output.read_text(encoding="utf-8"), end="")
+          PY
+
+      - name: Upload Runtime Build Manifest v2
+        id: upload-manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-runtime-build-manifest-v2
+          path: runtime-manifest/runtime-build-manifest-v2.json
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Summarize immutable manifest artifact
+        shell: bash
+        env:
+          MANIFEST_ARTIFACT_ID: ${{ steps.upload-manifest.outputs.artifact-id }}
+          MANIFEST_ARTIFACT_DIGEST: >-
+            ${{ steps.upload-manifest.outputs.artifact-digest }}
+          EXPECTED_BUILD_ID: >-
+            ${{ needs.resolve-build-context.outputs.expected-build-id }}
+        run: |
+          {
+            echo "### Runtime build manifest v2"
+            echo ""
+            echo "- Artifact: \`floorp-runtime-build-manifest-v2\`"
+            echo "- Artifact ID: \`${MANIFEST_ARTIFACT_ID}\`"
+            echo "- Artifact digest: \`${MANIFEST_ARTIFACT_DIGEST}\`"
+            echo "- Expected BuildID: \`${EXPECTED_BUILD_ID}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   publish-debug-to-core-ftp:
     name: Publish Debug Assets to Core FTP
-    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac, android]
-    if: ${{ github.event.inputs.debug == 'true' }}
+    needs:
+      - windows-x86_64
+      - linux-x86_64
+      - linux-aarch64
+      - mac
+      - android
+      - verify-windows-x86_64
+      - verify-linux-x86_64
+      - verify-linux-aarch64
+      - verify-mac-x86_64
+      - verify-mac-aarch64
+    if: >-
+      ${{ github.event.inputs.debug == 'true' &&
+          inputs.validation_only != true }}
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x86_64 artifact
@@ -132,8 +477,10 @@ jobs:
 
   publish-release:
     name: Publish Release Assets
-    needs: [windows-x86_64, linux-x86_64, linux-aarch64, mac, android]
-    if: ${{ github.event.inputs.debug != 'true' }}
+    needs: [aggregate-runtime-manifest-v2, android]
+    if: >-
+      ${{ github.event.inputs.debug != 'true' &&
+          inputs.validation_only != true }}
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x86_64 artifact

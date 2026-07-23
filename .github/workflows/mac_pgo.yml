@@ -3,15 +3,33 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 on:
-    workflow_call:
+  workflow_call:
+    inputs:
+      MOZ_BUILD_DATE:
+        description: "Resolved 14-digit build ID"
+        type: string
+        required: true
+
+permissions:
+  actions: read
+  contents: read
 
 jobs:
   macOS-Universal-gen-profdata-and-jarlog:
     runs-on: ${{ matrix.runs-on }}
+    env:
+      ARCH_TYPE: ${{ matrix.arch }}
+      MOZ_BUILD_DATE: ${{ inputs.MOZ_BUILD_DATE }}
     strategy:
+      fail-fast: false
       matrix:
-        runs-on: [macos-15-intel, macos-14]
-        # macos-15-intel is x86_64 and macos-14 is arm64
+        include:
+          - runs-on: macos-15-intel
+            arch: x86_64
+            runner-arch: x86_64
+          - runs-on: macos-14
+            arch: aarch64
+            runner-arch: arm64
 
     steps:
       - name: Init
@@ -25,19 +43,6 @@ jobs:
         name: Clone 🧬
         with:
           submodules: 'true'
-
-      - name: Check Arch type
-        shell: bash
-        run: |
-          if [[ $GHA_BUILD_MACHINE != 'macos-15-intel' ]]; then
-            export ARCH_TYPE=`echo "aarch64"`
-            echo "ARCH_TYPE=$ARCH_TYPE" >> $GITHUB_ENV
-          else
-            export ARCH_TYPE=`echo "x86_64"`
-            echo "ARCH_TYPE=$ARCH_TYPE" >> $GITHUB_ENV
-          fi
-        env:
-          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
 
       - uses: actions/download-artifact@v4
         id: download-artifacts-mac-enable-profgen
@@ -131,6 +136,7 @@ jobs:
 
       - name: Extract artifact 📂
         run: |
+          set -euo pipefail
           cd ~/downloads/artifacts
           echo "Contents of download path:"
           ls -la
@@ -138,6 +144,57 @@ jobs:
           tar xzf floorp-mac-${ARCH_TYPE}-moz-artifact.tar.gz -C ${{ github.workspace }}
           echo "Extraction complete. Checking workspace:"
           ls -la ${{ github.workspace }}/obj-${ARCH_TYPE}-apple-darwin/ || echo "Directory not found"
+
+      - name: Verify Stage 1 runtime build identity
+        shell: bash
+        env:
+          EXPECTED_RUNNER_ARCH: ${{ matrix.runner-arch }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$MOZ_BUILD_DATE" =~ ^[0-9]{14}$ ]]; then
+            echo "Expected build ID must be exactly 14 digits: $MOZ_BUILD_DATE" >&2
+            exit 1
+          fi
+
+          RUNNER_ARCH=$(uname -m)
+          if [[ "$RUNNER_ARCH" != "$EXPECTED_RUNNER_ARCH" ]]; then
+            echo "Runner architecture $RUNNER_ARCH does not match $EXPECTED_RUNNER_ARCH for $ARCH_TYPE" >&2
+            exit 1
+          fi
+
+          APP_BINARY=$(find \
+            "./obj-${ARCH_TYPE}-apple-darwin/dist/floorp" \
+            -type f -path "*.app/Contents/MacOS/floorp" -print | sed -n '1p')
+          if [[ -z "$APP_BINARY" || ! -x "$APP_BINARY" ]]; then
+            echo "Unable to locate an executable Stage 1 Floorp app for $ARCH_TYPE" >&2
+            exit 1
+          fi
+
+          unset XUL_APP_FILE
+          echo "Running native identity check: $APP_BINARY --full-version"
+          FULL_VERSION_OUTPUT=$("$APP_BINARY" --full-version 2>&1)
+          printf '%s\n' "$FULL_VERSION_OUTPUT"
+
+          BUILD_IDS=$(printf '%s\n' "$FULL_VERSION_OUTPUT" | grep -Eo '[0-9]{14}' || true)
+          BUILD_ID_COUNT=$(printf '%s\n' "$BUILD_IDS" | sed '/^$/d' | wc -l | tr -d ' ')
+          FIRST_BUILD_ID=$(printf '%s\n' "$BUILD_IDS" | sed -n '1p')
+          SECOND_BUILD_ID=$(printf '%s\n' "$BUILD_IDS" | sed -n '2p')
+
+          if [[ "$BUILD_ID_COUNT" != "2" ]]; then
+            echo "Expected exactly two 14-digit IDs from --full-version, found $BUILD_ID_COUNT" >&2
+            exit 1
+          fi
+          if [[ "$FIRST_BUILD_ID" != "$MOZ_BUILD_DATE" || "$SECOND_BUILD_ID" != "$MOZ_BUILD_DATE" ]]; then
+            echo "Stage 1 IDs do not both match expected build ID $MOZ_BUILD_DATE" >&2
+            exit 1
+          fi
+          if ! printf '%s\n' "$FULL_VERSION_OUTPUT" | grep -Eq "(^|[^0-9])${MOZ_BUILD_DATE}[[:space:]]+${MOZ_BUILD_DATE}([^0-9]|$)"; then
+            echo "The two expected build IDs are not adjacent in --full-version output" >&2
+            exit 1
+          fi
+
+          echo "STAGE1_APP_BINARY=$APP_BINARY" >> "$GITHUB_ENV"
 
 ## ./mach python python/mozbuild/mozbuild/action/install.py $MOZ_FETCHES_DIR/target.dmg $MOZ_FETCHES_DIR
       - name: Generate Profdata 📊
@@ -160,7 +217,7 @@ jobs:
           $LLVM_PROFDATA --version || echo "llvm-profdata version check failed"
           
           export JARLOG_FILE="en-US.log"
-          ./mach python build/pgo/profileserver.py --binary ./obj-${ARCH_TYPE}-apple-darwin/dist/floorp/Floorp.app/Contents/MacOS/floorp
+          ./mach python build/pgo/profileserver.py --binary "$STAGE1_APP_BINARY"
 
       - name: Publish 🎁
         uses: actions/upload-artifact@v4
@@ -169,3 +226,5 @@ jobs:
           path: |
             merged.profdata
             en-US.log
+          if-no-files-found: error
+          overwrite: true

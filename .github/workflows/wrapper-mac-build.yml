@@ -13,6 +13,11 @@ on:
       pgo:
         type: boolean
         required: true
+      requested_MOZ_BUILD_DATE:
+        description: "Optional 14-digit build ID assertion"
+        type: string
+        required: false
+        default: ""
 
   workflow_call:
     inputs:
@@ -22,19 +27,37 @@ on:
       pgo:
         type: boolean
         required: true
+      MOZ_BUILD_DATE:
+        description: "Trusted resolved 14-digit build ID"
+        type: string
+        required: true
+    outputs:
+      artifact-name:
+        description: "Final universal macOS artifact name"
+        value: ${{ jobs.part2_no_pgo.outputs.artifact-name || jobs.part4_pgo.outputs.artifact-name }}
+      artifact-id:
+        description: "Final universal macOS artifact ID"
+        value: ${{ jobs.part2_no_pgo.outputs.artifact-id || jobs.part4_pgo.outputs.artifact-id }}
+      artifact-digest:
+        description: "Final universal macOS artifact digest"
+        value: ${{ jobs.part2_no_pgo.outputs.artifact-digest || jobs.part4_pgo.outputs.artifact-digest }}
+      expected-build-id:
+        description: "Expected build ID embedded in the final artifact"
+        value: ${{ jobs.part2_no_pgo.outputs.expected-build-id || jobs.part4_pgo.outputs.expected-build-id }}
+
+permissions:
+  actions: read
+  contents: read
 
 run-name: ${{toJSON(inputs.pgo) == 'true' && '[PGO] ' || ''}}Mac x64 build${{toJSON(inputs.debug) == 'true' && ' Debug' || ''}}
 jobs:
-  get-buildid:
-    runs-on: ubuntu-latest
-    outputs:
-      buildids: ${{ steps.get.outputs.bid }}
-    steps:
-      - id: get
-        shell: bash -xe {0}
-        run: |
-          bdat=`date +"%Y%m%d%I%M%S"`
-          echo "bid=${bdat}" >> $GITHUB_OUTPUT
+  resolve-build-context:
+    uses: ./.github/workflows/resolve-build-context.yml
+    with:
+      resolved_moz_build_date: ${{ inputs.MOZ_BUILD_DATE || '' }}
+      requested_moz_build_date: >-
+        ${{ inputs.requested_MOZ_BUILD_DATE || '' }}
+      require_run_metadata: false
 
   download-macos-sdk:
     runs-on: macos-26
@@ -91,10 +114,11 @@ jobs:
           name: macos-sdk
           path: macos_sdk.tar.gz
           retention-days: 1
+          if-no-files-found: error
           overwrite: true
 
   part1-x86_64:
-    needs: [get-buildid, download-macos-sdk]
+    needs: [resolve-build-context, download-macos-sdk]
     uses: ./.github/workflows/common-build.yml
     with:
       platform: mac
@@ -102,10 +126,10 @@ jobs:
       debug: ${{ inputs.debug }}
       pgo: ${{ inputs.pgo }}
       pgo_mode: ${{ inputs.pgo && 'generate' || '' }}
-      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   part1-aarch64:
-    needs: [get-buildid, download-macos-sdk]
+    needs: [resolve-build-context, download-macos-sdk]
     uses: ./.github/workflows/common-build.yml
     with:
       platform: mac
@@ -113,15 +137,17 @@ jobs:
       debug: ${{ inputs.debug }}
       pgo: ${{ inputs.pgo }}
       pgo_mode: ${{ inputs.pgo && 'generate' || '' }}
-      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   part2:
-    needs: [get-buildid, part1-x86_64, part1-aarch64]
+    needs: [resolve-build-context, part1-x86_64, part1-aarch64]
     if: ${{ inputs.pgo }}
     uses: ./.github/workflows/mac_pgo.yml
+    with:
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   part3-x86_64:
-    needs: [get-buildid, part2]
+    needs: [resolve-build-context, part2]
     if: ${{ inputs.pgo }}
     uses: ./.github/workflows/common-build.yml
     with:
@@ -131,10 +157,10 @@ jobs:
       pgo: ${{ inputs.pgo }}
       pgo_mode: use
       pgo_artifact_name: floorp-x86_64-apple-darwin-profdata-and-jarlog
-      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   part3-aarch64:
-    needs: [get-buildid, part2]
+    needs: [resolve-build-context, part2]
     if: ${{ inputs.pgo }}
     uses: ./.github/workflows/common-build.yml
     with:
@@ -144,28 +170,28 @@ jobs:
       pgo: ${{ inputs.pgo }}
       pgo_mode: use
       pgo_artifact_name: floorp-aarch64-apple-darwin-profdata-and-jarlog
-      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   part2_no_pgo:
     name: "Integration (No PGO)"
-    needs: [get-buildid, part1-x86_64, part1-aarch64]
+    needs: [resolve-build-context, part1-x86_64, part1-aarch64]
     if: ${{ !inputs.pgo }}
     uses: ./.github/workflows/mac_integration.yml
     secrets: inherit
     with:
       x86_64_artifact_name: floorp-mac-x86_64-moz-artifact
       aarch64_artifact_name: floorp-mac-aarch64-moz-artifact
-      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
       debug: ${{ inputs.debug }}
 
   part4_pgo:
     name: "Integration (With PGO)"
-    needs: [get-buildid, part3-x86_64, part3-aarch64]
+    needs: [resolve-build-context, part3-x86_64, part3-aarch64]
     if: ${{ inputs.pgo }}
     uses: ./.github/workflows/mac_integration.yml
     secrets: inherit
     with:
       x86_64_artifact_name: floorp-mac-x86_64-moz-artifact
       aarch64_artifact_name: floorp-mac-aarch64-moz-artifact
-      MOZ_BUILD_DATE: ${{ needs.get-buildid.outputs.buildids }}
+      MOZ_BUILD_DATE: ${{ needs.resolve-build-context.outputs.expected-build-id }}
       debug: ${{ inputs.debug }}

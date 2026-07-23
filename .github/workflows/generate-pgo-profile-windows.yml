@@ -6,6 +6,10 @@ name: Generate PGO Profile (Windows)
 on:
   workflow_call:
     inputs:
+      MOZ_BUILD_DATE:
+        description: 'Expected Stage 1 build ID (14 UTC digits)'
+        required: true
+        type: string
       browser-artifact-name:
         description: 'Browser artifact to download'
         required: true
@@ -30,6 +34,10 @@ on:
         required: false
         type: string
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   generate-profdata-and-jarlog:
     name: Generate PGO Profile Data (${{ inputs.target-arch }})
@@ -37,6 +45,7 @@ jobs:
     env:
       ARTIFACT_PATH: ${{ inputs.artifact-path }}
       TARGET_ARCH: ${{ inputs.target-arch }}
+      EXPECTED_BUILD_ID: ${{ inputs.MOZ_BUILD_DATE }}
       UPLOAD_ARTIFACT_NAME: >-
         ${{ inputs.upload-artifact-name ||
         format('{0}-profile-generate-output', inputs.browser-artifact-name) }}
@@ -64,6 +73,102 @@ jobs:
             Get-ChildItem -Path $artifactPath -Recurse -Depth 1 | ForEach-Object { Write-Host $_.FullName }
           } else {
             Write-Error "No zip file found in $artifactPath"
+          }
+
+      - name: Verify Stage 1 native build identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($env:EXPECTED_BUILD_ID -notmatch '^\d{14}$') {
+            throw "Expected build ID must contain exactly 14 digits."
+          }
+
+          $browserDirectory = Join-Path $env:ARTIFACT_PATH 'floorp'
+          $browserPath = Join-Path $browserDirectory 'floorp.exe'
+          if (-not (Test-Path -LiteralPath $browserPath -PathType Leaf)) {
+            throw "Stage 1 browser executable not found at $browserPath"
+          }
+
+          $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+          $startInfo.FileName = $browserPath
+          $startInfo.Arguments = '--full-version'
+          $startInfo.WorkingDirectory = $browserDirectory
+          $startInfo.UseShellExecute = $false
+          $startInfo.RedirectStandardOutput = $true
+          $startInfo.RedirectStandardError = $true
+          $startInfo.CreateNoWindow = $true
+          [void]$startInfo.Environment.Remove('XUL_APP_FILE')
+
+          $process = [System.Diagnostics.Process]::new()
+          $process.StartInfo = $startInfo
+          try {
+            if (-not $process.Start()) {
+              throw "Failed to start $browserPath"
+            }
+
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            $exitCode = $process.ExitCode
+          } finally {
+            $process.Dispose()
+          }
+
+          Write-Host "floorp.exe --full-version stdout: $stdout"
+          if ($stderr) {
+            Write-Host "floorp.exe --full-version stderr: $stderr"
+          }
+          if ($exitCode -ne 0) {
+            throw "floorp.exe --full-version exited with code $exitCode"
+          }
+
+          $allBuildIds = [regex]::Matches($stdout, '(?<!\d)\d{14}(?!\d)')
+          if ($allBuildIds.Count -ne 2) {
+            throw "Expected exactly two 14-digit build IDs in --full-version output; found $($allBuildIds.Count)."
+          }
+
+          $identityPattern = '(?<!\d)(?<application>\d{14})\s+(?<platform>\d{14})(?!\d)'
+          $identityMatches = [regex]::Matches($stdout, $identityPattern)
+          if ($identityMatches.Count -ne 1) {
+            throw "Expected one adjacent application/platform build ID pair in --full-version output; found $($identityMatches.Count)."
+          }
+
+          $applicationBuildId = $identityMatches[0].Groups['application'].Value
+          $platformBuildId = $identityMatches[0].Groups['platform'].Value
+          if ($applicationBuildId -ne $env:EXPECTED_BUILD_ID -or
+              $platformBuildId -ne $env:EXPECTED_BUILD_ID) {
+            throw "Native build ID mismatch: expected $env:EXPECTED_BUILD_ID, application=$applicationBuildId, platform=$platformBuildId"
+          }
+          Write-Host "Verified native Stage 1 build IDs: $applicationBuildId $platformBuildId"
+
+          # application.ini is useful context, but the native process output is
+          # the authoritative identity check above.
+          $applicationIniPath = Join-Path $browserDirectory 'application.ini'
+          if (Test-Path -LiteralPath $applicationIniPath -PathType Leaf) {
+            try {
+              $iniBuildId = $null
+              foreach ($line in Get-Content -LiteralPath $applicationIniPath) {
+                if ($line -match '^BuildID=(\d{14})$') {
+                  $iniBuildId = $Matches[1]
+                  break
+                }
+              }
+              if ($iniBuildId) {
+                Write-Host "Diagnostic application.ini BuildID: $iniBuildId"
+                if ($iniBuildId -ne $env:EXPECTED_BUILD_ID) {
+                  Write-Warning "Diagnostic application.ini BuildID differs from the expected native identity."
+                }
+              } else {
+                Write-Warning "Diagnostic application.ini has no 14-digit BuildID."
+              }
+            } catch {
+              Write-Warning "Could not read diagnostic application.ini: $($_.Exception.Message)"
+            }
+          } else {
+            Write-Warning "Diagnostic application.ini not found at $applicationIniPath"
           }
 
       - name: Setup Mozilla Build
@@ -107,3 +212,5 @@ jobs:
             merged.profdata
             en-US.log
           retention-days: 7
+          if-no-files-found: error
+          overwrite: true
