@@ -3,6 +3,10 @@
 
 name: Linux Build
 
+permissions:
+  actions: read
+  contents: read
+
 'on':
   workflow_dispatch:
     inputs:
@@ -23,6 +27,11 @@ name: Linux Build
           - aarch64
         default: x86_64
         required: true
+      requested_MOZ_BUILD_DATE:
+        description: 'Optional 14-digit build ID assertion'
+        type: string
+        default: ''
+        required: false
 
   workflow_call:
     inputs:
@@ -33,36 +42,77 @@ name: Linux Build
       pgo:
         description: 'Enable Profile-Guided Optimization'
         type: boolean
-        default: false
         required: true
       arch:
         description: 'Target architecture'
         type: string
         default: x86_64
         required: false
+      MOZ_BUILD_DATE:
+        description: 'Resolved 14-digit build ID'
+        type: string
+        required: true
+    outputs:
+      artifact-name:
+        description: 'Primary final build artifact name'
+        value: >-
+          ${{ inputs.pgo && inputs.arch != 'aarch64' &&
+          jobs.build-pgo-final.outputs.artifact-name ||
+          jobs.build-normal.outputs.artifact-name }}
+      artifact-id:
+        description: 'Primary final build artifact ID'
+        value: >-
+          ${{ inputs.pgo && inputs.arch != 'aarch64' &&
+          jobs.build-pgo-final.outputs.artifact-id ||
+          jobs.build-normal.outputs.artifact-id }}
+      artifact-digest:
+        description: 'Primary final build artifact digest'
+        value: >-
+          ${{ inputs.pgo && inputs.arch != 'aarch64' &&
+          jobs.build-pgo-final.outputs.artifact-digest ||
+          jobs.build-normal.outputs.artifact-digest }}
+      expected-build-id:
+        description: 'Build ID embedded in the primary final artifact'
+        value: >-
+          ${{ inputs.pgo && inputs.arch != 'aarch64' &&
+          jobs.build-pgo-final.outputs.expected-build-id ||
+          jobs.build-normal.outputs.expected-build-id }}
 
 run-name: >-
-  ${{ inputs.pgo && '[PGO] ' || '' }}Linux ${{ inputs.arch || 'x64' }}
+  ${{ inputs.pgo && inputs.arch != 'aarch64' && '[PGO] ' || '' }}Linux
+  ${{ inputs.arch || 'x86_64' }}
   ${{ inputs.debug && ' Debug' || '' }}
 
 jobs:
+  resolve-build-context:
+    uses: ./.github/workflows/resolve-build-context.yml
+    with:
+      resolved_moz_build_date: ${{ inputs.MOZ_BUILD_DATE || '' }}
+      requested_moz_build_date: >-
+        ${{ inputs.requested_MOZ_BUILD_DATE || '' }}
+      require_run_metadata: false
+
   build-normal:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }}
       ${{ inputs.debug && ' Debug' || '' }}
     if: ${{ !inputs.pgo || inputs.arch == 'aarch64' }}
+    needs: resolve-build-context
     uses: ./.github/workflows/common-build.yml
     with:
       platform: linux
       arch: ${{ inputs.arch || 'x86_64' }}
       debug: ${{ inputs.debug }}
       pgo: false
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   build-pgo-stage1:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 1
       ${{ inputs.debug && ' Debug' || '' }}
     if: ${{ inputs.pgo && inputs.arch != 'aarch64' }}
+    needs: resolve-build-context
     uses: ./.github/workflows/common-build.yml
     with:
       platform: linux
@@ -70,28 +120,32 @@ jobs:
       debug: ${{ inputs.debug }}
       pgo: true
       pgo_mode: 'generate'
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   collect-profiles:
     name: Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 2
     if: ${{ inputs.pgo && inputs.arch != 'aarch64' }}
-    needs: build-pgo-stage1
+    needs: [resolve-build-context, build-pgo-stage1]
     uses: ./.github/workflows/generate-pgo-profile-linux.yml
     secrets: inherit
     with:
       browser-artifact-name: >-
-        floorp-linux-${{ inputs.arch || 'x86_64' }}-moz-artifact
+        floorp-linux-x86_64-profile-generate-mode-package
       artifact-path: /home/runner/artifact
       runner: ubuntu-latest
       target-arch: ${{ inputs.arch || 'x86_64' }}
       upload-artifact-name: >-
         floorp-linux-${{ inputs.arch || 'x86_64' }}-profile-generate-output
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   build-pgo-final:
     name: >-
       Linux ${{ inputs.arch || 'x86_64' }} PGO Stage 3
       ${{ inputs.debug && ' Debug' || '' }}
     if: ${{ inputs.pgo && inputs.arch != 'aarch64' }}
-    needs: collect-profiles
+    needs: [resolve-build-context, collect-profiles]
     uses: ./.github/workflows/common-build.yml
     with:
       platform: linux
@@ -101,3 +155,5 @@ jobs:
       pgo_mode: 'use'
       pgo_artifact_name: >-
         floorp-linux-${{ inputs.arch || 'x86_64' }}-profile-generate-output
+      MOZ_BUILD_DATE: >-
+        ${{ needs.resolve-build-context.outputs.expected-build-id }}

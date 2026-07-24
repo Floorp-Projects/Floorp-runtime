@@ -18,7 +18,6 @@ name: Common Build Workflow
         description: 'Enable debug build'
         type: boolean
         required: true
-        default: true
       release:
         description: 'Enable release build'
         type: boolean
@@ -45,18 +44,51 @@ name: Common Build Workflow
         required: false
         default: ""
       MOZ_BUILD_DATE:
-        description: 'Build date override'
+        description: 'Expected 14-digit build ID (YYYYMMDDhhmmss)'
         type: string
-        required: false
-        default: ""
+        required: true
+    outputs:
+      artifact-name:
+        description: 'Name of the consolidated primary build artifact'
+        value: ${{ jobs.build.outputs.artifact-name }}
+      artifact-id:
+        description: 'GitHub artifact ID of the consolidated primary build artifact'
+        value: ${{ jobs.build.outputs.artifact-id }}
+      artifact-digest:
+        description: 'GitHub artifact digest of the consolidated primary build artifact'
+        value: ${{ jobs.build.outputs.artifact-digest }}
+      expected-build-id:
+        description: 'Validated build ID used for this build'
+        value: ${{ jobs.build.outputs.expected-build-id }}
 
 jobs:
   build:
     name: Build ${{ inputs.platform }}-${{ inputs.arch }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    outputs:
+      artifact-name: ${{ steps.build-identity.outputs.artifact-name }}
+      artifact-id: ${{ steps.upload-primary-artifact.outputs.artifact-id }}
+      artifact-digest: ${{ steps.upload-primary-artifact.outputs.artifact-digest }}
+      expected-build-id: ${{ steps.build-identity.outputs.expected-build-id }}
 
     steps:
+      - name: Validate build identity
+        id: build-identity
+        shell: bash
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          ARCH: ${{ inputs.arch }}
+          MOZ_BUILD_DATE: ${{ inputs.MOZ_BUILD_DATE }}
+        run: |
+          if [[ ! "$MOZ_BUILD_DATE" =~ ^[0-9]{14}$ ]]; then
+            echo "::error::MOZ_BUILD_DATE must be exactly 14 decimal digits (YYYYMMDDhhmmss)."
+            exit 1
+          fi
+
+          echo "artifact-name=floorp-${PLATFORM}-${ARCH}-moz-artifact" >> "$GITHUB_OUTPUT"
+          echo "expected-build-id=${MOZ_BUILD_DATE}" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -141,53 +173,16 @@ jobs:
           SCCACHE_GHA_ENABLED: 'on'
           SCCACHE_MAX_FRAME_LENGTH: '1048576'
 
-      - name: Clean existing Windows artifacts
-        if: inputs.platform == 'windows'
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: |
-            floorp-windows-x86_64-moz-artifact
-            windows-x86_64-dist-host
-            windows-x86_64-application-ini
-
-      - name: Clean existing Linux x86_64 artifacts
-        if: inputs.platform == 'linux' && inputs.arch == 'x86_64'
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: |
-            floorp-linux-x86_64-moz-artifact
-            linux-x86_64-dist-host
-            linux-x86_64-application-ini
-
-      - name: Clean existing Linux aarch64 artifacts
-        if: inputs.platform == 'linux' && inputs.arch == 'aarch64'
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: |
-            floorp-linux-aarch64-moz-artifact
-            linux-aarch64-dist-host
-            linux-aarch64-application-ini
-
-      - name: Clean existing Mac artifacts
-        if: inputs.platform == 'mac'
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: |
-            floorp-mac-${{ inputs.arch }}-moz-artifact
-
       - name: Upload build artifact
+        id: upload-primary-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: floorp-${{ inputs.platform }}-${{ inputs.arch }}-moz-artifact
+          name: ${{ steps.build-identity.outputs.artifact-name }}
           path: >-
-            ${{ inputs.platform == 'windows' &&
-            format('~/output/floorp-{0}-{1}-moz-artifact.zip',
-            inputs.platform, inputs.arch) ||
-            inputs.platform == 'mac' &&
-            format('~/output/floorp-{0}-{1}-moz-artifact.tar.gz',
-            inputs.platform, inputs.arch) ||
-            format('~/output/floorp-{0}-{1}-moz-artifact.tar.xz',
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact-bundle',
             inputs.platform, inputs.arch) }}
+          if-no-files-found: error
+          overwrite: true
 
       - name: Upload PGO profile generation package (Windows)
         if: >-
@@ -198,8 +193,24 @@ jobs:
         with:
           name: floorp-windows-x86_64-profile-generate-mode-package
           path: >-
-            ${{ format('~/output/floorp-{0}-{1}-moz-artifact.zip',
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact-bundle/floorp-{0}-{1}-moz-artifact.zip',
             inputs.platform, inputs.arch) }}
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Upload PGO profile generation package (Linux)
+        if: >-
+          inputs.pgo_mode == 'generate' &&
+          inputs.platform == 'linux' &&
+          inputs.arch == 'x86_64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: floorp-linux-x86_64-profile-generate-mode-package
+          path: >-
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact-bundle/floorp-{0}-{1}-moz-artifact.tar.xz',
+            inputs.platform, inputs.arch) }}
+          if-no-files-found: error
+          overwrite: true
 
       - name: Upload PGO profile generation package (Mac)
         if: >-
@@ -209,19 +220,27 @@ jobs:
         with:
           name: floorp-mac-${{ inputs.arch }}-build-with-profgen
           path: >-
-            ${{ format('~/output/floorp-{0}-{1}-moz-artifact.tar.gz',
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact-bundle/floorp-{0}-{1}-moz-artifact.tar.gz',
             inputs.platform, inputs.arch) }}
+          if-no-files-found: error
+          overwrite: true
 
       - name: Upload dist/host for MAR
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.platform }}-${{ inputs.arch }}-dist-host
-          path: ${{ format('~/output/{0}-{1}-dist-host', inputs.platform, inputs.arch) }}
+          path: >-
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact-bundle/dist-host',
+            inputs.platform, inputs.arch) }}
+          if-no-files-found: error
           overwrite: true
 
       - name: Upload application.ini for MAR
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.platform }}-${{ inputs.arch }}-application-ini
-          path: ./floorp-application.ini
+          path: >-
+            ${{ format('~/output/floorp-{0}-{1}-moz-artifact-bundle/floorp-application.ini',
+            inputs.platform, inputs.arch) }}
+          if-no-files-found: error
           overwrite: true

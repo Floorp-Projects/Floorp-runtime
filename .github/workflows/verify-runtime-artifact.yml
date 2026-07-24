@@ -1,0 +1,497 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Verify Final Runtime Artifact
+
+'on':
+  workflow_call:
+    inputs:
+      source-workflow-run-id:
+        description: Optional source run ID; blank verifies this workflow run
+        type: string
+        required: false
+        default: ''
+      artifact-id:
+        description: Immutable final primary artifact ID
+        type: string
+        required: true
+      artifact-name:
+        description: Expected final primary artifact name
+        type: string
+        required: true
+      expected-build-id:
+        description: Expected 14-digit application and platform build ID
+        type: string
+        required: true
+      platform:
+        description: Target platform (Windows, Linux, or Darwin)
+        type: string
+        required: true
+      arch:
+        description: Native slice architecture
+        type: string
+        required: true
+      runner:
+        description: Native GitHub-hosted runner label
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      source-workflow-run-id:
+        description: Source Actions workflow run ID containing the artifact
+        type: string
+        required: true
+      artifact-id:
+        description: Immutable final primary artifact ID
+        type: string
+        required: true
+      artifact-name:
+        description: Expected final primary artifact name
+        type: string
+        required: true
+      expected-build-id:
+        description: Expected 14-digit BuildID derived from source run created_at
+        type: string
+        required: true
+      platform:
+        description: Target platform
+        type: choice
+        required: true
+        options:
+          - Windows
+          - Linux
+          - Darwin
+      arch:
+        description: Native slice architecture
+        type: choice
+        required: true
+        options:
+          - x86_64
+          - aarch64
+      runner:
+        description: Native runner matching platform and architecture
+        type: choice
+        required: true
+        options:
+          - windows-2025
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+          - macos-15-intel
+          - macos-14
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  verify:
+    name: Verify ${{ inputs.platform }}/${{ inputs.arch }} final runtime
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Validate immutable verifier contract
+        uses: actions/github-script@v7
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source-workflow-run-id || github.run_id }}
+          ARTIFACT_ID: ${{ inputs.artifact-id }}
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
+          TARGET_PLATFORM: ${{ inputs.platform }}
+          TARGET_ARCH: ${{ inputs.arch }}
+          TARGET_RUNNER: ${{ inputs.runner }}
+        with:
+          script: |
+            const contracts = new Map([
+              ["Windows/x86_64", {
+                runner: "windows-2025",
+                artifact: "floorp-windows-x86_64-moz-artifact",
+              }],
+              ["Linux/x86_64", {
+                runner: "ubuntu-24.04",
+                artifact: "floorp-linux-x86_64-moz-artifact",
+              }],
+              ["Linux/aarch64", {
+                runner: "ubuntu-24.04-arm",
+                artifact: "floorp-linux-aarch64-moz-artifact",
+              }],
+              ["Darwin/x86_64", {
+                runner: "macos-15-intel",
+                artifact: "floorp-mac-universal-moz-artifact",
+              }],
+              ["Darwin/aarch64", {
+                runner: "macos-14",
+                artifact: "floorp-mac-universal-moz-artifact",
+              }],
+            ]);
+
+            const positiveId = /^[1-9][0-9]*$/;
+            for (const [name, value] of [
+              ["source workflow run ID", process.env.SOURCE_RUN_ID],
+              ["artifact ID", process.env.ARTIFACT_ID],
+            ]) {
+              if (!positiveId.test(value)) {
+                core.setFailed(`${name} must be a positive decimal integer`);
+                return;
+              }
+              if (!Number.isSafeInteger(Number(value))) {
+                core.setFailed(`${name} exceeds JavaScript's safe integer range`);
+                return;
+              }
+            }
+            if (!/^[0-9]{14}$/.test(process.env.EXPECTED_BUILD_ID)) {
+              core.setFailed("expected build ID must be exactly 14 ASCII digits");
+              return;
+            }
+
+            const key = `${process.env.TARGET_PLATFORM}/${process.env.TARGET_ARCH}`;
+            const contract = contracts.get(key);
+            if (!contract) {
+              core.setFailed(`unsupported native verifier target: ${key}`);
+              return;
+            }
+            if (process.env.TARGET_RUNNER !== contract.runner) {
+              core.setFailed(
+                `${key} requires ${contract.runner}, got ${process.env.TARGET_RUNNER}`
+              );
+              return;
+            }
+            if (process.env.ARTIFACT_NAME !== contract.artifact) {
+              core.setFailed(
+                `${key} requires artifact ${contract.artifact}, got ` +
+                  process.env.ARTIFACT_NAME
+              );
+            }
+
+      - name: Validate manually selected source provenance
+        if: inputs.source-workflow-run-id != ''
+        uses: actions/github-script@v7
+        env:
+          SOURCE_RUN_ID: ${{ inputs.source-workflow-run-id }}
+          ARTIFACT_ID: ${{ inputs.artifact-id }}
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
+        with:
+          script: |
+            const sourceRunId = Number(process.env.SOURCE_RUN_ID);
+            const artifactId = Number(process.env.ARTIFACT_ID);
+            const {data: run} = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: sourceRunId,
+            });
+            if (run.id !== sourceRunId) {
+              core.setFailed("REST workflow run ID mismatch");
+              return;
+            }
+            if (run.repository?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("REST workflow repository mismatch");
+              return;
+            }
+            if (!/^[0-9a-f]{40}$/.test(run.head_sha || "")) {
+              core.setFailed("REST workflow head SHA is malformed");
+              return;
+            }
+            if (!Number.isInteger(run.run_attempt) || run.run_attempt < 1) {
+              core.setFailed("REST workflow run attempt is malformed");
+              return;
+            }
+            if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$/.test(run.created_at || "")) {
+              core.setFailed("REST workflow created_at is malformed");
+              return;
+            }
+            const derivedBuildId = run.created_at.replace(/[-:TZ]/g, "");
+            if (derivedBuildId !== process.env.EXPECTED_BUILD_ID) {
+              core.setFailed(
+                `expected BuildID ${process.env.EXPECTED_BUILD_ID} does not match ` +
+                  `source run created_at BuildID ${derivedBuildId}`
+              );
+              return;
+            }
+
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: sourceRunId,
+                per_page: 100,
+              }
+            );
+            const matches = artifacts.filter(artifact => artifact.id === artifactId);
+            if (matches.length !== 1) {
+              core.setFailed("artifact ID is not unique in the selected source run");
+              return;
+            }
+            if (matches[0].name !== process.env.ARTIFACT_NAME) {
+              core.setFailed(
+                `REST artifact name ${matches[0].name} does not match ` +
+                  process.env.ARTIFACT_NAME
+              );
+              return;
+            }
+            if (matches[0].expired) {
+              core.setFailed("selected source artifact is expired");
+            }
+
+      - name: Checkout native identity parser
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/scripts/verify_full_version.py
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download exact final primary artifact by ID
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ inputs.artifact-id }}
+          path: ${{ runner.temp }}/runtime-artifact
+          merge-multiple: true
+          run-id: ${{ inputs.source-workflow-run-id || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify Windows final runtime natively
+        if: inputs.platform == 'Windows'
+        shell: pwsh
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/runtime-artifact
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
+          OUTPUT_FILE: ${{ runner.temp }}/native-full-version.txt
+          PARSER_PATH: ${{ github.workspace }}/.github/workflows/scripts/verify_full_version.py
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RUNNER_ARCH -ne 'X64') {
+            throw "Expected a native X64 runner, got $env:RUNNER_ARCH"
+          }
+
+          $expectedPackage = Join-Path $env:ARTIFACT_DIR "$env:ARTIFACT_NAME.zip"
+          $archives = @(Get-ChildItem -LiteralPath $env:ARTIFACT_DIR -File -Filter '*.zip')
+          if ($archives.Count -ne 1 -or
+              $archives[0].FullName -ne $expectedPackage) {
+            throw "Expected exactly the root package $expectedPackage"
+          }
+
+          $extractDirectory = Join-Path $env:RUNNER_TEMP 'native-runtime-package'
+          New-Item -ItemType Directory -Path $extractDirectory -Force | Out-Null
+          Expand-Archive -LiteralPath $expectedPackage -DestinationPath $extractDirectory -Force
+          $binaries = @(
+            Get-ChildItem -LiteralPath $extractDirectory -Recurse -File -Filter 'floorp.exe'
+          )
+          if ($binaries.Count -ne 1) {
+            throw "Expected exactly one packaged floorp.exe; found $($binaries.Count)"
+          }
+
+          $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+          $startInfo.FileName = $binaries[0].FullName
+          $startInfo.Arguments = '--full-version'
+          $startInfo.WorkingDirectory = $binaries[0].DirectoryName
+          $startInfo.UseShellExecute = $false
+          $startInfo.RedirectStandardOutput = $true
+          $startInfo.RedirectStandardError = $true
+          $startInfo.CreateNoWindow = $true
+          [void]$startInfo.Environment.Remove('XUL_APP_FILE')
+
+          $process = [System.Diagnostics.Process]::new()
+          $process.StartInfo = $startInfo
+          try {
+            if (-not $process.Start()) {
+              throw 'Failed to start packaged floorp.exe'
+            }
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            if (-not $process.WaitForExit(30000)) {
+              $process.Kill($true)
+              $process.WaitForExit()
+              throw 'Packaged floorp.exe --full-version timed out'
+            }
+            $stdout = $stdoutTask.GetAwaiter().GetResult()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
+            if ($process.ExitCode -ne 0) {
+              throw "Packaged floorp.exe exited with code $($process.ExitCode): $stderr"
+            }
+          } finally {
+            $process.Dispose()
+          }
+
+          Write-Host $stdout
+          if ($stderr) { Write-Host "stderr: $stderr" }
+          [System.IO.File]::WriteAllText(
+            $env:OUTPUT_FILE,
+            $stdout,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+          & python $env:PARSER_PATH `
+            --expected-build-id $env:EXPECTED_BUILD_ID `
+            --output-file $env:OUTPUT_FILE
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Native --full-version identity parser rejected Windows output'
+          }
+
+      - name: Verify Linux final runtime natively
+        if: inputs.platform == 'Linux'
+        shell: bash
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/runtime-artifact
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
+          OUTPUT_FILE: ${{ runner.temp }}/native-full-version.txt
+          PARSER_PATH: ${{ github.workspace }}/.github/workflows/scripts/verify_full_version.py
+          TARGET_ARCH: ${{ inputs.arch }}
+        run: |
+          set -euo pipefail
+          case "$TARGET_ARCH" in
+            x86_64) expected_runner_arch=x86_64 ;;
+            aarch64) expected_runner_arch=aarch64 ;;
+            *) echo "Unsupported Linux architecture: $TARGET_ARCH" >&2; exit 1 ;;
+          esac
+          if [[ "$(uname -m)" != "$expected_runner_arch" ]]; then
+            echo "Expected native $expected_runner_arch runner, got $(uname -m)" >&2
+            exit 1
+          fi
+
+          shopt -s nullglob
+          archives=("$ARTIFACT_DIR"/*.tar.xz)
+          expected_archive="$ARTIFACT_DIR/$ARTIFACT_NAME.tar.xz"
+          if (( ${#archives[@]} != 1 )) || [[ "${archives[0]}" != "$expected_archive" ]]; then
+            echo "Expected exactly the root package $expected_archive" >&2
+            exit 1
+          fi
+
+          package_dir="$RUNNER_TEMP/native-runtime-package"
+          mkdir -p "$package_dir"
+          tar -xf "$expected_archive" -C "$package_dir"
+          mapfile -t binaries < <(find "$package_dir" -type f -name floorp -perm /111 -print)
+          if (( ${#binaries[@]} != 1 )); then
+            echo "Expected exactly one packaged floorp binary; found ${#binaries[@]}" >&2
+            exit 1
+          fi
+
+          unset XUL_APP_FILE
+          if full_version="$(timeout 30s "${binaries[0]}" --full-version 2>&1)"; then
+            :
+          else
+            status=$?
+            printf '%s\n' "$full_version" >&2
+            exit "$status"
+          fi
+          printf '%s\n' "$full_version"
+          printf '%s\n' "$full_version" > "$OUTPUT_FILE"
+          python "$PARSER_PATH" \
+            --expected-build-id "$EXPECTED_BUILD_ID" \
+            --output-file "$OUTPUT_FILE"
+
+      - name: Verify macOS universal final runtime natively
+        if: inputs.platform == 'Darwin'
+        shell: bash
+        env:
+          ARTIFACT_DIR: ${{ runner.temp }}/runtime-artifact
+          EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
+          OUTPUT_FILE: ${{ runner.temp }}/native-full-version.txt
+          PARSER_PATH: ${{ github.workspace }}/.github/workflows/scripts/verify_full_version.py
+          TARGET_ARCH: ${{ inputs.arch }}
+        run: |
+          set -euo pipefail
+          case "$TARGET_ARCH" in
+            x86_64) expected_runner_arch=x86_64; expected_slice=x86_64 ;;
+            aarch64) expected_runner_arch=arm64; expected_slice=arm64 ;;
+            *) echo "Unsupported macOS architecture: $TARGET_ARCH" >&2; exit 1 ;;
+          esac
+          if [[ "$(uname -m)" != "$expected_runner_arch" ]]; then
+            echo "Expected native $expected_runner_arch runner, got $(uname -m)" >&2
+            exit 1
+          fi
+
+          shopt -s nullglob
+          dmgs=("$ARTIFACT_DIR"/*.dmg)
+          expected_dmg="$ARTIFACT_DIR/floorp-macOS-universal-moz-artifact.dmg"
+          if (( ${#dmgs[@]} != 1 )) || [[ "${dmgs[0]}" != "$expected_dmg" ]]; then
+            echo "Expected exactly the root package $expected_dmg" >&2
+            exit 1
+          fi
+
+          mount_plist="$RUNNER_TEMP/floorp-mount.plist"
+          hdiutil attach -readonly -nobrowse -plist "$expected_dmg" > "$mount_plist"
+          mount_point="$(python - "$mount_plist" <<'PY'
+          import plistlib
+          import sys
+
+          with open(sys.argv[1], "rb") as source:
+              payload = plistlib.load(source)
+          points = [
+              entity["mount-point"]
+              for entity in payload.get("system-entities", [])
+              if isinstance(entity, dict) and entity.get("mount-point")
+          ]
+          if len(points) != 1:
+              raise SystemExit(f"expected one mounted DMG volume, found {len(points)}")
+          print(points[0])
+          PY
+          )"
+          cleanup() {
+            if [[ -n "${mount_point:-}" ]]; then
+              hdiutil detach "$mount_point" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          app_binary="$(python - "$mount_point" <<'PY'
+          import pathlib
+          import sys
+
+          matches = [
+              path
+              for path in pathlib.Path(sys.argv[1]).glob("*.app/Contents/MacOS/floorp")
+              if path.is_file()
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected one packaged Floorp app, found {len(matches)}")
+          print(matches[0])
+          PY
+          )"
+          slices="$(lipo -archs "$app_binary")"
+          case " $slices " in
+            *" $expected_slice "*) ;;
+            *) echo "Universal binary lacks $expected_slice slice: $slices" >&2; exit 1 ;;
+          esac
+
+          unset XUL_APP_FILE
+          APP_BINARY="$app_binary" python3 - <<'PY'
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          environment = os.environ.copy()
+          environment.pop("XUL_APP_FILE", None)
+          try:
+              result = subprocess.run(
+                  [os.environ["APP_BINARY"], "--full-version"],
+                  env=environment,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+                  timeout=30,
+                  check=False,
+              )
+          except subprocess.TimeoutExpired as error:
+              if error.stdout:
+                  sys.stderr.buffer.write(error.stdout)
+              raise SystemExit(
+                  "packaged Floorp --full-version timed out after 30 seconds"
+              ) from error
+
+          if result.returncode != 0:
+              sys.stderr.buffer.write(result.stdout)
+              raise SystemExit(
+                  f"packaged Floorp exited with code {result.returncode}"
+              )
+          sys.stdout.buffer.write(result.stdout)
+          pathlib.Path(os.environ["OUTPUT_FILE"]).write_bytes(result.stdout)
+          PY
+          python "$PARSER_PATH" \
+            --expected-build-id "$EXPECTED_BUILD_ID" \
+            --output-file "$OUTPUT_FILE"

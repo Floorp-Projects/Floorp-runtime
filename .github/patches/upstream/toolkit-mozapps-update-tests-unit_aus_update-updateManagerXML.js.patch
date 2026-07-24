@@ -1,0 +1,82 @@
+diff --git a/toolkit/mozapps/update/tests/unit_aus_update/updateManagerXML.js b/toolkit/mozapps/update/tests/unit_aus_update/updateManagerXML.js
+--- a/toolkit/mozapps/update/tests/unit_aus_update/updateManagerXML.js
++++ b/toolkit/mozapps/update/tests/unit_aus_update/updateManagerXML.js
+@@ -30,8 +30,10 @@ async function run_test() {
+     name: "New",
+     displayVersion: "version 4",
+     appVersion: "4.0",
++    appVersion2: "4.0.1",
+     platformVersion: "4.0",
+     buildID: "20070811053724",
++    buildID2: "01982f4f-7b80-7000-8000-000000000001",
+     detailsURL: "http://details1/",
+     serviceURL: "http://service1/",
+     installDate: "1238441300314",
+@@ -78,6 +80,17 @@ async function run_test() {
+ 
+   await standardInit();
+ 
++  await waitForUpdateXMLFiles();
++  const serializedUpdates = readFile(getUpdateDirFile(FILE_UPDATES_XML));
++  Assert.ok(
++    serializedUpdates.includes('appVersion2="4.0.1"'),
++    "the serialized update should contain the appVersion2 attribute"
++  );
++  Assert.ok(
++    serializedUpdates.includes('buildID2="01982f4f-7b80-7000-8000-000000000001"'),
++    "the serialized update should contain the buildID2 attribute"
++  );
++
+   Assert.ok(
+     !(await gUpdateManager.getDownloadingUpdate()),
+     "there should not be a downloading update"
+@@ -121,11 +134,21 @@ async function run_test() {
+     "4.0",
+     "the update appVersion attribute" + MSG_SHOULD_EQUAL
+   );
++  Assert.equal(
++    update.appVersion2,
++    "4.0.1",
++    "the update appVersion2 attribute" + MSG_SHOULD_EQUAL
++  );
+   Assert.equal(
+     update.buildID,
+     "20070811053724",
+     "the update buildID attribute" + MSG_SHOULD_EQUAL
+   );
++  Assert.equal(
++    update.buildID2,
++    "01982f4f-7b80-7000-8000-000000000001",
++    "the update buildID2 attribute" + MSG_SHOULD_EQUAL
++  );
+   Assert.equal(
+     update.detailsURL,
+     "http://details1/",
+@@ -526,8 +549,10 @@ async function run_test() {
+ 
+   let attrNames = [
+     "appVersion",
++    "appVersion2",
+     "platformVersion",
+     "buildID",
++    "buildID2",
+     "channel",
+     "detailsURL",
+     "displayVersion",
+@@ -569,6 +594,16 @@ async function run_test() {
+     "4.0",
+     "the platformVersion of the update should be 4.0"
+   );
++  Assert.equal(
++    updateHistory[0].appVersion2,
++    "4.0.1",
++    "the appVersion2 of the update should be 4.0.1"
++  );
++  Assert.equal(
++    updateHistory[0].buildID2,
++    "01982f4f-7b80-7000-8000-000000000001",
++    "the buildID2 of the update should be preserved"
++  );
+ 
+   executeSoon(doTestFinish);
+ }

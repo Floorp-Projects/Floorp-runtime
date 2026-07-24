@@ -18,15 +18,38 @@ on:
         type: boolean
         default: false
       MOZ_BUILD_DATE:
+        description: "Resolved 14-digit build ID"
         type: string
-        default: ""
+        required: true
       debug:
         type: boolean
         default: false
+    outputs:
+      artifact-name:
+        description: "Final universal macOS artifact name"
+        value: ${{ jobs.Integration.outputs.artifact-name }}
+      artifact-id:
+        description: "Final universal macOS artifact ID"
+        value: ${{ jobs.Integration.outputs.artifact-id }}
+      artifact-digest:
+        description: "Final universal macOS artifact digest"
+        value: ${{ jobs.Integration.outputs.artifact-digest }}
+      expected-build-id:
+        description: "Expected build ID embedded in the artifact"
+        value: ${{ jobs.Integration.outputs.expected-build-id }}
+
+permissions:
+  actions: read
+  contents: read
 
 jobs:
   Integration:
     runs-on: macos-26
+    outputs:
+      artifact-name: floorp-mac-universal-moz-artifact
+      artifact-id: ${{ steps.upload-primary.outputs.artifact-id }}
+      artifact-digest: ${{ steps.upload-primary.outputs.artifact-digest }}
+      expected-build-id: ${{ inputs.MOZ_BUILD_DATE }}
     steps:
       - name: Init
         run: |
@@ -71,13 +94,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.aarch64_artifact_name }}
-          path: ./
+          path: ./downloaded-artifacts/aarch64
 
       - name: download x86_64 build artifact 📥
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.x86_64_artifact_name }}
-          path: ./
+          path: ./downloaded-artifacts/x86_64
 
       - name: Download macOS SDK
         uses: actions/download-artifact@v4
@@ -93,12 +116,20 @@ jobs:
 
       - name: Extract 📦
         run: |
+          set -euo pipefail
+          X86_64_ARCHIVE=./downloaded-artifacts/x86_64/floorp-mac-x86_64-moz-artifact.tar.gz
+          AARCH64_ARCHIVE=./downloaded-artifacts/aarch64/floorp-mac-aarch64-moz-artifact.tar.gz
+
+          if [[ ! -f "$X86_64_ARCHIVE" || ! -f "$AARCH64_ARCHIVE" ]]; then
+            echo "Missing one or both architecture package archives" >&2
+            find ./downloaded-artifacts -maxdepth 3 -type f -print >&2
+            exit 1
+          fi
+
           mkdir -p ./obj-x86_64-apple-darwin/dist
-          tar -xf ./floorp-mac-x86_64-moz-artifact.tar.gz -C ./obj-x86_64-apple-darwin/dist
-          rm ./floorp-mac-x86_64-moz-artifact.tar.gz
+          tar -xf "$X86_64_ARCHIVE" -C ./obj-x86_64-apple-darwin/dist
           mkdir -p ./obj-aarch64-apple-darwin/dist
-          tar -xf ./floorp-mac-aarch64-moz-artifact.tar.gz -C ./obj-aarch64-apple-darwin/dist
-          rm ./floorp-mac-aarch64-moz-artifact.tar.gz
+          tar -xf "$AARCH64_ARCHIVE" -C ./obj-aarch64-apple-darwin/dist
 
       - name: Check Branding Type
         shell: bash
@@ -131,15 +162,11 @@ jobs:
       - name: setup environment 🌲
         continue-on-error: true
         env:
-          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
           SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
           MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
           MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_BUILD_DATE: ${{ inputs.MOZ_BUILD_DATE }}
         run: |
-          if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]]; then
-            export MOZ_BUILD_DATE=${{ inputs.MOZ_BUILD_DATE }}
-          fi
-
           echo "ac_add_options --disable-bootstrap" >> mozconfig
 
           # Add macOS SDK path
@@ -236,28 +263,19 @@ jobs:
 
       - name: Integration 🗃
         env:
-          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
           SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
           MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
           MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_BUILD_DATE: ${{ inputs.MOZ_BUILD_DATE }}
         run: |
-          if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]]; then
-            export MOZ_BUILD_DATE=${{ inputs.MOZ_BUILD_DATE }}
-          fi
-
           ./mach python "./toolkit/mozapps/installer/unify.py" ./obj-x86_64-apple-darwin/dist/floorp/*.app ./obj-aarch64-apple-darwin/dist/floorp/*.app
-
       - name: Create DMG 📦
         env:
-          GHA_BUILD_MACHINE: ${{ matrix.runs-on }}
           SDKROOT: ${{ env.RUNNER_USERDIR }}/macos-sdk
           MACOS_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
           MOZ_SDK_DIR: ${{ env.RUNNER_USERDIR }}/macos-sdk
+          MOZ_BUILD_DATE: ${{ inputs.MOZ_BUILD_DATE }}
         run: |
-          if [[ -n ${{ inputs.MOZ_BUILD_DATE }} ]]; then
-            export MOZ_BUILD_DATE=${{ inputs.MOZ_BUILD_DATE }}
-          fi
-
           ./mach python -m mozbuild.action.make_dmg ./obj-x86_64-apple-darwin/dist/floorp floorp-macOS-universal-moz-artifact.dmg
 
           cp ./obj-x86_64-apple-darwin/dist/floorp*update_framework_artifacts.zip ./floorp-macOS.update_framework_artifacts.zip
@@ -266,28 +284,56 @@ jobs:
           APP_DIR=$(find ./obj-x86_64-apple-darwin/dist/floorp -maxdepth 1 -name "*.app" -type d | head -n 1)
           cp "${APP_DIR}/Contents/Resources/application.ini" ./floorp-application.ini
 
-      # Publish Start
-      - name: Remove old uploaded artifacts
-        uses: geekyeggo/delete-artifact@v5.1.0
-        with:
-          name: |
-            floorp-mac-x86_64-package
-            floorp-mac-aarch64-package
+      - name: Stage consolidated universal artifact
+        env:
+          EXPECTED_BUILD_ID: ${{ inputs.MOZ_BUILD_DATE }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$EXPECTED_BUILD_ID" =~ ^[0-9]{14}$ ]]; then
+            echo "Expected build ID must be exactly 14 digits: $EXPECTED_BUILD_ID" >&2
+            exit 1
+          fi
+
+          ACTUAL_BUILD_ID=$(awk -F= '$1 == "BuildID" { print $2; exit }' ./floorp-application.ini | tr -d '\r')
+          if [[ "$ACTUAL_BUILD_ID" != "$EXPECTED_BUILD_ID" ]]; then
+            echo "Universal application.ini BuildID $ACTUAL_BUILD_ID does not match $EXPECTED_BUILD_ID" >&2
+            exit 1
+          fi
+
+          STAGE_DIR=./artifact-stage/floorp-mac-universal-moz-artifact
+          rm -rf "$STAGE_DIR"
+          mkdir -p "$STAGE_DIR/dist-host"
+
+          cp ./floorp-macOS-universal-moz-artifact.dmg "$STAGE_DIR/"
+          cp ./floorp-macOS.update_framework_artifacts.zip "$STAGE_DIR/"
+          cp -a ./obj-x86_64-apple-darwin/dist/host/. "$STAGE_DIR/dist-host/"
+          cp ./floorp-application.ini "$STAGE_DIR/floorp-application.ini"
+
+          test -s "$STAGE_DIR/floorp-macOS-universal-moz-artifact.dmg"
+          test -s "$STAGE_DIR/floorp-macOS.update_framework_artifacts.zip"
+          test -s "$STAGE_DIR/floorp-application.ini"
+          HOST_ENTRY=$(find "$STAGE_DIR/dist-host" -type f -print | sed -n '1p')
+          if [[ -z "$HOST_ENTRY" ]]; then
+            echo "The consolidated artifact has an empty dist-host directory" >&2
+            exit 1
+          fi
 
       - name: Publish Package Mozilla Artifact 🎁
+        id: upload-primary
         uses: actions/upload-artifact@v4
         with:
           name: floorp-mac-universal-moz-artifact
-          if-no-files-found: ignore
-          path: |
-            ./floorp-macOS-universal-moz-artifact.dmg
-            ./floorp-macOS.update_framework_artifacts.zip
+          path: ./artifact-stage/floorp-mac-universal-moz-artifact/
+          if-no-files-found: error
+          overwrite: true
 
       - name: Publish dist/host for MAR
         uses: actions/upload-artifact@v4
         with:
           name: macOS-universal-dist-host
           path: obj-x86_64-apple-darwin/dist/host/
+          if-no-files-found: error
           overwrite: true
 
       - name: Publish floorp-application.ini for MAR
@@ -295,7 +341,7 @@ jobs:
         with:
           name: macOS-universal-application-ini
           path: ./floorp-application.ini
+          if-no-files-found: error
           overwrite: true
-      # Publish End
 
 

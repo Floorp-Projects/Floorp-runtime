@@ -1,0 +1,77 @@
+---
+# SPDX-License-Identifier: MPL-2.0
+
+name: Resolve Runtime Build Context
+
+permissions:
+  actions: read
+  contents: read
+
+'on':
+  workflow_call:
+    inputs:
+      resolved_moz_build_date:
+        description: Trusted build ID propagated by a parent workflow
+        type: string
+        required: false
+        default: ''
+      requested_moz_build_date:
+        description: Optional assertion for the resolved build ID
+        type: string
+        required: false
+        default: ''
+      require_run_metadata:
+        description: Require validated metadata from the current Actions run
+        type: boolean
+        required: false
+        default: false
+    outputs:
+      expected-build-id:
+        description: UTC build ID derived from the Actions run creation time
+        value: ${{ jobs.resolve.outputs['expected-build-id'] }}
+      repository:
+        description: Validated repository full name
+        value: ${{ jobs.resolve.outputs.repository }}
+      head-sha:
+        description: Validated workflow head SHA
+        value: ${{ jobs.resolve.outputs['head-sha'] }}
+      workflow-run-id:
+        description: Validated Actions workflow run ID
+        value: ${{ jobs.resolve.outputs['workflow-run-id'] }}
+      run-created-at:
+        description: Canonical Actions run creation time when REST was required
+        value: ${{ jobs.resolve.outputs['run-created-at'] }}
+      run-attempt:
+        description: Validated Actions run attempt observation
+        value: ${{ jobs.resolve.outputs['run-attempt'] }}
+
+jobs:
+  resolve:
+    name: Resolve build context
+    runs-on: ubuntu-latest
+    outputs:
+      expected-build-id: ${{ steps.context.outputs['expected-build-id'] }}
+      repository: ${{ steps.context.outputs.repository }}
+      head-sha: ${{ steps.context.outputs['head-sha'] }}
+      workflow-run-id: ${{ steps.context.outputs['workflow-run-id'] }}
+      run-created-at: ${{ steps.context.outputs['run-created-at'] }}
+      run-attempt: ${{ steps.context.outputs['run-attempt'] }}
+    steps:
+      - name: Checkout build-context resolver
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/workflows/scripts/runtime_build_context.py
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve and validate build context
+        id: context
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REQUESTED_MOZ_BUILD_DATE: ${{ inputs.requested_moz_build_date }}
+          REQUIRE_RUN_METADATA: ${{ toJSON(inputs.require_run_metadata) }}
+          RESOLVED_MOZ_BUILD_DATE: ${{ inputs.resolved_moz_build_date }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/workflows/scripts/runtime_build_context.py
