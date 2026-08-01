@@ -233,11 +233,13 @@ jobs:
               core.setFailed("selected source artifact is expired");
             }
 
-      - name: Checkout native identity parser
+      - name: Checkout native verification scripts
         uses: actions/checkout@v4
         with:
           persist-credentials: false
-          sparse-checkout: .github/workflows/scripts/verify_full_version.py
+          sparse-checkout: |
+            .github/workflows/scripts/verify_full_version.py
+            .github/workflows/scripts/verify_linux_profile_paths.py
           sparse-checkout-cone-mode: false
 
       - name: Set up Python
@@ -341,6 +343,9 @@ jobs:
           EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
           OUTPUT_FILE: ${{ runner.temp }}/native-full-version.txt
           PARSER_PATH: ${{ github.workspace }}/.github/workflows/scripts/verify_full_version.py
+          PROFILE_PATH_VERIFIER: ${{ github.workspace }}/.github/workflows/scripts/verify_linux_profile_paths.py
+          PROFILE_PATH_WORK_DIR: ${{ runner.temp }}/floorp-profile-path-verification
+          PROFILE_PATH_RESULTS: ${{ runner.temp }}/floorp-profile-path-results.json
           TARGET_ARCH: ${{ inputs.arch }}
         run: |
           set -euo pipefail
@@ -384,6 +389,22 @@ jobs:
           python "$PARSER_PATH" \
             --expected-build-id "$EXPECTED_BUILD_ID" \
             --output-file "$OUTPUT_FILE"
+          python "$PROFILE_PATH_VERIFIER" \
+            --binary "${binaries[0]}" \
+            --work-dir "$PROFILE_PATH_WORK_DIR" \
+            --results-json "$PROFILE_PATH_RESULTS"
+
+      - name: Upload Linux profile path verification evidence
+        if: always() && inputs.platform == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-profile-path-verification-${{ inputs.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/floorp-profile-path-results.json
+            ${{ runner.temp }}/floorp-profile-path-verification/evidence
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
 
       - name: Verify macOS universal final runtime natively
         if: inputs.platform == 'Darwin'
