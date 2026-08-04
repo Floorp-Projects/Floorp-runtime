@@ -1,0 +1,259 @@
+diff --git a/toolkit/tests/gtest/TestXREAppDir.cpp b/toolkit/tests/gtest/TestXREAppDir.cpp
+index c5376749b4e4b87677ac11ee203a53cfcc3d4233..4917906bf60dfd34cfc774e9e043d03d4c197799 100644
+--- a/toolkit/tests/gtest/TestXREAppDir.cpp
++++ b/toolkit/tests/gtest/TestXREAppDir.cpp
+@@ -36,6 +36,9 @@ using namespace mozilla;
+ class BaseXREAppDir : public ::testing::Test {
+  protected:
+   void SetUp() override {
++    mInitialAppData = gAppData;
++    ASSERT_NE(mInitialAppData, nullptr);
++
+ // There is no need to mock on macOS because nsXREDirProvider relies on macOS
+ // level APIs, see below
+ #if defined(XP_UNIX) && !defined(XP_MACOSX)
+@@ -121,13 +124,7 @@ class BaseXREAppDir : public ::testing::Test {
+       SwitchFakeAppDataOff();
+     }
+ 
+-    EXPECT_STREQ(gAppData->profile, nullptr);
+-#if defined(ANDROID)
+-    EXPECT_STREQ(gAppData->name, "Fennec");
+-#else
+-    EXPECT_STREQ(gAppData->name, "Firefox");
+-#endif
+-    EXPECT_STREQ(gAppData->vendor, "Mozilla");
++    EXPECT_EQ(gAppData, mInitialAppData);
+   }
+ 
+   nsCString GetPath(nsCOMPtr<nsIFile> aFile) {
+@@ -147,9 +144,13 @@ class BaseXREAppDir : public ::testing::Test {
+ 
+   void SwitchFakeAppDataOff() {
+     EXPECT_NE(mOriginalAppData, nullptr);
+-    gAppData = mOriginalAppData;
++    EXPECT_EQ(gAppData, &mFakeAppData);
++
++    const XREAppData* originalAppData = mOriginalAppData;
+     mOriginalAppData = nullptr;
+-    EXPECT_STREQ(gAppData->profile, nullptr);
++    gAppData = originalAppData;
++
++    EXPECT_EQ(gAppData, mInitialAppData);
+   }
+ 
+   // Used by
+@@ -158,8 +159,8 @@ class BaseXREAppDir : public ::testing::Test {
+   //  - NS_APP_APPLICATION_REGISTRY_FILE
+   nsCString GetUserAppDataDirectory() {
+     nsCOMPtr<nsIFile> localDir;
+-    nsresult rv = NS_OK;
+-    nsXREDirProvider::GetUserAppDataDirectory(getter_AddRefs(localDir));
++    nsresult rv =
++        nsXREDirProvider::GetUserAppDataDirectory(getter_AddRefs(localDir));
+     EXPECT_NS_SUCCEEDED(rv);
+     return GetPath(localDir);
+   }
+@@ -289,6 +290,7 @@ class BaseXREAppDir : public ::testing::Test {
+   nsCString mRoamingHome;
+ #endif
+ 
++  const XREAppData* mInitialAppData = nullptr;
+   const XREAppData* mOriginalAppData = nullptr;
+   XREAppData mFakeAppData{};
+ };
+@@ -2087,3 +2089,194 @@ TEST_F(CacheXREAppDir_Env, GetUserProfilesLocalDir) {
+           ,
+       GetUserProfilesLocalDir());
+ }
++
++#if defined(MOZ_WIDGET_GTK)
++class FloorpXREAppDir : public XDGXREAppDir_NoEnv_AppDataProfile {
++ protected:
++  void SetUp() override {
++    XDGXREAppDir_NoEnv_AppDataProfile::SetUp();
++    mFakeAppData.vendor = "Ablaze";
++    mFakeAppData.name = "Floorp";
++    mFakeAppData.profile = "Floorp";
++    UnsetEnv("XDG_CACHE_HOME");
++    UnsetEnv("MOZ_APP_DATA");
++    UnsetEnv("MOZ_LOCAL_APP_DATA");
++  }
++
++  nsCString HomePath(const char* aRelativePath) {
++    nsCString path(mMockedHomeDir);
++    path.Append('/');
++    path.Append(aRelativePath);
++    return path;
++  }
++
++  void ExpectDataRoots(const nsCString& aConfigRoot,
++                       const nsCString& aCacheRoot) {
++    EXPECT_EQ(aConfigRoot, GetUserAppDataDirectory());
++    EXPECT_EQ(aConfigRoot, GetUserProfilesRootDir());
++    EXPECT_EQ(aCacheRoot, GetUserLocalDataDirectory());
++    EXPECT_EQ(aCacheRoot, GetUserProfilesLocalDir());
++  }
++
++  bool PathExists(const nsACString& aPath) {
++    nsCOMPtr<nsIFile> path;
++    nsresult rv = NS_NewNativeLocalFile(aPath, getter_AddRefs(path));
++    EXPECT_NS_SUCCEEDED(rv);
++    if (NS_FAILED(rv)) {
++      return false;
++    }
++
++    bool exists = false;
++    rv = path->Exists(&exists);
++    EXPECT_NS_SUCCEEDED(rv);
++    return NS_SUCCEEDED(rv) && exists;
++  }
++
++  void MakeHomeSubdir(const char* aRelativePath) {
++    nsCString path;
++    MkHomeSubdir(aRelativePath, path);
++  }
++
++  void UseCustomXDGConfigHome() {
++    MkHomeSubdir(".xdgConfigDir", mXdgConfigDir);
++    SetEnv("XDG_CONFIG_HOME", mXdgConfigDir.get());
++  }
++
++  void UseCustomXDGCacheHome() {
++    MkHomeSubdir(".xdgCacheDir", mXdgCacheDir);
++    SetEnv("XDG_CACHE_HOME", mXdgCacheDir.get());
++  }
++
++  nsCString mXdgConfigDir;
++  nsCString mXdgCacheDir;
++};
++
++TEST_F(FloorpXREAppDir, FreshHomeUsesDefaultXDGPaths) {
++  ExpectDataRoots(HomePath(".config/floorp"), HomePath(".cache/floorp"));
++  EXPECT_TRUE(PathExists(HomePath(".config/floorp")));
++  EXPECT_TRUE(PathExists(HomePath(".cache/floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".config/.floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".config/Floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".cache/Floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".floorp")));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, FreshHomeUsesCustomXDGPaths) {
++  UseCustomXDGConfigHome();
++  UseCustomXDGCacheHome();
++
++  ExpectDataRoots(nsCString(mXdgConfigDir + "/floorp"_ns),
++                  nsCString(mXdgCacheDir + "/floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgConfigDir + "/.floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgCacheDir + "/.floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgConfigDir + "/Floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgCacheDir + "/Floorp"_ns));
++  EXPECT_FALSE(PathExists(HomePath(".floorp")));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, RelativeXDGPathsFallBackToDefaults) {
++  SetEnv("MOZ_LEGACY_HOME", "0");
++  SetEnv("XDG_CONFIG_HOME", "relative-config");
++  SetEnv("XDG_CACHE_HOME", "relative-cache");
++
++  ExpectDataRoots(HomePath(".config/floorp"), HomePath(".cache/floorp"));
++  EXPECT_FALSE(PathExists(HomePath(".floorp")));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, ExistingEmptyLegacyRootWins) {
++  SetEnv("MOZ_LEGACY_HOME", "0");
++  MakeHomeSubdir(".floorp");
++
++  ExpectDataRoots(HomePath(".floorp"), HomePath(".cache/floorp"));
++  EXPECT_FALSE(PathExists(HomePath(".config/floorp")));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, ExistingLegacyRootWinsOverXDGRoot) {
++  MakeHomeSubdir(".floorp");
++  UseCustomXDGConfigHome();
++  MakeHomeSubdir(".xdgConfigDir/floorp");
++
++  ExpectDataRoots(HomePath(".floorp"), HomePath(".cache/floorp"));
++  EXPECT_TRUE(PathExists(mXdgConfigDir + "/floorp"_ns));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, ForcedLegacyKeepsXDGCache) {
++  SetEnv("MOZ_LEGACY_HOME", "1");
++  UseCustomXDGConfigHome();
++  UseCustomXDGCacheHome();
++
++  ExpectDataRoots(HomePath(".floorp"), nsCString(mXdgCacheDir + "/floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgConfigDir + "/floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgCacheDir + "/.floorp"_ns));
++  EXPECT_FALSE(PathExists(mXdgCacheDir + "/Floorp"_ns));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, ExistingCapitalizedMarkerDoesNotSelectLegacy) {
++  MakeHomeSubdir("Floorp");
++
++  ExpectDataRoots(HomePath(".config/floorp"), HomePath(".cache/floorp"));
++  EXPECT_TRUE(PathExists(HomePath("Floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".floorp")));
++}
++
++TEST_F(FloorpXREAppDir, ExistingMozillaRootDoesNotSelectLegacy) {
++  MakeHomeSubdir("mozilla");
++
++  ExpectDataRoots(HomePath(".config/floorp"), HomePath(".cache/floorp"));
++  EXPECT_TRUE(PathExists(HomePath("mozilla")));
++  EXPECT_FALSE(PathExists(HomePath(".floorp")));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, OfficialIdentityComparisonIsCaseInsensitive) {
++  mFakeAppData.vendor = "aBlAzE";
++  mFakeAppData.name = "fLoOrP";
++  mFakeAppData.profile = "FLOORP";
++  SetEnv("MOZ_LEGACY_HOME", "0");
++
++  ExpectDataRoots(HomePath(".config/floorp"), HomePath(".cache/floorp"));
++  EXPECT_FALSE(PathExists(HomePath(".config/FLOORP")));
++  EXPECT_FALSE(PathExists(HomePath(".cache/FLOORP")));
++  EXPECT_FALSE(PathExists(HomePath(".floorp")));
++  EXPECT_FALSE(PathExists(HomePath("Floorp")));
++}
++
++TEST_F(FloorpXREAppDir, NonOfficialVendorRetainsNamedProfileBehavior) {
++  mFakeAppData.vendor = "Example Distribution";
++
++  ExpectDataRoots(HomePath(".floorp"), HomePath(".cache/floorp"));
++  EXPECT_TRUE(PathExists(HomePath("Floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".config/floorp")));
++}
++
++TEST_F(FloorpXREAppDir, NonOfficialNameRetainsNamedProfileBehavior) {
++  mFakeAppData.name = "Floorp Community";
++
++  ExpectDataRoots(HomePath(".floorp"), HomePath(".cache/floorp"));
++  EXPECT_TRUE(PathExists(HomePath("Floorp")));
++  EXPECT_FALSE(PathExists(HomePath(".config/floorp")));
++}
++
++TEST_F(FloorpXREAppDir, NonOfficialProfileRetainsNamedProfileBehavior) {
++  mFakeAppData.profile = "FloorpFork";
++
++  ExpectDataRoots(HomePath(".floorpfork"), HomePath(".cache/floorpfork"));
++  EXPECT_TRUE(PathExists(HomePath("FloorpFork")));
++  EXPECT_FALSE(PathExists(HomePath(".config/floorpfork")));
++}
++
++TEST_F(FloorpXREAppDir, NoranekoRetainsNamedProfileBehavior) {
++  mFakeAppData.vendor = "Noraneko Community";
++  mFakeAppData.profile = "Noraneko";
++
++  ExpectDataRoots(HomePath(".noraneko"), HomePath(".cache/noraneko"));
++  EXPECT_TRUE(PathExists(HomePath("Noraneko")));
++  EXPECT_FALSE(PathExists(HomePath(".config/noraneko")));
++}
++#endif  // defined(MOZ_WIDGET_GTK)

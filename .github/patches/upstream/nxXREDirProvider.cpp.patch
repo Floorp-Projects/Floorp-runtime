@@ -1,8 +1,85 @@
 diff --git a/toolkit/xre/nsXREDirProvider.cpp b/toolkit/xre/nsXREDirProvider.cpp
-index 3b4612e02c..3c02531e26 100644
+index fea288aa5b6..5a8796ea507 100644
 --- a/toolkit/xre/nsXREDirProvider.cpp
 +++ b/toolkit/xre/nsXREDirProvider.cpp
-@@ -1253,10 +1253,10 @@ nsresult nsXREDirProvider::AppendProfilePath(nsIFile* aFile, bool aLocal) {
+@@ -1317,10 +1317,20 @@ bool nsXREDirProvider::IsForceLegacyHome() {
+ #  else
+   return true;
+ #  endif
+ }
+ 
++static bool IsOfficialFloorpAppData() {
++  return gAppData && gAppData->vendor && gAppData->name && gAppData->profile &&
++         nsDependentCString(gAppData->vendor)
++             .Equals("Ablaze"_ns, nsCaseInsensitiveCStringComparator) &&
++         nsDependentCString(gAppData->name)
++             .Equals("Floorp"_ns, nsCaseInsensitiveCStringComparator) &&
++         nsDependentCString(gAppData->profile)
++             .Equals("Floorp"_ns, nsCaseInsensitiveCStringComparator);
++}
++
+ /* static */
+ nsresult nsXREDirProvider::AppendFromAppData(nsIFile* aFile, bool aIsDotted) {
+   // This might happen in xpcshell so assert that it is indeed in a xpcshell
+   // test. This assumes the xpcshell are ran through test harness.
+   if (!gAppData) {
+@@ -1332,12 +1342,17 @@ nsresult nsXREDirProvider::AppendFromAppData(nsIFile* aFile, bool aIsDotted) {
+ 
+   // Similar to nsXREDirProvider::AppendProfilePath.
+   // TODO: Bug 1990407 - Evaluate if refactoring might be required there in the
+   // future?
+   if (gAppData->profile) {
+-    nsAutoCString profile;
+-    profile = gAppData->profile;
++    nsAutoCString profile(gAppData->profile);
++    if (IsOfficialFloorpAppData()) {
++      ToLowerCase(profile);
++      if (aIsDotted) {
++        profile.Insert('.', 0);
++      }
++    }
+     MOZ_TRY(aFile->AppendRelativeNativePath(profile));
+   } else {
+     nsAutoCString vendor;
+     nsAutoCString appName;
+     vendor = gAppData->vendor;
+@@ -1380,12 +1395,13 @@ bool nsXREDirProvider::LegacyHomeExists(nsIFile** aFile) {
+   NS_ENSURE_SUCCESS(rv, false);
+ 
+   rv = localDir->Exists(&exists);
+   NS_ENSURE_SUCCESS(rv, false);
+ 
+-  // Give a chance to (3)
+-  if (!exists) {
++  // Give a chance to (3). Official Floorp has never used MOZ_USER_DIR as its
++  // product profile root.
++  if (!exists && !IsOfficialFloorpAppData()) {
+     nsCOMPtr<nsIFile> userDir;
+     rv = parentDir->Clone(getter_AddRefs(userDir));
+     NS_ENSURE_SUCCESS(rv, false);
+ 
+     nsAutoCString mozUserDir;
+@@ -1510,13 +1526,14 @@ nsresult nsXREDirProvider::GetLegacyOrXDGHomePath(const char* aHomeDir,
+           PR_GetEnv("XPCSHELL_TEST_PROFILE_DIR");
+       MOZ_ASSERT(xpcshell, "gAppData can only be nullptr in xpcshell tests");
+       return NS_OK;
+     }
+ 
+-    // If the build was made against a specific profile name, MOZ_APP_PROFILE=
+-    // then make sure we respect this and dont move to XDG directory
+-    if (gAppData->profile) {
++    // Keep MOZ_APP_PROFILE builds on legacy home, except official Floorp,
++    // whose existing legacy root was handled above and whose fresh profiles
++    // use XDG.
++    if (gAppData->profile && !IsOfficialFloorpAppData()) {
+       MOZ_TRY(NS_NewNativeLocalFile(nsDependentCString(aHomeDir),
+                                     getter_AddRefs(localDir)));
+     } else {
+       MOZ_TRY(GetLegacyOrXDGConfigHome(aHomeDir, getter_AddRefs(localDir)));
+       MOZ_TRY(localDir->Clone(getter_AddRefs(parentDir)));
+@@ -1576,14 +1593,14 @@ nsresult nsXREDirProvider::AppendProfilePath(nsIFile* aFile, bool aLocal) {
+ 
+ #elif defined(XP_WIN)
    if (!profile.IsEmpty()) {
      rv = AppendProfileString(aFile, profile.get());
    } else {
@@ -17,3 +94,5 @@ index 3b4612e02c..3c02531e26 100644
      rv = aFile->AppendNative(appName);
    }
    NS_ENSURE_SUCCESS(rv, rv);
+ 
+ #elif defined(ANDROID)
