@@ -620,6 +620,13 @@ pref("browser.urlbar.unitConversion.enabled", true);
 // bookmarks.
 pref("browser.urlbar.showSearchSuggestionsFirst", true);
 
+// Whether to show search suggestions before general results like history and
+// bookmarks in the smartbar.
+pref("browser.urlbar.smartbar.showSearchSuggestionsFirst", false);
+
+// The maximum number of results to show in the smartbar.
+pref("browser.urlbar.smartbar.maxResults", 7);
+
 // As a user privacy measure, don't fetch search suggestions if a pasted string
 // is longer than this.
 pref("browser.urlbar.maxCharsForSearchSuggestions", 100);
@@ -1723,6 +1730,11 @@ pref("services.sync.prefs.sync.browser.tabs.warnOnOpen", true);
 pref("services.sync.prefs.sync.browser.taskbar.previews.enable", true);
 pref("services.sync.prefs.sync.browser.urlbar.maxRichResults", true);
 pref("services.sync.prefs.sync.browser.urlbar.showSearchSuggestionsFirst", true);
+pref("services.sync.prefs.sync.browser.urlbar.smartbar.maxResults", true);
+pref(
+  "services.sync.prefs.sync.browser.urlbar.smartbar.showSearchSuggestionsFirst",
+  true
+);
 pref("services.sync.prefs.sync.browser.urlbar.suggest.bookmark", true);
 pref("services.sync.prefs.sync.browser.urlbar.suggest.history", true);
 pref("services.sync.prefs.sync.browser.urlbar.suggest.openpage", true);
@@ -2282,11 +2294,16 @@ pref("browser.smartwindow.worldcup.enabled", true);
 pref("browser.smartwindow.worldcup.endpointURL", "https://merino.services.mozilla.com");
 pref("browser.smartwindow.worldcup.timeoutMs", 2000);
 
+// Smart Window: Exa search endpoint, used by the search_the_web agentic flow (bug 2037948)
+pref("browser.smartwindow.searchQuery.endpointURL", "https://mlpa-prod-prod-mozilla.global.ssl.fastly.net/v1/search");
+pref("browser.smartwindow.searchQuery.apiKey", "");
+
 // Smart Window Logging
 pref("browser.smartwindow.chatHistory.loglevel", "Error");
 pref("browser.smartwindow.chatStore.loglevel", "Error");
 pref("browser.smartwindow.conversation.logLevel", "Error");
 pref("browser.smartwindow.smartbarMentions.loglevel", "Error");
+pref("browser.smartwindow.telemetryLogLevel", "Error");
 
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);
@@ -2702,6 +2719,11 @@ pref("browser.tabs.fadeOutUnloadedTabs", false);
 // Whether tabs can be "split" or displayed side by side at once.
 pref("browser.tabs.splitView.enabled", true);
 pref("browser.tabs.splitview.hasUsed", false);
+// Delay in milliseconds before the splitViewUsed ASRouter trigger fires after entering split view.
+pref("browser.tabs.splitview.trigger.delay_ms", 15000);
+// Number of distinct Split Views created, observed by the splitViewUsed
+// ASRouter trigger.
+pref("browser.tabs.splitview.trigger.createCount", 0);
 
 // Whether SVG favicons should be safely re-encoded using the moz-remote-image:// protocol.
 pref("browser.tabs.remoteSVGIconDecoding", true);

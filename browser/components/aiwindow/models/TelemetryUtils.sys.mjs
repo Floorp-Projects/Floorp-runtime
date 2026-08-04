@@ -6,10 +6,10 @@
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import {
-  openAIEngine,
   renderPrompt,
   checkMajorVersion,
 } from "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs";
+import { openAIEngine } from "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs";
 
 const lazy = XPCOMUtils.declareLazy({
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
@@ -168,7 +168,10 @@ export class TelemetryPromptEngine {
    */
   async run(conversation) {
     const fxAccountToken = await openAIEngine.getFxAccountToken();
-    const messages = conversation.getMessagesInOpenAiFormat();
+    // The LLM-as-judge model needs the raw URLs, not the chat URL tokens.
+    const messages = conversation.getMessagesInChatCompletionsFormat({
+      applyUrlTokens: false,
+    });
 
     const prompt = renderPrompt(this.#promptRecord.prompt, {
       chatConversation: JSON.stringify(messages),
@@ -376,7 +379,7 @@ export class TelemetryEngine {
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
           await new Promise(resolve =>
-            lazy.setTimeout(resolve, 2000 * attempt)
+            lazy.setTimeout(resolve, 1000 * 2 ** attempt + Math.random() * 500)
           );
         }
         try {
@@ -389,14 +392,13 @@ export class TelemetryEngine {
           });
           lastError = null;
           break;
-        } catch (e) {
-          if (e.message?.includes("429")) {
-            // trying to catch 429 / rate-limiting errors; backoff and retry
-            lastError = e;
+        } catch (error) {
+          if (openAIEngine.is429Error(error)) {
+            lastError = error;
           } else {
             lazy.console.error(
               `Telemetry: evaluation failed for ${record.telemetry_name}:`,
-              e
+              error
             ); // other errors fail
             break;
           }
@@ -474,13 +476,11 @@ export function submitTelemetryResult(
 
 /**
  * Marks conversations as unprocessed (since new turns have been added) and
- *  runs LLM-as-judge-based telemetry
+ * runs LLM-as-judge-based telemetry.
  *
  * @param {ChatConversation} conversation
- * @param {openAIEngine} engineInstance
  */
-
-export async function runLLMaJTelemetry(conversation, engineInstance) {
+export async function runLLMaJTelemetry(conversation) {
   const turnIndex = conversation.currentTurnIndex();
   await lazy.ChatStore.markLLMTelemetryUnprocessed(conversation.id).catch(e =>
     console.error("Failed to mark telemetry unprocessed:", e)
@@ -495,11 +495,11 @@ export async function runLLMaJTelemetry(conversation, engineInstance) {
       if (!results.length) {
         return;
       }
-      submitTelemetryResult(results, conversation, engineInstance.model, {
+      submitTelemetryResult(results, conversation, conversation.engine?.model, {
         record_type: "midChat",
         uniform_sampling_probability: conversation._telemetryUniformProbability,
         triggers: triggers.map(t => t.name),
-        chat_version: conversation.chatPromptVersion,
+        chat_version: conversation.systemPromptVersion,
       });
       const prompts = Object.fromEntries(
         results.map(r => [r.telemetry_name, turnIndex])
