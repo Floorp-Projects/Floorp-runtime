@@ -1,0 +1,12 @@
+[DEFAULT]
+head = "head_appinfo.js ../../../common/tests/unit/head_helpers.js head_helpers.js head_http_server.js head_errorhandler_common.js"
+firefox-appdir = "browser"
+prefs = ["identity.fxaccounts.enabled=true"]
+support-files = [
+  "floorp-notes-merge-v1.json",
+]
+
+# Floorp Notes prefs-engine contract coverage (shared fixture digest
+# 2597e5311c7c4ea4bb9d6a806ffa183aae3b3bd7380893b664b02ac829d665fd).
+
+["test_floorp_notes_prefs.js"]
