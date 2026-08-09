@@ -6,6 +6,7 @@
 import json
 import os
 import re
+import socket
 import sys
 import time
 
@@ -13,7 +14,11 @@ from mach.decorators import Command, CommandArgument
 from mozpack.copier import Jarrer
 from mozpack.files import FileFinder
 
-PHASE_TIMEOUT_SECONDS = 300
+PHASE_TIMEOUT_SECONDS = 600
+TPS_STARTUP_TIMEOUT_SECONDS = 30
+TPS_CLEANUP_TIMEOUT_SECONDS = 60
+TPS_OAUTH_TIMEOUT_MS = 300000
+TPS_PHASE_SHUTDOWN_MARGIN_SECONDS = 30
 TPS_ENV = {
     "MOZ_CRASHREPORTER_DISABLE": "1",
     "GNOME_DISABLE_CRASH_DIALOG": "1",
@@ -45,6 +50,10 @@ TPS_PREFERENCES = {
     "engine.bookmarks.repair.enabled": False,
     "extensions.experiments.enabled": True,
     "webextensions.storage.sync.kinto": False,
+    # Marionette's generic recommended prefs redirect FxA to a dummy host.
+    # TPS exercises real FxA/Sync endpoints, so preserve this profile's URLs.
+    "remote.prefs.recommended": False,
+    "testing.tps.oauthTimeoutMs": TPS_OAUTH_TIMEOUT_MS,
 }
 TPS_DEBUG_PREFERENCES = {
     "services.sync.log.appender.console": "Trace",
@@ -139,6 +148,77 @@ def _load_test_phases(testfile):
     return yaml.safe_load(phases_str)
 
 
+def _resolve_fxa_credentials(
+    username, password, environ, *, allow_argument_credentials=True
+):
+    env_username = environ.get("TPS_FXA_USERNAME")
+    env_password = environ.get("TPS_FXA_PASSWORD")
+    argument_credentials = bool(username or password)
+    environment_credentials = bool(env_username or env_password)
+
+    if argument_credentials and environment_credentials:
+        raise ValueError(
+            "FxA argument credentials and environment credentials must not be mixed"
+        )
+    if argument_credentials:
+        if not allow_argument_credentials:
+            raise ValueError(
+                "FxA production credentials must be supplied through the environment"
+            )
+        if not username or not password:
+            raise ValueError("--username and --password must both be set")
+        return username, password
+    if environment_credentials:
+        if not env_username or not env_password:
+            raise ValueError("TPS_FXA_USERNAME and TPS_FXA_PASSWORD must both be set")
+        return env_username, env_password
+    raise ValueError(
+        "Either --auto-account, --username with --password, or "
+        "TPS_FXA_USERNAME with TPS_FXA_PASSWORD is required"
+    )
+
+
+def _resolve_fxa_ci_token(environ, *, fxa_staging):
+    if not fxa_staging:
+        return None
+    return environ.get("TPS_FXA_CI_TOKEN")
+
+
+def _prepare_tps_preferences(config, *, fxa_ci_token, debug):
+    preferences = TPS_PREFERENCES.copy()
+    preferences["tps.config"] = json.dumps(config)
+    if fxa_ci_token:
+        preferences["tps.fxa.bypassToken"] = fxa_ci_token
+    if debug:
+        preferences.update(TPS_DEBUG_PREFERENCES)
+    return preferences
+
+
+def _prepare_tps_environment(environ, topsrcdir, *, platform_name=None):
+    env = environ.copy()
+    env.pop("TPS_FXA_USERNAME", None)
+    env.pop("TPS_FXA_PASSWORD", None)
+    env.pop("TPS_FXA_CI_TOKEN", None)
+    env.update(TPS_ENV)
+    if (platform_name or sys.platform) == "darwin":
+        env["MOZ_DEVELOPER_REPO_DIR"] = os.path.abspath(topsrcdir)
+    return env
+
+
+def _cleanup_tps_resources(profiles, addon_server):
+    succeeded = True
+    try:
+        for profile in profiles:
+            try:
+                profile.cleanup()
+            except Exception as error:
+                succeeded = False
+                print(f"ERROR: Failed to clean up TPS profile: {error}")
+    finally:
+        addon_server.stop()
+    return succeeded
+
+
 def _extract_phase_status(logfile, testname, phase_name):
     found_test = False
 
@@ -161,6 +241,183 @@ def _extract_phase_status(logfile, testname, phase_name):
                     return "FAIL", line.split("CROSSWEAVE ERROR: ")[1].strip()
 
     return None, None
+
+
+def _allocate_marionette_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def _wait_for_tps_startup(logfile, timeout):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if os.path.exists(logfile):
+            with open(logfile) as log:
+                if "Sync version:" in log.read():
+                    return True
+        time.sleep(0.1)
+    return False
+
+
+def _oauth_timeout_for_phase(phase_timeout):
+    if phase_timeout <= 0:
+        raise ValueError("TPS phase timeout must be greater than zero")
+    shutdown_margin = min(TPS_PHASE_SHUTDOWN_MARGIN_SECONDS, phase_timeout / 2)
+    available_ms = max(1, int((phase_timeout - shutdown_margin) * 1000))
+    return min(TPS_OAUTH_TIMEOUT_MS, available_ms)
+
+
+def _run_tps_phase(
+    profile,
+    current_testfile,
+    phase_name,
+    testname,
+    logfile,
+    binary,
+    env,
+    tps_xpi,
+    phase_timeout=PHASE_TIMEOUT_SECONDS,
+    startup_timeout=TPS_STARTUP_TIMEOUT_SECONDS,
+    marionette_port=None,
+    runner_cls=None,
+    marionette_cls=None,
+    addons_cls=None,
+    monotonic=time.monotonic,
+    startup_waiter=_wait_for_tps_startup,
+):
+    if runner_cls is None:
+        from mozrunner import FirefoxRunner
+
+        runner_cls = FirefoxRunner
+    if marionette_cls is None:
+        from marionette_driver.marionette import Marionette
+
+        marionette_cls = Marionette
+    if addons_cls is None:
+        from marionette_driver.addons import Addons
+
+        addons_cls = Addons
+
+    try:
+        oauth_timeout_ms = _oauth_timeout_for_phase(phase_timeout)
+    except ValueError as error:
+        return "FAIL", f"invalid TPS phase timeout: {error}"
+
+    deadline = monotonic() + phase_timeout
+
+    def remaining(stage):
+        seconds = deadline - monotonic()
+        if seconds <= 0:
+            raise TimeoutError(
+                f"TPS phase timed out after {phase_timeout} seconds during {stage}"
+            )
+        return seconds
+
+    port = marionette_port or _allocate_marionette_port()
+    profile.set_preferences({
+        "testing.tps.testFile": current_testfile,
+        "testing.tps.testPhase": phase_name,
+        "testing.tps.logFile": logfile,
+        "testing.tps.ignoreUnusedEngines": False,
+        "testing.tps.oauthTimeoutMs": oauth_timeout_ms,
+        "marionette.port": port,
+    })
+
+    runner = runner_cls(
+        binary=binary,
+        profile=profile,
+        env=env,
+        cmdargs=["-marionette", "-remote-allow-system-access"],
+        process_args=[],
+    )
+    marionette = None
+    try:
+        runner.start(timeout=remaining("Firefox startup"))
+        session_timeout = min(startup_timeout, remaining("Marionette startup"))
+        marionette = marionette_cls(
+            host="127.0.0.1",
+            port=port,
+            startup_timeout=session_timeout,
+            socket_timeout=remaining("Marionette connection"),
+        )
+        marionette.start_session(timeout=session_timeout)
+        install_timeout = remaining("TPS add-on installation")
+        marionette.socket_timeout = install_timeout
+        if getattr(marionette, "client", None) is not None:
+            marionette.client.socket_timeout = install_timeout
+        addon_id = addons_cls(marionette).install(tps_xpi, temp=True)
+        if addon_id != "tps@mozilla.org":
+            return "FAIL", f"temporary TPS add-on returned unexpected id: {addon_id}"
+        startup_wait_timeout = min(startup_timeout, remaining("TPS add-on startup"))
+        if not startup_waiter(logfile, startup_wait_timeout):
+            return "FAIL", (
+                f"TPS add-on did not start within {startup_wait_timeout:g} seconds"
+            )
+
+        process_wait_timeout = remaining("TPS process completion")
+        returncode = runner.wait(timeout=process_wait_timeout)
+        if returncode is None:
+            runner.stop()
+            return "FAIL", f"TPS phase timed out after {phase_timeout} seconds"
+        return _extract_phase_status(logfile, testname, phase_name)
+    except TimeoutError as error:
+        return "FAIL", str(error)
+    except Exception as error:
+        return "FAIL", f"phase execution failed: {error}"
+    finally:
+        if marionette is not None:
+            try:
+                marionette.delete_session()
+            except Exception:
+                pass
+        runner.stop()
+
+
+def _run_tps_cleanup_phases(
+    *,
+    profiles,
+    used_profiles,
+    successful_profiles,
+    current_testfile,
+    testname,
+    logfile,
+    binary,
+    env,
+    tps_xpi,
+    phase_runner=None,
+):
+    if phase_runner is None:
+        phase_runner = _run_tps_phase
+
+    cleanup_failed = False
+    print("Running cleanup phases...")
+    for profile_name in sorted(used_profiles):
+        if profile_name not in successful_profiles:
+            print(f"Cleanup: {profile_name} (skipped; no successful phase)")
+            continue
+
+        profile = profiles[profile_name]
+        cleanup_phase = f"cleanup-{profile_name}"
+        print(f"Cleanup: {profile_name}")
+        status, error_line = phase_runner(
+            profile,
+            current_testfile,
+            cleanup_phase,
+            testname,
+            logfile,
+            binary,
+            env,
+            tps_xpi,
+            phase_timeout=TPS_CLEANUP_TIMEOUT_SECONDS,
+        )
+        if status != "PASS":
+            cleanup_failed = True
+            if error_line:
+                print(f"   Cleanup ERROR: {error_line}")
+            print(f"   Cleanup FAIL (status: {status})")
+
+    return cleanup_failed
 
 
 @Command(
@@ -209,7 +466,6 @@ def run_tps(
 ):
     """Run TPS tests with a simple command-line interface."""
     from mozprofile import Profile
-    from mozrunner import FirefoxRunner
     from wptserve import server
 
     print("Starting TPS test runner...")
@@ -227,7 +483,7 @@ def run_tps(
         fxa_staging = True
 
     # FxA stage has a WAF that requires a bypass token for automation.
-    fxa_ci_token = os.environ.get("TPS_FXA_CI_TOKEN")
+    fxa_ci_token = _resolve_fxa_ci_token(os.environ, fxa_staging=fxa_staging)
     if fxa_staging and not fxa_ci_token:
         print(
             "ERROR: TPS_FXA_CI_TOKEN env var is required for FxA staging.\n"
@@ -242,11 +498,17 @@ def run_tps(
         username = f"tps-test-{secrets.token_hex(8)}@restmail.net"
         password = secrets.token_urlsafe(16)
         print(f"   Account credentials generated: {username}")
-    elif not username or not password:
-        print(
-            "ERROR: Either --auto-account or both --username and --password are required"
-        )
-        return 1
+    else:
+        try:
+            username, password = _resolve_fxa_credentials(
+                username,
+                password,
+                os.environ,
+                allow_argument_credentials=not fxa_production,
+            )
+        except ValueError as error:
+            print(f"ERROR: {error}")
+            return 1
 
     # Build TPS extension
     print("Building TPS extension...")
@@ -299,42 +561,21 @@ def run_tps(
     if fxa_staging:
         print("Using FxA staging server")
 
-    preferences = TPS_PREFERENCES.copy()
-    preferences["tps.config"] = json.dumps(config)
-    if fxa_ci_token:
-        preferences["tps.fxa.bypassToken"] = fxa_ci_token
+    preferences = _prepare_tps_preferences(
+        config, fxa_ci_token=fxa_ci_token, debug=debug
+    )
     if debug:
-        preferences.update(TPS_DEBUG_PREFERENCES)
         print("Debug logging enabled")
 
-    env = os.environ.copy()
-    env.update(TPS_ENV)
-
-    if sys.platform == "darwin":
-        env["MOZ_DEVELOPER_REPO_DIR"] = os.path.abspath(command_context.topsrcdir)
+    env = _prepare_tps_environment(os.environ, command_context.topsrcdir)
 
     addon_server = server.WebTestHttpd(port=4567, doc_root=testdir)
     addon_server.start()
 
-    def run_phase(profile, current_testfile, phase_name, testname):
-        profile.set_preferences({
-            "testing.tps.testFile": current_testfile,
-            "testing.tps.testPhase": phase_name,
-            "testing.tps.logFile": logfile,
-            "testing.tps.ignoreUnusedEngines": False,
-        })
-        runner = FirefoxRunner(
-            binary=binary,
-            profile=profile,
-            env=env,
-            process_args=[],
-        )
-        runner.start()
-        runner.wait(timeout=PHASE_TIMEOUT_SECONDS)
-        return _extract_phase_status(logfile, testname, phase_name)
-
     failed_tests = []
     passed_tests = []
+    all_profiles = []
+    profile_cleanup_failed = False
     try:
         for index, current_testfile in enumerate(testfiles, start=1):
             testname = os.path.basename(current_testfile)
@@ -363,60 +604,64 @@ def run_tps(
             test_preferences["tps.seconds_since_epoch"] = int(time.time())
 
             profiles = {}
+            used_profiles = set()
+            successful_profiles = set()
             phase_list = []
             for phase_name, profile_name in sorted(test_phases.items()):
                 if profile_name not in profiles:
-                    profiles[profile_name] = Profile(
-                        preferences=test_preferences.copy(), addons=[tps_xpi]
-                    )
-                phase_list.append((phase_name, profiles[profile_name]))
+                    profile = Profile(preferences=test_preferences.copy())
+                    profiles[profile_name] = profile
+                    all_profiles.append(profile)
+                phase_list.append((phase_name, profile_name, profiles[profile_name]))
 
             test_failed = False
-            for phase_name, profile in phase_list:
+            for phase_name, profile_name, profile in phase_list:
+                used_profiles.add(profile_name)
                 print(f"Phase: {phase_name}")
-                try:
-                    status, error_line = run_phase(
-                        profile, current_testfile, phase_name, testname
-                    )
-                except Exception as e:
-                    print(f"   FAIL (phase execution failed: {e})\n")
-                    test_failed = True
-                    break
+                status, error_line = _run_tps_phase(
+                    profile,
+                    current_testfile,
+                    phase_name,
+                    testname,
+                    logfile,
+                    binary,
+                    env,
+                    tps_xpi,
+                    phase_timeout=PHASE_TIMEOUT_SECONDS,
+                )
                 if error_line:
                     print(f"   ERROR: {error_line}")
 
                 if status == "PASS":
+                    successful_profiles.add(profile_name)
                     print("   PASS\n")
                 else:
                     print(f"   FAIL (status: {status})\n")
                     test_failed = True
                     break
 
-            print("Running cleanup phases...")
-            for profile_name, profile in profiles.items():
-                cleanup_phase = f"cleanup-{profile_name}"
-                print(f"Cleanup: {profile_name}")
-
-                try:
-                    status, error_line = run_phase(
-                        profile, current_testfile, cleanup_phase, testname
-                    )
-                except Exception as e:
-                    test_failed = True
-                    print(f"   Cleanup FAIL (execution failed: {e})")
-                    continue
-                if status != "PASS":
-                    test_failed = True
-                    if error_line:
-                        print(f"   Cleanup ERROR: {error_line}")
-                    print(f"   Cleanup FAIL (status: {status})")
+            if _run_tps_cleanup_phases(
+                profiles=profiles,
+                used_profiles=used_profiles,
+                successful_profiles=successful_profiles,
+                current_testfile=current_testfile,
+                testname=testname,
+                logfile=logfile,
+                binary=binary,
+                env=env,
+                tps_xpi=tps_xpi,
+            ):
+                test_failed = True
 
             if test_failed:
                 failed_tests.append(testname)
             else:
                 passed_tests.append(testname)
     finally:
-        addon_server.stop()
+        profile_cleanup_failed = not _cleanup_tps_resources(all_profiles, addon_server)
+
+    if profile_cleanup_failed:
+        failed_tests.append("profile cleanup")
 
     # Final results
     print("\n" + "=" * 50)

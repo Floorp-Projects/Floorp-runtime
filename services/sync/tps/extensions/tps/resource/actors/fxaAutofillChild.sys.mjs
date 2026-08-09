@@ -13,6 +13,7 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
     this._password = "";
     this._timerId = 0;
     this._lastSubmit = 0;
+    this._submittedSteps = new Set();
   }
 
   didDestroy() {
@@ -65,7 +66,7 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
       return false;
     }
     const win = this.contentWindow;
-    console.warn(`[TPS Autofill] Filling ${input.name} with value)`);
+    console.warn(`[TPS Autofill] Filling ${input.name} with value`);
     input.focus();
     input.value = value;
     input.dispatchEvent(new win.Event("input", { bubbles: true }));
@@ -73,6 +74,15 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
     input.dispatchEvent(new win.Event("blur", { bubbles: true }));
     console.warn(`[TPS Autofill] Field ${input.name} filled`);
     return true;
+  }
+
+  _isUsableInput(input) {
+    return (
+      input &&
+      !input.disabled &&
+      input.type !== "hidden" &&
+      input.getAttribute?.("aria-hidden") !== "true"
+    );
   }
 
   _fillAndSubmit() {
@@ -83,17 +93,24 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
     const passwordInput = doc.querySelector(
       'input[name="password"], input[type="password"]'
     );
-    const submitButton = doc.querySelector(
-      'button[type="submit"]:not([disabled]), button:not([type]):not([disabled])'
-    );
-
-    if (!submitButton) {
+    const emailUsable = this._isUsableInput(emailInput);
+    const passwordUsable = this._isUsableInput(passwordInput);
+    let activeStep = "";
+    if (passwordUsable) {
+      activeStep = "password";
+    } else if (emailUsable) {
+      activeStep = "email";
+    }
+    if (!activeStep) {
       return false;
+    }
+    if (this._submittedSteps.has(activeStep)) {
+      return activeStep === "password";
     }
 
     // Fill email if present
     let emailFilled = false;
-    if (emailInput && emailInput.offsetParent !== null) {
+    if (emailUsable) {
       this._setInputValue(emailInput, this._email);
       emailFilled = emailInput.value.trim() === this._email.trim();
       console.warn(
@@ -103,7 +120,7 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
 
     // Fill password if present
     let passwordFilled = false;
-    if (passwordInput && passwordInput.offsetParent !== null) {
+    if (passwordUsable) {
       this._setInputValue(passwordInput, this._password);
       passwordFilled = passwordInput.value === this._password;
       console.warn(
@@ -122,6 +139,21 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
       return false;
     }
 
+    // Scope submission to the active input's form. The password page also has
+    // an enabled password-recovery button, which must never be selected as the
+    // generic first button in the document.
+    const activeInput = passwordFilled ? passwordInput : emailInput;
+    const form = activeInput?.form || activeInput?.closest?.("form");
+    if (!form) {
+      return false;
+    }
+    const submitSelector =
+      'button[type="submit"]:not([disabled]), input[type="submit"]:not([disabled])';
+    const submitButton = form.querySelector(submitSelector);
+    if (!submitButton) {
+      return false;
+    }
+
     // Wait a bit for the button to become enabled after input
     // Don't click too fast (debounce)
     const now = Date.now();
@@ -134,11 +166,15 @@ export class TPSFxAAutofillChild extends JSWindowActorChild {
     try {
       submitButton.click();
       console.warn("[TPS Autofill] Clicked submit button");
+      this._submittedSteps.add(activeStep);
     } catch (e) {
       console.error("[TPS Autofill] Failed to click button:", e);
       return false;
     }
 
-    return true;
+    // The production FxA flow presents email and password as separate steps in
+    // the same document. Keep polling after the email step and stop only after
+    // the password step has been submitted.
+    return activeStep === "password";
   }
 }

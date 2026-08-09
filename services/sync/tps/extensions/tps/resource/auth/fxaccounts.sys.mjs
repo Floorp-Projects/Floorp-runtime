@@ -19,19 +19,32 @@ const fxAccounts = getFxAccountsSingleton();
 const AUTOFILL_ACTOR_NAME = "TPSFxAAutofill";
 const FXA_HOSTS = new Set([
   "accounts.firefox.com",
+  "oauth.accounts.firefox.com",
   "accounts.stage.mozaws.net",
   "api-accounts.stage.mozaws.net",
   "api.accounts.firefox.com",
 ]);
+const FXA_STAGING_HOSTS = new Set([
+  "accounts.stage.mozaws.net",
+  "api-accounts.stage.mozaws.net",
+]);
 const BYPASS_TOKEN_PREF = "tps.fxa.bypassToken";
 const FXA_CI_HEADER = "fxa-ci";
 const OAUTH_READY_POLL_INTERVAL_MS = 1000;
-const OAUTH_TIMEOUT_MS = 120000;
+const OAUTH_TIMEOUT_PREF = "testing.tps.oauthTimeoutMs";
+const DEFAULT_OAUTH_TIMEOUT_MS = 120000;
 const RESTMAIL_POLL_INTERVAL_MS = 1000;
 const RESTMAIL_MAX_ATTEMPTS = 60;
 
 function getBypassToken() {
   return Services.prefs.getStringPref(BYPASS_TOKEN_PREF, "");
+}
+
+function getOAuthTimeoutMs() {
+  return Services.prefs.getIntPref(
+    OAUTH_TIMEOUT_PREF,
+    DEFAULT_OAUTH_TIMEOUT_MS
+  );
 }
 
 let gAutofillActorRegistered = false;
@@ -61,7 +74,7 @@ function ensureBypassHeaderObserverRegistered() {
         return;
       }
       const channel = subject.QueryInterface(Ci.nsIHttpChannel);
-      if (FXA_HOSTS.has(channel.URI.host)) {
+      if (FXA_STAGING_HOSTS.has(channel.URI.host)) {
         channel.setRequestHeader(FXA_CI_HEADER, token, false);
       }
     },
@@ -87,6 +100,7 @@ function ensureAutofillActorRegistered() {
       },
       matches: [
         "https://accounts.firefox.com/*",
+        "https://oauth.accounts.firefox.com/*",
         "https://accounts.stage.mozaws.net/*",
       ],
       messageManagerGroups: ["browsers"],
@@ -195,6 +209,7 @@ export var Authentication = {
 
   async _automateOAuthFlow(oauthUrl, email, password) {
     ensureAutofillActorRegistered();
+    const oauthTimeoutMs = getOAuthTimeoutMs();
 
     const win = Services.ww.openWindow(
       null,
@@ -307,6 +322,7 @@ export var Authentication = {
             );
             return;
           }
+          configureAutofillActor(browser?.currentURI?.spec || oauthUrl);
           if (await this.isReady()) {
             finish(resolve);
           }
@@ -321,10 +337,10 @@ export var Authentication = {
         finish(
           reject,
           new Error(
-            `OAuth flow timed out after ${OAUTH_TIMEOUT_MS / 1000} seconds`
+            `OAuth flow timed out after ${oauthTimeoutMs / 1000} seconds`
           )
         );
-      }, OAUTH_TIMEOUT_MS);
+      }, oauthTimeoutMs);
 
       if (
         win.document.readyState === "complete" ||
@@ -415,7 +431,7 @@ export var Authentication = {
   async signIn(account) {
     Logger.AssertTrue(account.username, "Username has been found");
     Logger.AssertTrue(account.password, "Password has been found");
-    Logger.logInfo("Login user: " + account.username);
+    Logger.logInfo("Login user configured");
 
     try {
       await FxAccountsConfig.ensureConfigured();
