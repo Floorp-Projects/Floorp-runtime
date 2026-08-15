@@ -1,10 +1,8 @@
 diff --git a/toolkit/xre/nsXREDirProvider.cpp b/toolkit/xre/nsXREDirProvider.cpp
-index fea288aa5b6..5a8796ea507 100644
+index dcce3335e14f9f5d3c0b9fe6a86527be6011c143..9933da65208960f41bdc80de801f2fd1e2bbe188 100644
 --- a/toolkit/xre/nsXREDirProvider.cpp
 +++ b/toolkit/xre/nsXREDirProvider.cpp
-@@ -1317,10 +1317,20 @@ bool nsXREDirProvider::IsForceLegacyHome() {
- #  else
-   return true;
+@@ -1321,6 +1321,16 @@ bool nsXREDirProvider::IsForceLegacyHome() {
  #  endif
  }
  
@@ -21,17 +19,10 @@ index fea288aa5b6..5a8796ea507 100644
  /* static */
  nsresult nsXREDirProvider::AppendFromAppData(nsIFile* aFile, bool aIsDotted) {
    // This might happen in xpcshell so assert that it is indeed in a xpcshell
-   // test. This assumes the xpcshell are ran through test harness.
-   if (!gAppData) {
-@@ -1332,12 +1342,17 @@ nsresult nsXREDirProvider::AppendFromAppData(nsIFile* aFile, bool aIsDotted) {
- 
-   // Similar to nsXREDirProvider::AppendProfilePath.
-   // TODO: Bug 1990407 - Evaluate if refactoring might be required there in the
-   // future?
-   if (gAppData->profile) {
--    nsAutoCString profile;
--    profile = gAppData->profile;
-+    nsAutoCString profile(gAppData->profile);
+@@ -1343,6 +1353,12 @@ nsresult nsXREDirProvider::AppendFromAppData(nsIFile* aFile, bool aIsDotted) {
+     }
+ #  endif
+     profile.Append(gAppData->profile);
 +    if (IsOfficialFloorpAppData()) {
 +      ToLowerCase(profile);
 +      if (aIsDotted) {
@@ -41,11 +32,7 @@ index fea288aa5b6..5a8796ea507 100644
      MOZ_TRY(aFile->AppendRelativeNativePath(profile));
    } else {
      nsAutoCString vendor;
-     nsAutoCString appName;
-     vendor = gAppData->vendor;
-@@ -1380,12 +1395,13 @@ bool nsXREDirProvider::LegacyHomeExists(nsIFile** aFile) {
-   NS_ENSURE_SUCCESS(rv, false);
- 
+@@ -1390,8 +1406,9 @@ bool nsXREDirProvider::LegacyHomeExists(nsIFile** aFile) {
    rv = localDir->Exists(&exists);
    NS_ENSURE_SUCCESS(rv, false);
  
@@ -57,29 +44,34 @@ index fea288aa5b6..5a8796ea507 100644
      nsCOMPtr<nsIFile> userDir;
      rv = parentDir->Clone(getter_AddRefs(userDir));
      NS_ENSURE_SUCCESS(rv, false);
- 
-     nsAutoCString mozUserDir;
-@@ -1510,13 +1526,14 @@ nsresult nsXREDirProvider::GetLegacyOrXDGHomePath(const char* aHomeDir,
-           PR_GetEnv("XPCSHELL_TEST_PROFILE_DIR");
-       MOZ_ASSERT(xpcshell, "gAppData can only be nullptr in xpcshell tests");
+@@ -1520,22 +1537,15 @@ nsresult nsXREDirProvider::GetLegacyOrXDGHomePath(const char* aHomeDir,
        return NS_OK;
      }
  
 -    // If the build was made against a specific profile name, MOZ_APP_PROFILE=
 -    // then make sure we respect this and dont move to XDG directory
--    if (gAppData->profile) {
+-    //
+-    // Only do this on Firefox.
+-    //
+-    // For Thunderbird, it always defines MOZ_APP_PROFILE=thunderbird. Hence,
+-    // check if the gAppData->profile value is set to something else, indicating
+-    // of a specific build where legacy needs to be forced, similar to the
+-    // Firefox handling. Both casing are verified to account for systems where
+-    // that matters.
 +    // Keep MOZ_APP_PROFILE builds on legacy home, except official Floorp,
 +    // whose existing legacy root was handled above and whose fresh profiles
 +    // use XDG.
-+    if (gAppData->profile && !IsOfficialFloorpAppData()) {
+     if (gAppData->profile
+ #  if defined(MOZ_THUNDERBIRD)
+         && strcmp(gAppData->profile, "thunderbird") != 0 &&
+         strcmp(gAppData->profile, "Thunderbird") != 0
+ #  endif
+-    ) {
++        && !IsOfficialFloorpAppData()) {
        MOZ_TRY(NS_NewNativeLocalFile(nsDependentCString(aHomeDir),
                                      getter_AddRefs(localDir)));
      } else {
-       MOZ_TRY(GetLegacyOrXDGConfigHome(aHomeDir, getter_AddRefs(localDir)));
-       MOZ_TRY(localDir->Clone(getter_AddRefs(parentDir)));
-@@ -1576,14 +1593,14 @@ nsresult nsXREDirProvider::AppendProfilePath(nsIFile* aFile, bool aLocal) {
- 
- #elif defined(XP_WIN)
+@@ -1599,10 +1609,10 @@ nsresult nsXREDirProvider::AppendProfilePath(nsIFile* aFile, bool aLocal) {
    if (!profile.IsEmpty()) {
      rv = AppendProfileString(aFile, profile.get());
    } else {
@@ -94,5 +86,3 @@ index fea288aa5b6..5a8796ea507 100644
      rv = aFile->AppendNative(appName);
    }
    NS_ENSURE_SUCCESS(rv, rv);
- 
- #elif defined(ANDROID)

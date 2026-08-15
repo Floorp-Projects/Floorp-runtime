@@ -1043,6 +1043,8 @@
   <string name="customize_toggle_pocket_sponsored">ਸਪਾਂਸਰ ਕੀਤੀਆਂ ਕਹਾਣੀਆਂ</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">ਵਾਲਪੇਪਰ</string>
+  <!-- Label for the menu item that opens the customize homepage settings screen. -->
+  <string name="browser_menu_customize_homepage">ਮੁੱਖ-ਸਫ਼ੇ ਨੂੰ ਕਸਟਮਾਈਜ਼ ਕਰੋ</string>
   <!-- Label for the menu item that opens the wallpaper settings screen. -->
   <string name="browser_menu_change_wallpaper">ਵਾਲਪੇਪਰ ਨੂੰ ਬਦਲੋ</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
@@ -1710,10 +1712,22 @@
   <string name="tab_group_three_dot_button_content_description">ਹੋਰ ਚੋਣਾਂ</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">ਸੋਧੋ</string>
+  <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_ungroup">ਅਣ-ਗਰੁੱਪ ਕਰੋ</string>
   <!-- Text shown on the delete button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_delete">ਹਟਾਓ</string>
   <!-- Text shown on the close button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_close">ਬੰਦ ਕਰੋ</string>
+  <!-- Title for the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_title">ਟੈਗ ਗਰੁੱਪ ਨੂੰ ਅਣ-ਗਰੁੱਪ ਕਰਨਾ ਹੈ?</string>
+  <!-- Text shown in the body of the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_body">ਟੈਬਾਂ ਇਸ ਗਰੁੱਪ ਉੱਤੇ ਖੁੱਲ੍ਹੀਆਂ ਰਹਿਣਗੀਆਂ, ਪਰ ਗਰੁੱਪ ਨੂੰ ਹਟਾਇਆ ਜਾਵੇਗਾ।</string>
+  <!-- Text shown on the Don't Ask Again checkbox button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">ਮੁੜ ਕੇ ਨਾ ਪੁੱਛੋ</string>
+  <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_confirm">ਅਣ-ਗਰੁੱਪ ਕਰੋ</string>
+  <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_cancel">ਰੱਦ ਕਰੋ</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -2415,6 +2429,10 @@
   <string name="sync_sign_in">ਸਿੰਕ ਕਰਨ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ</string>
   <!-- An option from the share dialog to send link to all other sync devices -->
   <string name="sync_send_to_all">ਸਾਰੇ ਡਿਵਾਈਸਾਂ ‘ਤੇ ਭੇਜੋ</string>
+  <!-- Text displayed when no other sync devices are available for link sharing -->
+  <string name="sync_no_devices_available">ਕੋਈ ਡਿਵਾਈਸ ਮੌਜੂਦ ਨਹੀਂ ਹੈ</string>
+  <!-- Text displayed when no other sync devices are available for link sharing. -->
+  <string name="sync_no_devices_available_description">ਇਸ ਖਾਤੇ ਨਾਲ ਕੋਈ ਵੀ ਸਾਈਨ ਇਨ ਹੋਇਆ ਅਤੇ ਸਿੰਕ ਕੀਤੇ ਡਿਵਾਈਸ ਨੁੰ ਇੱਥੇ ਦਿਖਾਇਆ ਜਾਵੇਗਾ।</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">ਸਿੰਕ ਕਰਨ ਲਈ ਮੁੜ-ਕਨੈਕਟ ਕਰੋ</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
@@ -3164,6 +3182,14 @@
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">ਟਿਕਾਣਾ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਹੋਰ ਟਿਕਾਣੇ ਨੂੰ ਚੁਣੋ।</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
   <string name="ip_protection_location_unavailable_recommended_snackbar" tools:ignore="UnusedResources">ਚੁਣਿਆ ਗਿਆ VPN ਟਿਕਾਣੇ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਸਿਫ਼ਾਰਸ਼ ਕੀਤੇ ਟਿਕਾਣੇ ਨਾਲ ਕਨੈਕਟ ਹੈ।</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_title">ਟਿਕਾਣੇ ਮੌਜੂਦ ਨਹੀਂ ਹਨ</string>
+  <!-- Description for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_description">ਸਿਫਾਰਸ਼ੀ ਟਿਕਾਣੇ ਲਈ ਬਦਲਿਆ ਗਿਆ ਹੈ।</string>
+  <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
+  <string name="ip_protection_locations_title">VPN ਟਿਕਾਣੇ ਨੂੰ ਚੁਣੋ</string>
+  <!-- Content description for the browser VPN location selection screen top bar back button -->
+  <string name="ip_protection_locations_navigate_back_button_content_description">ਪਿੱਛੇ ਵੱਲ ਨੈਵੀਗੇਟ ਕਰੋ</string>
   <!-- Title for the card shown to the user when we are unable to fetch server locations -->
   <string name="ip_protection_location_unavailable_title" tools:ignore="UnusedResources">ਪਿਛਲਾ ਟਿਕਾਣਾ ਮੌਜੂਦ ਨਹੀਂ ਹੈ</string>
   <!-- Description for the card shown to the user when we are unable to fetch server locations -->
@@ -4733,6 +4759,16 @@
   <string name="lens_camera_mode_qr">QR ਸਕੈਨਰ</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">ਚਿੱਤਰ ਵਿੱਚ ਕੋਈ QR ਕੋਡ ਨਹੀਂ ਮਿਲਿਆ</string>
+  <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_title">ਇਸ ਨੂੰ Google Lens ਨਾਲ ਲੱਭੋ</string>
+  <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_description">ਕਿਸੇ ਚਿੱਤਰ ਨੂੰ ਚੁਣੋ ਜਾਂ ਆਪਣੇ ਕੈਮਰੇ ਨੂੰ ਵਰਤ ਕੇ Google Lens ਰਾਹੀਂ ਨਤੀਜੇ ਲਵੋ।</string>
+  <!-- Text of the link in the first-run Google Lens bottom sheet that opens the Search settings page -->
+  <string name="lens_opt_out_settings_link">Google Lens ਸੈਟਿੰਗਾਂ</string>
+  <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->
+  <string name="lens_opt_out_try_it_now_button">ਹੁਣੇ ਅਜ਼ਮਾਓ</string>
+  <!-- Button in the first-run Google Lens bottom sheet that leaves Google Lens without using it -->
+  <string name="lens_opt_out_not_now_button">ਹੁਣੇ ਨਹੀਂ</string>
   <!--
     Firefox Labs
 

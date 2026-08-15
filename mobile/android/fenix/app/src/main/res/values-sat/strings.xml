@@ -1044,6 +1044,8 @@
   <string name="customize_toggle_pocket_sponsored">ᱜᱟᱲᱚ ᱠᱟᱱ ᱠᱟᱹᱦᱱᱤ ᱠᱚ</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">ᱠᱟᱸᱛᱷᱪᱤᱛᱟᱹᱨ</string>
+  <!-- Label for the menu item that opens the customize homepage settings screen. -->
+  <string name="browser_menu_customize_homepage">ᱚᱲᱟᱜᱥᱟᱦᱴᱟ ᱠᱩᱥᱤᱛᱮ ᱫᱚᱦᱚᱭ ᱢᱮ</string>
   <!-- Label for the menu item that opens the wallpaper settings screen. -->
   <string name="browser_menu_change_wallpaper">ᱠᱟᱸᱛᱪᱷᱟᱯᱟ ᱵᱚᱫᱚᱞ ᱢᱮ</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
@@ -1716,6 +1718,8 @@
   <string name="tab_group_three_dot_button_content_description">ᱰᱷᱮᱨ ᱢᱚᱱᱮᱛᱮᱭᱟᱜ</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">ᱥᱟᱯᱲᱟᱣ</string>
+  <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_ungroup">ᱪᱷᱟᱰᱟ</string>
   <!-- Text shown on the delete button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_delete">ᱢᱮᱴᱟᱣ ᱢᱮ</string>
   <!-- Text shown on the close button for a tab group on the three dot menu -->
@@ -2432,6 +2436,10 @@
   <string name="sync_sign_in">ᱥᱭᱝᱠ ᱞᱟᱹᱜᱤᱫ ᱵᱚᱞᱚᱱ ᱥᱩᱦᱤ ᱢᱮ</string>
   <!-- An option from the share dialog to send link to all other sync devices -->
   <string name="sync_send_to_all">ᱡᱚᱛᱚ ᱥᱟᱫᱷᱚᱱ ᱛᱮ ᱵᱷᱮᱡᱟᱭᱢᱮ</string>
+  <!-- Text displayed when no other sync devices are available for link sharing -->
+  <string name="sync_no_devices_available">ᱪᱮᱫ ᱥᱟᱫᱷᱚᱱ ᱵᱟᱹᱱᱩᱜ ᱠᱟᱫᱟ</string>
+  <!-- Text displayed when no other sync devices are available for link sharing. -->
+  <string name="sync_no_devices_available_description">ᱱᱚᱣᱟ ᱠᱷᱟᱛᱟ ᱨᱮ ᱥᱩᱦᱤ ᱮᱢ ᱟᱨ ᱟᱹᱭᱩᱨ ᱢᱤᱫ ᱟᱠᱟᱱ ᱡᱟᱦᱟᱱ ᱥᱟᱫᱷᱚᱱ ᱜᱮ ᱱᱚᱸᱰᱮ ᱧᱮᱞᱚᱜᱼᱟ ᱾</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">ᱥᱭᱝᱠ ᱞᱟᱹᱜᱤᱫ ᱫᱩᱦᱲᱟᱹ ᱡᱩᱲᱟᱹᱣ</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
@@ -4767,6 +4775,16 @@
   <string name="lens_camera_mode_qr">QR ᱥᱠᱟᱱᱚᱨ</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">ᱪᱤᱛᱟᱹᱨ ᱨᱮ ᱪᱮᱫ QR ᱠᱳᱰ ᱵᱟᱝ ᱧᱟᱢ ᱟᱠᱟᱱᱟ</string>
+  <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_title">Google Lens ᱥᱟᱶ ᱯᱟᱱᱴᱮ ᱢᱮ</string>
+  <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_description">Google Lens ᱥᱟᱶ ᱚᱨᱡᱚ ᱧᱟᱢ ᱞᱟᱹᱜᱤᱫ ᱢᱤᱫ ᱪᱤᱛᱟᱹᱨ ᱵᱟᱪᱷᱟᱣ ᱢᱮ ᱟᱨᱵᱟᱝ ᱟᱢᱟᱜ ᱠᱮᱢᱨᱟ ᱵᱮᱵᱷᱟᱨ ᱢᱮ ᱾</string>
+  <!-- Text of the link in the first-run Google Lens bottom sheet that opens the Search settings page -->
+  <string name="lens_opt_out_settings_link">Google Lens ᱥᱟᱡᱟᱣ</string>
+  <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->
+  <string name="lens_opt_out_try_it_now_button">ᱱᱤᱛᱚᱜ ᱪᱮᱥᱴᱟᱭ ᱢᱮ</string>
+  <!-- Button in the first-run Google Lens bottom sheet that leaves Google Lens without using it -->
+  <string name="lens_opt_out_not_now_button">ᱱᱤᱛᱚᱜ ᱫᱚ ᱵᱟᱝᱟ</string>
   <!--
     Firefox Labs
 
