@@ -1,0 +1,18 @@
+# Floorp Notes TPS manifest.
+#
+# Covers the Floorp Notes prefs-engine contract end-to-end through the real
+# FxA/Sync path selected by the TPS runner: the shared fixture aggregate (digest
+# 2597e5311c7c4ea4bb9d6a806ffa183aae3b3bd7380893b664b02ac829d665fd) is
+# persisted in the `floorp.browser.note.memos` preference on profile1, synced
+# to profile2, verified byte-identically, edited on profile2, and verified on
+# profile1 after a second sync.
+#
+# The TPS runner executes test files listed in all_tests.json; this manifest
+# documents the Floorp Notes scenario and its contract bindings. Floorp's
+# production gate uses only a dedicated QA account supplied interactively or
+# through masked environment credentials.
+
+["test_floorp_notes.js"]
+fixture = "floorp-notes-merge-v1"
+fixture_sha256 = "2597e5311c7c4ea4bb9d6a806ffa183aae3b3bd7380893b664b02ac829d665fd"
+engines = ["prefs"]
