@@ -1,33 +1,26 @@
 diff --git a/toolkit/tests/gtest/TestXREAppDir.cpp b/toolkit/tests/gtest/TestXREAppDir.cpp
-index c5376749b4e4b87677ac11ee203a53cfcc3d4233..4917906bf60dfd34cfc774e9e043d03d4c197799 100644
+index a5fe0d7e009df59b391242c74b32a288166c73c6..4abae1e57d11d2fd5899b233f272f4619dd0ee53 100644
 --- a/toolkit/tests/gtest/TestXREAppDir.cpp
 +++ b/toolkit/tests/gtest/TestXREAppDir.cpp
-@@ -36,6 +36,9 @@ using namespace mozilla;
+@@ -46,6 +46,9 @@ using namespace mozilla;
  class BaseXREAppDir : public ::testing::Test {
   protected:
    void SetUp() override {
 +    mInitialAppData = gAppData;
 +    ASSERT_NE(mInitialAppData, nullptr);
 +
- // There is no need to mock on macOS because nsXREDirProvider relies on macOS
- // level APIs, see below
- #if defined(XP_UNIX) && !defined(XP_MACOSX)
-@@ -121,13 +124,7 @@ class BaseXREAppDir : public ::testing::Test {
-       SwitchFakeAppDataOff();
-     }
- 
--    EXPECT_STREQ(gAppData->profile, nullptr);
--#if defined(ANDROID)
--    EXPECT_STREQ(gAppData->name, "Fennec");
--#else
--    EXPECT_STREQ(gAppData->name, "Firefox");
--#endif
--    EXPECT_STREQ(gAppData->vendor, "Mozilla");
+     // Get a Clone() of gDataDirProfileLocal / gDataDirProfile
+     // They will get restored in TearDown()
+     nsresult rv = nsXREDirProvider::ClearUserDataProfileDirectoryFromGTest(
+@@ -152,6 +155,7 @@ class BaseXREAppDir : public ::testing::Test {
+     EXPECT_STREQ(gAppData->name, EXPECTED_APP_NAME_CASED);
+ #endif
+     EXPECT_STREQ(gAppData->vendor, "Mozilla");
 +    EXPECT_EQ(gAppData, mInitialAppData);
    }
  
    nsCString GetPath(nsCOMPtr<nsIFile> aFile) {
-@@ -147,9 +144,13 @@ class BaseXREAppDir : public ::testing::Test {
+@@ -171,8 +175,12 @@ class BaseXREAppDir : public ::testing::Test {
  
    void SwitchFakeAppDataOff() {
      EXPECT_NE(mOriginalAppData, nullptr);
@@ -36,14 +29,20 @@ index c5376749b4e4b87677ac11ee203a53cfcc3d4233..4917906bf60dfd34cfc774e9e043d03d
 +
 +    const XREAppData* originalAppData = mOriginalAppData;
      mOriginalAppData = nullptr;
--    EXPECT_STREQ(gAppData->profile, nullptr);
 +    gAppData = originalAppData;
 +
+ #if defined(MOZ_THUNDERBIRD)
+     // Thunderbird always sets MOZ_APP_PROFILE=thunderbird
+ #  if defined(XP_WIN)
+@@ -183,6 +191,7 @@ class BaseXREAppDir : public ::testing::Test {
+ #else
+     EXPECT_STREQ(gAppData->profile, nullptr);
+ #endif
 +    EXPECT_EQ(gAppData, mInitialAppData);
    }
  
    // Used by
-@@ -158,8 +159,8 @@ class BaseXREAppDir : public ::testing::Test {
+@@ -191,8 +200,8 @@ class BaseXREAppDir : public ::testing::Test {
    //  - NS_APP_APPLICATION_REGISTRY_FILE
    nsCString GetUserAppDataDirectory() {
      nsCOMPtr<nsIFile> localDir;
@@ -54,15 +53,15 @@ index c5376749b4e4b87677ac11ee203a53cfcc3d4233..4917906bf60dfd34cfc774e9e043d03d
      EXPECT_NS_SUCCEEDED(rv);
      return GetPath(localDir);
    }
-@@ -289,6 +290,7 @@ class BaseXREAppDir : public ::testing::Test {
+@@ -313,6 +322,7 @@ class BaseXREAppDir : public ::testing::Test {
    nsCString mRoamingHome;
  #endif
  
 +  const XREAppData* mInitialAppData = nullptr;
    const XREAppData* mOriginalAppData = nullptr;
-   XREAppData mFakeAppData{};
- };
-@@ -2087,3 +2089,194 @@ TEST_F(CacheXREAppDir_Env, GetUserProfilesLocalDir) {
+   nsCOMPtr<nsIFile> mDataDirProfileLocal;
+   nsCOMPtr<nsIFile> mDataDirProfile;
+@@ -2561,3 +2571,194 @@ TEST_F(CacheXREAppDir_Env, GetUserProfilesLocalDir) {
            ,
        GetUserProfilesLocalDir());
  }
