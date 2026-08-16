@@ -49,20 +49,6 @@ Options:
   --logfile         Path to log file (default: tps.log)
   --debug           Enable debug logging
 
-For an existing account, prefer the `TPS_FXA_USERNAME` and
-`TPS_FXA_PASSWORD` environment variables instead of command-line arguments.
-Both variables must be set together. The runner removes them from the Firefox
-child-process environment before launch.
-
-TPS uses an unsigned extension with privileged experiment APIs. Release and
-beta milestone builds require a separate test-only build with add-on signing
-disabled:
-
-  MOZ_REQUIRE_SIGNING= ./mach build
-
-The empty value disables the configure option. This setting is for the local
-TPS test binary only and must not be used for a distributed build.
-
 Run in headless mode with:
   MOZ_HEADLESS=1 ./mach tps-test --testfile ... --auto-account
 
@@ -93,27 +79,12 @@ Manual Account Setup (Alternative)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you prefer to use an existing account:
 
-  TPS_FXA_USERNAME=your-test@restmail.net \
-  TPS_FXA_PASSWORD=your-password \
-    ./mach tps-test --testfile services/sync/tests/tps/test_sync.js
+  ./mach tps-test --testfile services/sync/tests/tps/test_sync.js \
+                  --username your-test@restmail.net \
+                  --password your-password
 
 Note: The account must already exist. You can create accounts manually at
 https://accounts.stage.mozaws.net (for staging).
 
 Note: The staging server approach is recommended for testing to avoid using
 production infrastructure. Accounts must be verified before TPS can use them.
-Production runs require the environment variables above; credentials passed as
-command-line arguments are rejected so they are not exposed in process lists.
-
-Production Retry Safety
-~~~~~~~~~~~~~~~~~~~~~~~
-Each FxA email or password form step is submitted at most once per document.
-If a challenge or rate-limit page appears, stop the run instead of repeatedly
-submitting the same step.
-
-Each normal phase has a ten-minute overall deadline, including Firefox startup,
-Marionette connection, TPS add-on installation, and the test itself. OAuth may
-use at most five minutes of that budget. Remote cleanup runs only for profiles
-that completed at least one normal phase successfully; cleanup has a one-minute
-overall deadline and a 30-second OAuth limit. Local profile cleanup and the TPS
-HTTP server shutdown still run after failures.
