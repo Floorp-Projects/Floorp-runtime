@@ -120,6 +120,7 @@ jobs:
       platform: Windows
       arch: x86_64
       runner: windows-2025
+      debug: ${{ github.event.inputs.debug == 'true' }}
 
   verify-linux-x86_64:
     name: Verify Linux x86_64 runtime artifact
