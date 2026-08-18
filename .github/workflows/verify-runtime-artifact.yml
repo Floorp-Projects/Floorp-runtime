@@ -35,6 +35,11 @@ name: Verify Final Runtime Artifact
         description: Native GitHub-hosted runner label
         type: string
         required: true
+      debug:
+        description: Whether the artifact is a Debug build
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
     inputs:
       source-workflow-run-id:
@@ -78,6 +83,11 @@ name: Verify Final Runtime Artifact
           - ubuntu-24.04-arm
           - macos-15-intel
           - macos-14
+      debug:
+        description: Whether the artifact is a Debug build
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   actions: read
@@ -263,6 +273,7 @@ jobs:
           ARTIFACT_DIR: ${{ runner.temp }}/runtime-artifact
           ARTIFACT_NAME: ${{ inputs.artifact-name }}
           EXPECTED_BUILD_ID: ${{ inputs.expected-build-id }}
+          DEBUG_BUILD: ${{ inputs.debug }}
           OUTPUT_FILE: ${{ runner.temp }}/native-full-version.txt
           PARSER_PATH: ${{ github.workspace }}/.github/workflows/scripts/verify_full_version.py
         run: |
@@ -286,6 +297,40 @@ jobs:
           )
           if ($binaries.Count -ne 1) {
             throw "Expected exactly one packaged floorp.exe; found $($binaries.Count)"
+          }
+
+          $applicationIniFiles = @(
+            Get-ChildItem -LiteralPath $extractDirectory -Recurse -File -Filter 'application.ini'
+          )
+          $platformIniFiles = @(
+            Get-ChildItem -LiteralPath $extractDirectory -Recurse -File -Filter 'platform.ini'
+          )
+          if ($applicationIniFiles.Count -ne 1 -or $platformIniFiles.Count -ne 1) {
+            throw "Expected exactly one packaged application.ini and platform.ini; found application.ini=$($applicationIniFiles.Count), platform.ini=$($platformIniFiles.Count)"
+          }
+
+          function Get-PackagedBuildId([System.IO.FileInfo] $iniFile) {
+            $buildIdMatches = @(
+              Select-String -LiteralPath $iniFile.FullName -Pattern '^BuildID=(\d{14})\r?$' |
+                ForEach-Object { $_.Matches[0].Groups[1].Value }
+            )
+            if ($buildIdMatches.Count -ne 1) {
+              throw "Expected exactly one 14-digit BuildID in $($iniFile.FullName); found $($buildIdMatches.Count)"
+            }
+            return $buildIdMatches[0]
+          }
+
+          $applicationBuildId = Get-PackagedBuildId $applicationIniFiles[0]
+          $platformBuildId = Get-PackagedBuildId $platformIniFiles[0]
+          if ($applicationBuildId -ne $env:EXPECTED_BUILD_ID -or
+              $platformBuildId -ne $env:EXPECTED_BUILD_ID) {
+            throw "Packaged BuildID mismatch: expected $env:EXPECTED_BUILD_ID, application=$applicationBuildId, platform=$platformBuildId"
+          }
+          Write-Host "Verified packaged BuildIDs: application=$applicationBuildId platform=$platformBuildId"
+
+          if ($env:DEBUG_BUILD -eq 'true') {
+            Write-Host 'Debug artifact: skipping native --full-version probe because the Windows Debug early-exit path asserts in NSPR.'
+            exit 0
           }
 
           $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
