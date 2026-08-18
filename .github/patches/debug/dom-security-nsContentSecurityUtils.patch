@@ -13,8 +13,8 @@ index 22c3e0b945..bd47d2cb5c 100644
      nsAutoString srcStr;
      aSrc.toString(srcStr);
      NS_ConvertUTF16toUTF8 srcStrUtf8(srcStr);
-@@ -1859,7 +1863,9 @@ void nsContentSecurityUtils::AssertAboutPageHasCSP(Document* aDocument) {
-   const nsCSPPolicy* policy = csp->GetPolicy(0);
+@@ -1906,7 +1906,9 @@ void nsContentSecurityUtils::AssertAboutPageHasCSP(Document* aDocument) {
+   const nsCSPPolicy* policy = csp->GetPolicy(hasBaselineCSP ? 1 : 0);
    {
      AllowBuiltinSrcVisitor visitor(CSPDirective::DEFAULT_SRC_DIRECTIVE, spec);
 -    if (!visitor.visit(policy)) {
