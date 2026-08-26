@@ -247,9 +247,6 @@ class ResolutionTests(unittest.TestCase):
         workflow = (
             Path(__file__).resolve().parents[1] / "daily-build.yml"
         ).read_text(encoding="utf-8")
-        android = workflow.split("  android:", 1)[1].split(
-            "  verify-windows-x86_64:", 1
-        )[0]
         aggregate = workflow.split("  aggregate-runtime-manifest-v2:", 1)[1].split(
             "  publish-debug-to-core-ftp:", 1
         )[0]
@@ -264,15 +261,15 @@ class ResolutionTests(unittest.TestCase):
         self.assertIn("type: boolean", validation_input)
         self.assertIn("default: false", validation_input)
         self.assertEqual(workflow.count("inputs.validation_only != true"), 3)
-        self.assertIn("if: ${{ inputs.validation_only != true }}", android)
+        self.assertIn("  # android:", workflow)
+        self.assertNotIn("\n  android:\n", workflow)
         self.assertIn("inputs.validation_only == true", aggregate)
         self.assertIn("github.event.inputs.debug != 'true'", aggregate)
         self.assertNotIn("aggregate-runtime-manifest-v2", debug_publish)
         self.assertIn("inputs.validation_only != true", debug_publish)
-        self.assertIn(
-            "needs: [aggregate-runtime-manifest-v2, android]",
-            release_publish,
-        )
+        self.assertIn("needs:\n      - aggregate-runtime-manifest-v2", release_publish)
+        self.assertIn("# - android", release_publish)
+        self.assertIn("# artifacts/android/floorp-android-all-artifacts.zip", release_publish)
         self.assertIn("inputs.validation_only != true", release_publish)
 
     def test_daily_runtime_verifier_matrix_and_publish_gates(self) -> None:
@@ -373,6 +370,8 @@ class ResolutionTests(unittest.TestCase):
             start = lines.index("    needs:") + 1
             needs = []
             for line in lines[start:]:
+                if line.startswith("      # "):
+                    continue
                 if not line.startswith("      - "):
                     break
                 needs.append(line.removeprefix("      - "))
@@ -397,7 +396,6 @@ class ResolutionTests(unittest.TestCase):
                 "linux-x86_64",
                 "linux-aarch64",
                 "mac",
-                "android",
                 *verifier_jobs,
             ],
         )
