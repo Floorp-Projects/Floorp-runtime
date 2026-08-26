@@ -14,7 +14,6 @@ with Files("remote*"):
 
 PYTHON_UNITTEST_MANIFESTS += [
     "test/python.toml",
-    "tps/python.toml",
 ]
 
 if not CONFIG["JS_STANDALONE"]:

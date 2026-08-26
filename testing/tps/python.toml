@@ -1,4 +1,0 @@
-[DEFAULT]
-subsuite = "tps"
-
-["test_mach_commands.py"]

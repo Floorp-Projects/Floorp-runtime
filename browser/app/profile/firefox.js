@@ -2340,6 +2340,7 @@ pref("places.semanticHistory.smartwindow.distanceThreshold", "0.6");
 
 // Smart Window: Auto Tab Grouping (bug 2054500).
 pref("browser.smartwindow.autoTabGrouping.enabled", true);
+pref("browser.smartwindow.autoTabGrouping.preloadModels", true);
 pref("browser.smartwindow.autoTabGrouping.maxGroups", 3);
 pref("browser.smartwindow.autoTabGrouping.minTabsPerGroup", 2);
 pref("browser.smartwindow.autoTabGrouping.minCandidateTabs", 4);
@@ -2348,7 +2349,7 @@ pref("browser.smartwindow.autoTabGrouping.timeoutMs", 8000);
 pref("browser.smartwindow.autoTabGrouping.loglevel", "Warn");
 
 // Smart Window: Merino World Cup Soccer tool call (bug 2038266)
-pref("browser.smartwindow.worldcup.enabled", true);
+pref("browser.smartwindow.worldcup.enabled", false);
 pref("browser.smartwindow.worldcup.endpointURL", "https://merino.services.mozilla.com");
 pref("browser.smartwindow.worldcup.timeoutMs", 2000);
 

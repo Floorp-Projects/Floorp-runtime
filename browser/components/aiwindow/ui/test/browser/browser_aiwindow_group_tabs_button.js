@@ -12,6 +12,9 @@ const { AutoTabGroupingSuggestions } = ChromeUtils.importESModule(
 const { SmartTabGroupingManager } = ChromeUtils.importESModule(
   "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs"
 );
+const { TabGroupTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/TabGroupTestUtils.sys.mjs"
+);
 
 // TODO: Break test into smaller pieces for ATG v1
 requestLongerTimeout(2);
@@ -29,6 +32,7 @@ function fakeTwoGroupManager() {
     async getPredictedLabelForGroup() {
       return "Test Group";
     },
+    async preloadAllModels() {},
   };
 }
 
@@ -129,6 +133,7 @@ add_setup(async function setup() {
   const originalManager = AutoTabGroupingSuggestions._manager;
   registerCleanupFunction(() => {
     AutoTabGroupingSuggestions._manager = originalManager;
+    AutoTabGroupingSuggestions._preloadPromise = null;
   });
 });
 
@@ -137,6 +142,7 @@ describe("Auto Tab Grouping toolbar button", () => {
 
   beforeEach(() => {
     AutoTabGroupingSuggestions._manager = fakeTwoGroupManager();
+    AutoTabGroupingSuggestions._preloadPromise = null;
     Services.fog.testResetFOG();
   });
 
@@ -145,6 +151,7 @@ describe("Auto Tab Grouping toolbar button", () => {
       await BrowserTestUtils.closeWindow(win);
       win = null;
     }
+    TabGroupTestUtils.forgetSavedTabGroups();
     await SpecialPowers.popPrefEnv();
   });
 
@@ -232,6 +239,136 @@ describe("Auto Tab Grouping toolbar button", () => {
       win = await openAIWindow();
       await navigateToContent(win);
       await assertButtonHiddenOnContent(win, "on-device ML is disabled");
+    });
+  });
+
+  describe("model preloading", () => {
+    let preloadStub;
+
+    afterEach(() => {
+      preloadStub?.restore();
+      preloadStub = null;
+    });
+
+    it("preloads when a Smart Window shows the button", async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [["browser.smartwindow.autoTabGrouping.enabled", true]],
+      });
+      preloadStub = sinon.stub(AutoTabGroupingSuggestions, "preloadModels");
+
+      win = await openAIWindow();
+
+      Assert.ok(
+        preloadStub.calledOnce,
+        "Opening a Smart Window preloads the models once"
+      );
+    });
+
+    it("preloads when a window switches to Smart Window", async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [["browser.smartwindow.autoTabGrouping.enabled", true]],
+      });
+      preloadStub = sinon.stub(AutoTabGroupingSuggestions, "preloadModels");
+
+      win = await BrowserTestUtils.openNewBrowserWindow();
+      Assert.ok(
+        preloadStub.notCalled,
+        "A classic window does not preload the models"
+      );
+
+      AIWindow.toggleAIWindow(win, true);
+      Assert.ok(
+        preloadStub.calledOnce,
+        "Switching to Smart Window preloads the models once"
+      );
+    });
+
+    it("does not preload while the button stays hidden", async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [["browser.smartwindow.autoTabGrouping.enabled", false]],
+      });
+      preloadStub = sinon.stub(AutoTabGroupingSuggestions, "preloadModels");
+
+      win = await openAIWindow();
+
+      Assert.ok(
+        preloadStub.notCalled,
+        "The models are not preloaded while the feature pref is off"
+      );
+    });
+
+    it("does not download while the preload pref is off", async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [
+          ["browser.smartwindow.autoTabGrouping.enabled", true],
+          ["browser.smartwindow.autoTabGrouping.preloadModels", false],
+        ],
+      });
+
+      let preloads = 0;
+      AutoTabGroupingSuggestions._manager = {
+        ...fakeTwoGroupManager(),
+        async preloadAllModels() {
+          preloads++;
+        },
+      };
+
+      await AutoTabGroupingSuggestions.preloadModels();
+
+      Assert.equal(
+        preloads,
+        0,
+        "The models are not fetched while the preload pref is off"
+      );
+    });
+
+    it("shares one download across repeated preloads", async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [
+          ["browser.smartwindow.autoTabGrouping.enabled", true],
+          ["browser.smartwindow.autoTabGrouping.preloadModels", true],
+        ],
+      });
+
+      let preloads = 0;
+      AutoTabGroupingSuggestions._manager = {
+        ...fakeTwoGroupManager(),
+        async preloadAllModels() {
+          preloads++;
+        },
+      };
+
+      await AutoTabGroupingSuggestions.preloadModels();
+      await AutoTabGroupingSuggestions.preloadModels();
+
+      Assert.equal(preloads, 1, "The second preload reuses the first download");
+    });
+
+    it("does not preload again after a failed download", async () => {
+      await SpecialPowers.pushPrefEnv({
+        set: [
+          ["browser.smartwindow.autoTabGrouping.enabled", true],
+          ["browser.smartwindow.autoTabGrouping.preloadModels", true],
+        ],
+      });
+
+      let preloads = 0;
+      AutoTabGroupingSuggestions._manager = {
+        ...fakeTwoGroupManager(),
+        async preloadAllModels() {
+          preloads++;
+          throw new Error("Preload failed");
+        },
+      };
+
+      await AutoTabGroupingSuggestions.preloadModels();
+      await AutoTabGroupingSuggestions.preloadModels();
+
+      Assert.equal(
+        preloads,
+        1,
+        "A failed download is not retried on the next preload"
+      );
     });
   });
 
@@ -544,7 +681,19 @@ describe("Auto Tab Grouping toolbar button", () => {
         "The row's label reports that count"
       );
 
+      const hintShown = BrowserTestUtils.waitForEvent(
+        win.document,
+        "popupshown",
+        true,
+        event => event.target.id === "confirmation-hint"
+      );
       row.click();
+      const { target: hint } = await hintShown;
+      Assert.equal(
+        hint.anchorNode?.id,
+        "smartwindow-group-tabs-button-inner",
+        "The hint points at our button, not the All Tabs button which may be absent"
+      );
       await TestUtils.waitForCondition(
         () => win.gBrowser.tabs.length === tabsBefore - 2,
         "Both duplicate tabs are closed"
@@ -554,6 +703,105 @@ describe("Auto Tab Grouping toolbar button", () => {
         new Set(urls).size,
         urls.length,
         "Every remaining tab is at a distinct URL"
+      );
+    });
+  });
+
+  describe("viewing existing tab groups", () => {
+    it("offers the row once groups exist and switches to the one clicked", async () => {
+      win = await openGroupingWindowWithTabs();
+      const panel = await openPanelWithSuggestions(win);
+
+      Assert.equal(
+        win.gBrowser.getAllTabGroups().length,
+        0,
+        "No tab group exists yet"
+      );
+      Assert.ok(
+        !panel.querySelector(".swgt-view-tab-groups"),
+        "No 'View Tab Groups' row while the user has no groups"
+      );
+
+      panel.querySelector(".swgt-create-all").click();
+      const row = await TestUtils.waitForCondition(
+        () => panel.querySelector(".swgt-view-tab-groups"),
+        "The row appears once the created groups exist"
+      );
+      Assert.equal(
+        row.querySelector(".swgt-row-label").getAttribute("data-l10n-id"),
+        "smartwindow-group-tabs-view-tab-groups",
+        "The row's label is localized via Fluent"
+      );
+
+      row.click();
+      const list = await TestUtils.waitForCondition(
+        () => panel._flyoutPanel?.querySelector("tab-groups-list"),
+        "Activating the row opens the tab groups list"
+      );
+      Assert.equal(
+        panel._flyoutPanel
+          .querySelector(".swgt-flyout-list")
+          .getAttribute("data-l10n-id"),
+        "smartwindow-group-tabs-groups-list",
+        "The list's accessible name is localized via Fluent"
+      );
+      Assert.equal(
+        row.getAttribute("aria-expanded"),
+        "true",
+        "The row reports its list as expanded"
+      );
+      await TestUtils.waitForCondition(
+        () => panel._flyoutPanel.contains(win.document.activeElement),
+        "Activating the row moves focus into the list"
+      );
+
+      // Reopening must rebuild the list, so groups created in between show up.
+      AutoTabGrouping._hideFlyout(panel);
+      row.click();
+      const groupRows = await TestUtils.waitForCondition(() => {
+        const rebuilt = panel._flyoutPanel.querySelector("tab-groups-list");
+        const rows = rebuilt?.querySelectorAll(".tab-group-row");
+        return rebuilt !== list && rows?.length === 2 ? [...rows] : null;
+      }, "Reopening builds a fresh list of both groups");
+
+      const group = win.gBrowser.getTabGroupById(
+        groupRows[1].dataset.tabGroupId
+      );
+      Assert.ok(group, "Each row names a tab group");
+      groupRows[1].click();
+      await TestUtils.waitForCondition(
+        () => !win.document.getElementById("smartwindow-group-tabs-panel"),
+        "Selecting a group closes the panel"
+      );
+      Assert.equal(
+        win.gBrowser.selectedTab.group,
+        group,
+        "The clicked group's tab is selected"
+      );
+    });
+
+    it("takes focus when the list replaces an open suggestion flyout", async () => {
+      win = await openGroupingWindowWithTabs();
+      const panel = await openPanelWithSuggestions(win);
+
+      panel.querySelector(".swgt-suggestion").click();
+      const row = await TestUtils.waitForCondition(
+        () => panel.querySelector(".swgt-view-tab-groups"),
+        "The row appears once the created group exists"
+      );
+      const suggestion = panel.querySelector(".swgt-suggestion");
+      suggestion.dispatchEvent(new win.MouseEvent("mouseenter"));
+      await TestUtils.waitForCondition(
+        () =>
+          panel._flyoutPanel?.state === "open" &&
+          panel._flyoutPanel.querySelector(".swgt-flyout-tab"),
+        "The remaining suggestion's flyout is open"
+      );
+
+      row.click();
+      await TestUtils.waitForCondition(
+        () => win.document.activeElement?.classList.contains("tab-group-row"),
+        "Focus lands in the tab groups list, not on the render it replaced"
       );
     });
   });
@@ -1011,11 +1259,9 @@ describe("Auto Tab Grouping toolbar button", () => {
       });
 
       AutoTabGroupingSuggestions._manager = {
+        ...fakeTwoGroupManager(),
         generateClusters() {
           return new Promise(() => {});
-        },
-        async getPredictedLabelForGroup() {
-          return "Test Group";
         },
       };
 
@@ -1045,18 +1291,12 @@ describe("Auto Tab Grouping toolbar button", () => {
       const clustersReady = new Promise(resolve => {
         releaseClusters = resolve;
       });
+      const fakeManager = fakeTwoGroupManager();
       AutoTabGroupingSuggestions._manager = {
+        ...fakeManager,
         async generateClusters(tabList) {
           await clustersReady;
-          return {
-            clusterRepresentations: [
-              { tabs: tabList.slice(0, 2), cohesion: 0.9 },
-              { tabs: tabList.slice(2, 4), cohesion: 0.9 },
-            ],
-          };
-        },
-        async getPredictedLabelForGroup() {
-          return "Test Group";
+          return fakeManager.generateClusters(tabList);
         },
       };
 

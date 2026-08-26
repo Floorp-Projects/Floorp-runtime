@@ -3026,10 +3026,18 @@ pref("signon.firefoxRelay.privacy_policy_url", "https://www.mozilla.org/%LOCALE%
 pref("signon.signupDetection.confidenceThreshold",     "0.75");
 
 // Logins Rust storage backend is enabled by default
-pref("signon.storage.rust.enabled", true);
-// The following two prefs are managed by Fx internally:
+#if MOZ_UPDATE_CHANNEL != release && MOZ_UPDATE_CHANNEL != esr
+  pref("signon.storage.rust.enabled", true);
+#else
+  pref("signon.storage.rust.enabled", false);
+#endif
+// Kill switch for restoring logins out of a deactivated Rust backend.
+pref("signon.storage.rust.restoreEnabled", true);
+// The following four prefs are managed by Fx internally:
 pref("signon.storage.rust.active", false);
 pref("signon.storage.rust.migrationAttempts", 0);
+pref("signon.storage.rust.restoreAttempts", 0);
+pref("signon.storage.rust.restoreDone", false);
 
 // Satchel (Form Manager) prefs
 pref("browser.formfill.debug",            false);
@@ -4011,14 +4019,22 @@ pref("security.storage.encryption.sqlite.enabled", false, locked);
 pref("extensions.formautofill.available", "detect");
 
 #if !defined(ANDROID)
-pref("extensions.formautofill.addresses.supported", "on");
+  #if MOZ_UPDATE_CHANNEL != release && MOZ_UPDATE_CHANNEL != esr
+    pref("extensions.formautofill.addresses.supported", "on");
+  #else
+    pref("extensions.formautofill.addresses.supported", "detect");
+  #endif
 #else
 pref("extensions.formautofill.addresses.supported", "detect");
 #endif
 
 // Use ML for address form field detection.
 #if defined(XP_WIN) || defined(XP_MACOSX)
-pref("extensions.formautofill.useml", true);
+  #if MOZ_UPDATE_CHANNEL != release && MOZ_UPDATE_CHANNEL != esr
+    pref("extensions.formautofill.useml", true);
+  #else
+    pref("extensions.formautofill.useml", false);
+  #endif
 #else
 pref("extensions.formautofill.useml", false);
 #endif
