@@ -10,6 +10,7 @@ permissions:
 'on':
   schedule:
     - cron: "0 6 * * *"
+    - cron: "0 18 * * *"
   workflow_dispatch:
     inputs:
       debug:
@@ -38,8 +39,8 @@ permissions:
 
 run-name: >-
   Daily Runtime Build
-  ${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
-  ${{ github.event.inputs.debug == 'true' && ' (Debug)' || '' }}
+  ${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+  ${{ (github.event.schedule == '0 18 * * *' || github.event.inputs.debug == 'true') && ' (Debug)' || '' }}
   ${{ inputs.validation_only && ' [Validation only]' || '' }}
 
 jobs:
@@ -52,25 +53,25 @@ jobs:
 
   windows-x86_64:
     name: >-
-      Windows x86_64${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+      Windows x86_64${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
     needs: resolve-build-context
     uses: ./.github/workflows/wrapper-build-windows.yml
     secrets: inherit
     with:
-      debug: ${{ github.event.inputs.debug == 'true' }}
-      pgo: ${{ github.event.inputs.pgo != 'false' }}
+      debug: ${{ github.event.schedule == '0 18 * * *' || github.event.inputs.debug == 'true' }}
+      pgo: ${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' }}
       MOZ_BUILD_DATE: >-
         ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
   linux-x86_64:
     name: >-
-      Linux x86_64${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+      Linux x86_64${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
     needs: resolve-build-context
     uses: ./.github/workflows/wrapper-build-linux.yml
     secrets: inherit
     with:
-      debug: ${{ github.event.inputs.debug == 'true' }}
-      pgo: ${{ github.event.inputs.pgo != 'false' }}
+      debug: ${{ github.event.schedule == '0 18 * * *' || github.event.inputs.debug == 'true' }}
+      pgo: ${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' }}
       arch: x86_64
       MOZ_BUILD_DATE: >-
         ${{ needs.resolve-build-context.outputs.expected-build-id }}
@@ -81,7 +82,7 @@ jobs:
     uses: ./.github/workflows/wrapper-build-linux.yml
     secrets: inherit
     with:
-      debug: ${{ github.event.inputs.debug == 'true' }}
+      debug: ${{ github.event.schedule == '0 18 * * *' || github.event.inputs.debug == 'true' }}
       pgo: false
       arch: aarch64
       MOZ_BUILD_DATE: >-
@@ -89,13 +90,13 @@ jobs:
 
   mac:
     name: >-
-      Mac build${{ github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
+      Mac build${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' && ' [PGO]' || '' }}
     needs: resolve-build-context
     uses: ./.github/workflows/wrapper-mac-build.yml
     secrets: inherit
     with:
-      debug: ${{ github.event.inputs.debug == 'true' }}
-      pgo: ${{ github.event.inputs.pgo != 'false' }}
+      debug: ${{ github.event.schedule == '0 18 * * *' || github.event.inputs.debug == 'true' }}
+      pgo: ${{ github.event.schedule != '0 18 * * *' && github.event.inputs.pgo != 'false' }}
       MOZ_BUILD_DATE: >-
         ${{ needs.resolve-build-context.outputs.expected-build-id }}
 
@@ -120,7 +121,7 @@ jobs:
       platform: Windows
       arch: x86_64
       runner: windows-2025
-      debug: ${{ github.event.inputs.debug == 'true' }}
+      debug: ${{ github.event.schedule == '0 18 * * *' || github.event.inputs.debug == 'true' }}
 
   verify-linux-x86_64:
     name: Verify Linux x86_64 runtime artifact
@@ -174,7 +175,8 @@ jobs:
     name: Aggregate Runtime Build Manifest v2
     if: >-
       ${{ inputs.validation_only == true ||
-          github.event.inputs.debug != 'true' }}
+          (github.event.schedule != '0 18 * * *' &&
+           github.event.inputs.debug != 'true') }}
     needs:
       - resolve-build-context
       - windows-x86_64
@@ -421,7 +423,8 @@ jobs:
       - verify-mac-x86_64
       - verify-mac-aarch64
     if: >-
-      ${{ github.event.inputs.debug == 'true' &&
+      ${{ (github.event.schedule == '0 18 * * *' ||
+           github.event.inputs.debug == 'true') &&
           inputs.validation_only != true }}
     runs-on: ubuntu-latest
     steps:
@@ -480,7 +483,8 @@ jobs:
     name: Publish Release Assets
     needs: [aggregate-runtime-manifest-v2, android]
     if: >-
-      ${{ github.event.inputs.debug != 'true' &&
+      ${{ github.event.schedule != '0 18 * * *' &&
+          github.event.inputs.debug != 'true' &&
           inputs.validation_only != true }}
     runs-on: ubuntu-latest
     steps:
